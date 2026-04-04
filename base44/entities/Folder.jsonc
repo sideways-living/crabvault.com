@@ -1,0 +1,37 @@
+{
+  "name": "Folder",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "title": "Folder Name"
+    },
+    "parent_folder_id": {
+      "type": "string",
+      "title": "Parent Folder ID"
+    },
+    "path": {
+      "type": "string",
+      "title": "Full Path"
+    },
+    "category_id": {
+      "type": "string",
+      "title": "Category ID"
+    },
+    "description": {
+      "type": "string",
+      "title": "Description"
+    },
+    "icon": {
+      "type": "string",
+      "title": "Icon"
+    },
+    "vault_path": {
+      "type": "string",
+      "title": "Cryptomator Vault Path"
+    }
+  },
+  "required": [
+    "name"
+  ]
+}

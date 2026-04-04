@@ -1,0 +1,95 @@
+{
+  "name": "Document",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "title": "Document Title"
+    },
+    "file_url": {
+      "type": "string",
+      "title": "File URL"
+    },
+    "original_filename": {
+      "type": "string",
+      "title": "Original Filename"
+    },
+    "file_type": {
+      "type": "string",
+      "title": "File Type",
+      "enum": [
+        "pdf",
+        "docx",
+        "xlsx",
+        "pptx",
+        "txt",
+        "jpg",
+        "png",
+        "other"
+      ]
+    },
+    "file_size": {
+      "type": "number",
+      "title": "File Size (bytes)"
+    },
+    "folder_id": {
+      "type": "string",
+      "title": "Folder ID"
+    },
+    "category_id": {
+      "type": "string",
+      "title": "Category ID"
+    },
+    "summary": {
+      "type": "string",
+      "title": "AI Summary"
+    },
+    "extracted_text": {
+      "type": "string",
+      "title": "Extracted Text Content"
+    },
+    "tags": {
+      "type": "array",
+      "title": "Tags",
+      "items": {
+        "type": "string"
+      }
+    },
+    "processing_status": {
+      "type": "string",
+      "title": "Processing Status",
+      "enum": [
+        "pending",
+        "processing",
+        "completed",
+        "failed"
+      ],
+      "default": "pending"
+    },
+    "is_searchable_pdf": {
+      "type": "boolean",
+      "title": "Is Searchable PDF",
+      "default": false
+    },
+    "vault_path": {
+      "type": "string",
+      "title": "Cryptomator Vault Path"
+    },
+    "source_path": {
+      "type": "string",
+      "title": "Source Path (shared folder)"
+    },
+    "document_date": {
+      "type": "string",
+      "format": "date",
+      "title": "Document Date"
+    },
+    "notes": {
+      "type": "string",
+      "title": "Notes"
+    }
+  },
+  "required": [
+    "title"
+  ]
+}
