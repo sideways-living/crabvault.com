@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Shield, FolderSync, HardDrive, Loader2, Plus, Trash2 } from "lucide-react";
+import { Shield, FolderSync, HardDrive, Loader2, Plus, Trash2, Play, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 
 export default function SettingsPage() {
@@ -15,6 +15,8 @@ export default function SettingsPage() {
   const [sharedFolderPath, setSharedFolderPath] = useState("");
   const [newCategory, setNewCategory] = useState("");
   const [saving, setSaving] = useState(false);
+  const [processing, setProcessing] = useState(false);
+  const [lastProcessed, setLastProcessed] = useState(null);
 
   useEffect(() => {
     const load = async () => {
@@ -39,6 +41,14 @@ export default function SettingsPage() {
     });
     toast.success("Settings saved");
     setSaving(false);
+  };
+
+  const handleProcessQueue = async () => {
+    setProcessing(true);
+    const res = await base44.functions.invoke('processQueuedDocuments', {});
+    setLastProcessed(res.data);
+    setProcessing(false);
+    toast.success(res.data?.message || 'Done');
   };
 
   const handleAddCategory = async () => {
@@ -117,6 +127,33 @@ export default function SettingsPage() {
         {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <HardDrive className="h-4 w-4 mr-2" />}
         Save Settings
       </Button>
+
+      {/* Process Queue */}
+      <div className="bg-card rounded-xl border p-6 space-y-3">
+        <div className="flex items-center gap-3">
+          <Play className="h-5 w-5 text-chart-2" />
+          <h2 className="font-semibold">Auto-Process Queue</h2>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          Automatically summarize, categorize, and assign vault paths to all pending documents using AI.
+          This also runs automatically every 30 minutes.
+        </p>
+        {lastProcessed && (
+          <div className="flex items-center gap-2 text-sm text-emerald-600 bg-emerald-50 rounded-lg px-3 py-2">
+            <CheckCircle2 className="h-4 w-4" />
+            {lastProcessed.message}
+          </div>
+        )}
+        <Button onClick={handleProcessQueue} disabled={processing} variant="outline">
+          {processing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Play className="h-4 w-4 mr-2" />}
+          {processing ? 'Processing...' : 'Process All Pending Now'}
+        </Button>
+      </div>
+
+      <div className="bg-muted/50 rounded-xl p-4 text-xs text-muted-foreground space-y-1">
+        <p className="font-medium">💡 Vault Path Auto-Fill</p>
+        <p>Set a Vault Path on each Folder (in Folder settings). When a document is assigned to that folder — either manually or by AI — its vault path will be auto-suggested based on the folder's vault path.</p>
+      </div>
 
       {/* Categories */}
       <div className="bg-card rounded-xl border p-6 space-y-4">

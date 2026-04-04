@@ -31,6 +31,7 @@ export default function DocumentDetail() {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [editData, setEditData] = useState({});
+  const [suggestedVaultPath, setSuggestedVaultPath] = useState("");
 
   const loadData = async () => {
     const [docs, flds, cats] = await Promise.all([
@@ -46,6 +47,7 @@ export default function DocumentDetail() {
         category_id: docs[0].category_id || "",
         notes: docs[0].notes || "",
         tags: docs[0].tags?.join(", ") || "",
+        vault_path: docs[0].vault_path || "",
       });
     }
     setFolders(flds);
@@ -62,6 +64,7 @@ export default function DocumentDetail() {
       category_id: editData.category_id || undefined,
       notes: editData.notes || undefined,
       tags: editData.tags ? editData.tags.split(",").map(t => t.trim()).filter(Boolean) : [],
+      vault_path: editData.vault_path || undefined,
     });
     toast.success("Document updated");
     setEditing(false);
@@ -203,7 +206,12 @@ export default function DocumentDetail() {
               <div className="flex items-center gap-2 text-muted-foreground">
                 <FolderOpen className="h-4 w-4" />
                 {editing ? (
-                  <Select value={editData.folder_id} onValueChange={v => setEditData({...editData, folder_id: v})}>
+                  <Select value={editData.folder_id} onValueChange={v => {
+                    const sel = folders.find(f => f.id === v);
+                    const suggested = sel?.vault_path ? `${sel.vault_path}/${doc.original_filename || doc.title}` : "";
+                    setSuggestedVaultPath(suggested);
+                    setEditData({...editData, folder_id: v, vault_path: editData.vault_path || suggested});
+                  }}>
                     <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Select folder" /></SelectTrigger>
                     <SelectContent>
                       {folders.map(f => <SelectItem key={f.id} value={f.id}>{f.path || f.name}</SelectItem>)}
@@ -218,11 +226,26 @@ export default function DocumentDetail() {
                   Size: {(doc.file_size / 1024).toFixed(0)} KB
                 </div>
               )}
-              {doc.vault_path && (
-                <div className="text-muted-foreground text-xs font-mono bg-muted/50 p-2 rounded">
-                  Vault: {doc.vault_path}
+              {editing ? (
+                <div>
+                  <label className="text-[10px] text-muted-foreground uppercase tracking-wide">Vault Path</label>
+                  <Input
+                    value={editData.vault_path}
+                    onChange={e => setEditData({...editData, vault_path: e.target.value})}
+                    placeholder="/vault/path/file.pdf"
+                    className="mt-1 text-xs font-mono h-8"
+                  />
+                  {suggestedVaultPath && editData.vault_path !== suggestedVaultPath && (
+                    <button onClick={() => setEditData({...editData, vault_path: suggestedVaultPath})} className="text-[10px] text-primary hover:underline mt-1">
+                      Use suggested: {suggestedVaultPath}
+                    </button>
+                  )}
                 </div>
-              )}
+              ) : doc.vault_path ? (
+                <div className="text-muted-foreground text-xs font-mono bg-muted/50 p-2 rounded break-all">
+                  🔒 {doc.vault_path}
+                </div>
+              ) : null}
             </div>
           </div>
 
