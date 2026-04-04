@@ -2,14 +2,15 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
+import SaveButton from "../components/SaveButton";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  ArrowLeft, FileText, Download, Trash2, Clock, CheckCircle2,
-  AlertCircle, Loader2, Calendar, Tag, FolderOpen, Save, ExternalLink
+  ArrowLeft, FileText, Trash2, Clock, CheckCircle2,
+  AlertCircle, Loader2, Calendar, FolderOpen, ExternalLink
 } from "lucide-react";
 import { toast } from "sonner";
 import ProcessDocumentButton from "../components/ProcessDocumentButton";
@@ -146,7 +147,7 @@ export default function DocumentDetail() {
               <Button variant="outline" size="sm" onClick={() => setEditing(true)}>Edit</Button>
             ) : (
               <>
-                <Button size="sm" onClick={handleSave}><Save className="h-4 w-4 mr-1" /> Save</Button>
+                <SaveButton size="sm" onSave={handleSave}>Save</SaveButton>
                 <Button variant="ghost" size="sm" onClick={() => setEditing(false)}>Cancel</Button>
               </>
             )}

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
+import SaveButton from "../components/SaveButton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -34,13 +35,11 @@ export default function SettingsPage() {
   }, []);
 
   const handleSaveSettings = async () => {
-    setSaving(true);
     await base44.auth.updateMe({
       vault_path: vaultPath,
       shared_folder_path: sharedFolderPath,
     });
     toast.success("Settings saved");
-    setSaving(false);
   };
 
   const handleProcessQueue = async () => {
@@ -123,10 +122,9 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      <Button onClick={handleSaveSettings} disabled={saving}>
-        {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <HardDrive className="h-4 w-4 mr-2" />}
-        Save Settings
-      </Button>
+      <SaveButton onSave={handleSaveSettings}>
+        <HardDrive className="h-4 w-4 mr-2" /> Save Settings
+      </SaveButton>
 
       {/* Process Queue */}
       <div className="bg-card rounded-xl border p-6 space-y-3">
