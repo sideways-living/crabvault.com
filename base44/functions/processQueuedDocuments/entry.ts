@@ -51,6 +51,7 @@ If it IS a receipt:
 - Extract: transaction_date (YYYY-MM-DD), vendor_name (clean company name, e.g. "Woolworths", "Amazon", "Shell")
 - suggested_title should follow the format: "YYYYMMDD - Vendor - Receipt" (e.g. "20240315 - Woolworths - Receipt")
 - is_receipt: true
+- In the summary, list ALL items purchased (name and price if available), e.g. "Receipt from Bunnings on 15 Mar 2024. Items: Spade $29.98, Garden Gloves $12.00, Potting Mix $8.50. Total: $50.48."
 
 If it is NOT a receipt:
 - is_receipt: false
