@@ -1,10 +1,9 @@
 import { useState, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Upload, FileText, X, Loader2 } from "lucide-react";
+import { Upload, FileText, X, Loader2, Brain, Lock, CheckCircle2, ChevronRight } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
 
@@ -12,6 +11,8 @@ export default function UploadDialog({ open, onOpenChange, folders, categories, 
   const [files, setFiles] = useState([]);
   const [folderId, setFolderId] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [phase, setPhase] = useState("idle"); // idle | uploading | processing | done
+  const [progressLabel, setProgressLabel] = useState("");
   const fileRef = useRef();
 
   const handleFiles = (e) => {
@@ -27,7 +28,11 @@ export default function UploadDialog({ open, onOpenChange, folders, categories, 
     if (files.length === 0) return;
     setUploading(true);
 
-    for (const file of files) {
+    // Phase 1: Upload
+    setPhase("uploading");
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      setProgressLabel(`Uploading ${file.name}… (${i + 1}/${files.length})`);
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
       const ext = file.name.split('.').pop().toLowerCase();
       const fileType = ['pdf', 'docx', 'xlsx', 'pptx', 'txt', 'jpg', 'png'].includes(ext) ? ext : 'other';
@@ -43,12 +48,31 @@ export default function UploadDialog({ open, onOpenChange, folders, categories, 
       });
     }
 
-    toast.success(`${files.length} document${files.length > 1 ? 's' : ''} uploaded`);
-    setFiles([]);
-    setFolderId("");
-    setUploading(false);
-    onOpenChange(false);
-    onUploaded?.();
+    // Phase 2: AI processing (summarise, categorise, assign vault path)
+    setPhase("processing");
+    setProgressLabel("AI is analysing, categorising & assigning vault paths…");
+    await base44.functions.invoke('processQueuedDocuments', {});
+
+    // Phase 3: Done
+    setPhase("done");
+    setProgressLabel("Documents processed and vault paths assigned.");
+    toast.success(`${files.length} document${files.length > 1 ? 's' : ''} uploaded & processed`);
+
+    setTimeout(() => {
+      setFiles([]);
+      setFolderId("");
+      setUploading(false);
+      setPhase("idle");
+      setProgressLabel("");
+      onOpenChange(false);
+      onUploaded?.();
+    }, 1500);
+  };
+
+  const stepClass = (activePhase, completedPhases) => {
+    if (completedPhases.includes(phase)) return "bg-emerald-100 text-emerald-700";
+    if (phase === activePhase) return "bg-primary text-primary-foreground";
+    return "bg-muted text-muted-foreground";
   };
 
   return (
@@ -59,9 +83,35 @@ export default function UploadDialog({ open, onOpenChange, folders, categories, 
         </DialogHeader>
 
         <div className="space-y-4">
+          {/* Pipeline steps */}
+          <div className="flex items-center justify-center gap-1.5 text-xs">
+            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full font-medium transition-all ${stepClass('uploading', ['processing', 'done'])}`}>
+              {phase === 'uploading' ? <Loader2 className="h-3 w-3 animate-spin" /> : ['processing','done'].includes(phase) ? <CheckCircle2 className="h-3 w-3" /> : <Upload className="h-3 w-3" />}
+              Upload
+            </div>
+            <ChevronRight className="h-3 w-3 text-muted-foreground" />
+            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full font-medium transition-all ${stepClass('processing', ['done'])}`}>
+              {phase === 'processing' ? <Loader2 className="h-3 w-3 animate-spin" /> : phase === 'done' ? <CheckCircle2 className="h-3 w-3" /> : <Brain className="h-3 w-3" />}
+              AI Process
+            </div>
+            <ChevronRight className="h-3 w-3 text-muted-foreground" />
+            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full font-medium transition-all ${stepClass('done', ['done'])}`}>
+              {phase === 'done' ? <CheckCircle2 className="h-3 w-3" /> : <Lock className="h-3 w-3" />}
+              Vault
+            </div>
+          </div>
+
+          {/* Status label */}
+          {progressLabel && (
+            <div className="bg-muted/50 rounded-lg px-4 py-2 text-xs text-center text-muted-foreground">
+              {progressLabel}
+            </div>
+          )}
+
+          {/* Drop zone */}
           <div
-            onClick={() => fileRef.current?.click()}
-            className="border-2 border-dashed rounded-xl p-8 text-center cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-all"
+            onClick={() => !uploading && fileRef.current?.click()}
+            className={`border-2 border-dashed rounded-xl p-8 text-center transition-all ${uploading ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer hover:border-primary/50 hover:bg-primary/5'}`}
           >
             <Upload className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
             <p className="text-sm font-medium">Click to select files</p>
@@ -76,7 +126,7 @@ export default function UploadDialog({ open, onOpenChange, folders, categories, 
                   <FileText className="h-4 w-4 text-primary shrink-0" />
                   <span className="truncate flex-1">{file.name}</span>
                   <span className="text-xs text-muted-foreground">{(file.size / 1024).toFixed(0)}KB</span>
-                  <button onClick={() => removeFile(i)} className="p-0.5 hover:bg-muted rounded">
+                  <button onClick={() => removeFile(i)} disabled={uploading} className="p-0.5 hover:bg-muted rounded disabled:opacity-40">
                     <X className="h-3.5 w-3.5" />
                   </button>
                 </div>
@@ -86,7 +136,7 @@ export default function UploadDialog({ open, onOpenChange, folders, categories, 
 
           <div>
             <Label className="text-xs">Destination Folder (optional)</Label>
-            <Select value={folderId} onValueChange={setFolderId}>
+            <Select value={folderId} onValueChange={setFolderId} disabled={uploading}>
               <SelectTrigger className="mt-1.5">
                 <SelectValue placeholder="Select a folder..." />
               </SelectTrigger>
@@ -99,8 +149,12 @@ export default function UploadDialog({ open, onOpenChange, folders, categories, 
           </div>
 
           <Button onClick={handleUpload} disabled={files.length === 0 || uploading} className="w-full">
-            {uploading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Upload className="h-4 w-4 mr-2" />}
-            {uploading ? "Uploading..." : `Upload ${files.length} file${files.length !== 1 ? 's' : ''}`}
+            {uploading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+            {!uploading && <Upload className="h-4 w-4 mr-2" />}
+            {phase === 'uploading' && 'Uploading…'}
+            {phase === 'processing' && 'AI Processing…'}
+            {phase === 'done' && 'Complete!'}
+            {phase === 'idle' && `Upload & Process ${files.length} file${files.length !== 1 ? 's' : ''}`}
           </Button>
         </div>
       </DialogContent>
