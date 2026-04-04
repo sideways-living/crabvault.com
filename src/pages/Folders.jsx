@@ -47,7 +47,7 @@ export default function Folders() {
       </div>
 
       <div className="bg-card rounded-xl border p-4">
-        <FolderTreeView folders={folders} documents={documents} />
+        <FolderTreeView folders={folders} documents={documents} onFoldersChanged={loadData} />
       </div>
 
       <CreateFolderDialog open={createOpen} onOpenChange={setCreateOpen} folders={folders} categories={categories} onCreated={loadData} />
