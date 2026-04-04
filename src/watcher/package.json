@@ -1,0 +1,9 @@
+{
+  "name": "docvault-watcher",
+  "version": "1.0.0",
+  "description": "Local folder watcher that auto-uploads files to DocVault",
+  "main": "watch.js",
+  "scripts": {
+    "start": "node watch.js"
+  }
+}
