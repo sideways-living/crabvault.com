@@ -34,12 +34,14 @@ export default function Layout() {
   const [vaultConnected, setVaultConnected] = useState(null);
   const [vaultHelpOpen, setVaultHelpOpen] = useState(false);
   const [docCounts, setDocCounts] = useState({ pending: 0, processing: 0, review: 0, completed: 0 });
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
     const checkVault = async () => {
       try {
-        const user = await base44.auth.me();
-        if (user) {
+        const currentUser = await base44.auth.me();
+        setUser(currentUser);
+        if (currentUser) {
           const res = await base44.functions.invoke('syncDocumentsToVault', { vaultPath: '/tmp/test' });
           setVaultConnected(!res.data?.error || res.data?.error !== 'Cryptomator vault not connected');
         }
