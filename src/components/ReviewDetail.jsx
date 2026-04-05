@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Save, Trash2, FileText, ExternalLink, BookOpen } from "lucide-react";
+import { Loader2, Save, Trash2, FileText, ExternalLink, BookOpen, Copy, GitMerge, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 
 function DocPreview({ doc }) {
@@ -23,7 +23,7 @@ function DocPreview({ doc }) {
   );
 }
 
-export default function ReviewDetail({ doc, folders, categories, onConfirmed }) {
+export default function ReviewDetail({ doc, folders, categories, duplicates = [], onConfirmed }) {
   const ai = doc.ai_data || {};
   const isReceipt = !!(ai.is_receipt);
 
@@ -50,6 +50,7 @@ export default function ReviewDetail({ doc, folders, categories, onConfirmed }) 
 
   const [saving, setSaving] = useState(false);
   const [rejecting, setRejecting] = useState(false);
+  const [merging, setMerging] = useState(false);
 
   // Auto-update vault path when folder or title changes
   useEffect(() => {
@@ -145,12 +146,40 @@ export default function ReviewDetail({ doc, folders, categories, onConfirmed }) 
     onConfirmed(doc.id);
   };
 
+  const handleMergeAndDelete = async () => {
+    if (!confirm(`Keep this document and delete ${duplicates.length} duplicate(s)? This cannot be undone.`)) return;
+    setMerging(true);
+    await Promise.all(duplicates.map(d => base44.entities.Document.delete(d.id)));
+    setMerging(false);
+    toast.success(`Merged — deleted ${duplicates.length} duplicate(s)`);
+    // Remove duplicates from queue, keep current doc selected
+    onConfirmed(duplicates.map(d => d.id));
+  };
+
   const updateItem = (i, field, val) => {
     setItems(prev => prev.map((item, idx) => idx === i ? { ...item, [field]: val } : item));
   };
 
   return (
     <div className="bg-card border rounded-xl overflow-hidden flex flex-col gap-0">
+      {duplicates.length > 0 && (
+        <div className="flex items-center gap-3 px-5 py-3 bg-amber-50 border-b border-amber-200">
+          <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" />
+          <p className="text-sm text-amber-800 flex-1">
+            <strong>{duplicates.length} possible duplicate{duplicates.length > 1 ? 's' : ''}</strong> also in queue:
+            {' '}{duplicates.map(d => <span key={d.id} className="font-mono text-xs bg-amber-100 px-1 rounded">{d.title}</span>).reduce((a, b) => [a, ', ', b])}
+          </p>
+          <Button
+            size="sm" variant="outline"
+            onClick={handleMergeAndDelete}
+            disabled={merging}
+            className="gap-1.5 border-amber-300 text-amber-700 hover:bg-amber-100 shrink-0"
+          >
+            {merging ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <GitMerge className="h-3.5 w-3.5" />}
+            Keep this, delete duplicates
+          </Button>
+        </div>
+      )}
       <div className="flex gap-0 min-h-0" style={{ height: 480 }}>
         {/* Preview */}
         <div className="w-72 shrink-0 bg-muted/20 border-r overflow-hidden">

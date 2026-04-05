@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { Loader2, CheckCircle2, ClipboardList } from "lucide-react";
+import { Loader2, CheckCircle2, ClipboardList, Copy } from "lucide-react";
 import ReviewDetail from "../components/ReviewDetail";
 
 export default function DocumentReview() {
@@ -9,6 +9,17 @@ export default function DocumentReview() {
   const [categories, setCategories] = useState([]);
   const [selected, setSelected] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  const getDuplicates = (doc, allDocs) => {
+    return allDocs.filter(d => {
+      if (d.id === doc.id) return false;
+      const sameFilename = doc.original_filename && d.original_filename &&
+        doc.original_filename.toLowerCase() === d.original_filename.toLowerCase();
+      const sameSize = doc.file_size && d.file_size && doc.file_size === d.file_size;
+      const sameAiTitle = doc.title && d.title && doc.title.toLowerCase() === d.title.toLowerCase();
+      return sameFilename || sameSize || sameAiTitle;
+    });
+  };
 
   const loadQueue = async () => {
     const [docs, flds, cats] = await Promise.all([
@@ -25,8 +36,9 @@ export default function DocumentReview() {
 
   useEffect(() => { loadQueue(); }, []);
 
-  const handleConfirmed = (docId) => {
-    const remaining = queue.filter(d => d.id !== docId);
+  const handleConfirmed = (docIds) => {
+    const ids = Array.isArray(docIds) ? docIds : [docIds];
+    const remaining = queue.filter(d => !ids.includes(d.id));
     setQueue(remaining);
     setSelected(remaining[0] || null);
   };
@@ -61,20 +73,30 @@ export default function DocumentReview() {
       <div className="flex gap-4 h-[calc(100vh-160px)]">
         {/* Queue list */}
         <div className="w-64 shrink-0 flex flex-col gap-1 overflow-y-auto">
-          {queue.map(doc => (
-            <button
-              key={doc.id}
-              onClick={() => setSelected(doc)}
-              className={`text-left px-3 py-2.5 rounded-lg border transition-all ${
-                selected?.id === doc.id
-                  ? "border-primary bg-primary/5 shadow-sm"
-                  : "border-transparent hover:bg-muted/60"
-              }`}
-            >
-              <p className="text-sm font-medium truncate">{doc.title}</p>
-              <p className="text-xs text-muted-foreground truncate mt-0.5">{doc.original_filename}</p>
-            </button>
-          ))}
+          {queue.map(doc => {
+            const dups = getDuplicates(doc, queue);
+            return (
+              <button
+                key={doc.id}
+                onClick={() => setSelected(doc)}
+                className={`text-left px-3 py-2.5 rounded-lg border transition-all ${
+                  selected?.id === doc.id
+                    ? "border-primary bg-primary/5 shadow-sm"
+                    : "border-transparent hover:bg-muted/60"
+                }`}
+              >
+                <div className="flex items-center gap-1.5">
+                  <p className="text-sm font-medium truncate flex-1">{doc.title}</p>
+                  {dups.length > 0 && (
+                    <span title={`${dups.length} possible duplicate(s)`}>
+                      <Copy className="h-3 w-3 text-amber-500 shrink-0" />
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground truncate mt-0.5">{doc.original_filename}</p>
+              </button>
+            );
+          })}
         </div>
 
         {/* Detail panel */}
@@ -85,6 +107,7 @@ export default function DocumentReview() {
               doc={selected}
               folders={folders}
               categories={categories}
+              duplicates={getDuplicates(selected, queue)}
               onConfirmed={handleConfirmed}
             />
           )}
