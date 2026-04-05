@@ -169,21 +169,7 @@ ${extractedText ? `Content preview:\n${extractedText.substring(0, 3000)}` : ''}`
     let targetFolderId = result.folder_id || doc.folder_id || undefined;
     let vaultPath = doc.vault_path;
 
-    // Save structured transaction record for receipts
-    if (result.is_receipt) {
-      await db.entities.Transaction.create({
-        document_id: doc.id,
-        store_brand: result.store_brand || result.vendor_name || '',
-        store_location: result.store_location || '',
-        transaction_date: result.transaction_date || '',
-        transaction_time: result.transaction_time || undefined,
-        transaction_type: result.transaction_type || 'purchase',
-        tender_type: result.tender_type || 'other',
-        amount: result.amount || undefined,
-        last_four_digits: result.last_four_digits || undefined,
-        items: result.items?.length ? result.items : undefined,
-      });
-    }
+    // NOTE: Transaction record is created at user review/confirmation stage, not here
 
     if (result.is_receipt && (result.store_brand || result.vendor_name)) {
       const vendorName = (result.store_brand || result.vendor_name).trim();
@@ -219,8 +205,9 @@ ${extractedText ? `Content preview:\n${extractedText.substring(0, 3000)}` : ''}`
       folder_id: targetFolderId,
       tags: result.tags || [],
       document_date: result.transaction_date || result.document_date || undefined,
-      processing_status: 'completed',
+      processing_status: 'needs_review',
       vault_path: vaultPath || undefined,
+      ai_data: result,
     });
 
     processedCount++;

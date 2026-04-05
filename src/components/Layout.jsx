@@ -1,6 +1,7 @@
 import { Outlet, Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, FileText, FolderTree, Search, Settings, Shield, Menu, X, BookOpen } from "lucide-react";
-import { useState } from "react";
+import { LayoutDashboard, FileText, FolderTree, Search, Settings, Shield, Menu, X, BookOpen, ClipboardCheck } from "lucide-react";
+import { useState, useEffect } from "react";
+import { base44 } from "@/api/base44Client";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -8,6 +9,7 @@ const navItems = [
   { path: "/documents", label: "Documents", icon: FileText },
   { path: "/folders", label: "Folders", icon: FolderTree },
   { path: "/search", label: "Search", icon: Search },
+  { path: "/review", label: "Review Queue", icon: ClipboardCheck, badge: true },
   { path: "/receipt-trainer", label: "Receipt Trainer", icon: BookOpen },
   { path: "/settings", label: "Settings", icon: Settings },
 ];
@@ -15,6 +17,13 @@ const navItems = [
 export default function Layout() {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [reviewCount, setReviewCount] = useState(0);
+
+  useEffect(() => {
+    base44.entities.Document.filter({ processing_status: "needs_review" }, "-created_date", 100)
+      .then(docs => setReviewCount(docs.length))
+      .catch(() => {});
+  }, [location.pathname]);
 
   return (
     <div className="min-h-screen flex bg-background">
@@ -45,18 +54,23 @@ export default function Layout() {
             const isActive = item.path === "/" ? location.pathname === "/" : location.pathname.startsWith(item.path);
             return (
               <Link
-                key={item.path}
-                to={item.path}
-                onClick={() => setSidebarOpen(false)}
-                className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200",
-                  isActive
-                    ? "bg-sidebar-accent text-sidebar-primary font-medium"
-                    : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
-                )}
+              key={item.path}
+              to={item.path}
+              onClick={() => setSidebarOpen(false)}
+              className={cn(
+                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200",
+                isActive
+                  ? "bg-sidebar-accent text-sidebar-primary font-medium"
+                  : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
+              )}
               >
-                <item.icon className="h-4 w-4" />
-                {item.label}
+              <item.icon className="h-4 w-4" />
+              {item.label}
+              {item.badge && reviewCount > 0 && (
+                <span className="ml-auto bg-primary text-primary-foreground text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none">
+                  {reviewCount}
+                </span>
+              )}
               </Link>
             );
           })}

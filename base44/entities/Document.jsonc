@@ -61,6 +61,7 @@
       "enum": [
         "pending",
         "processing",
+        "needs_review",
         "completed",
         "failed"
       ],
@@ -87,6 +88,10 @@
     "notes": {
       "type": "string",
       "title": "Notes"
+    },
+    "ai_data": {
+      "type": "object",
+      "title": "Raw AI Extraction Data"
     }
   },
   "required": [
