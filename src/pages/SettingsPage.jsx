@@ -96,11 +96,29 @@ export default function SettingsPage() {
   };
 
   const handleDeleteCategory = async (id) => {
-    if (!confirm("Delete this category?")) return;
+    if (!confirm("Delete this category? Documents using it will move to Review Queue.")) return;
+    
+    // Find all documents using this category
+    const allDocs = await base44.entities.Document.list('-created_date', 500);
+    const docsToUpdate = allDocs.filter(d => d.category_id === id && !d.is_deleted);
+    
+    // Move them to review queue with "Need Category" badge
+    await Promise.all(docsToUpdate.map(doc => 
+      base44.entities.Document.update(doc.id, {
+        processing_status: 'needs_review',
+        tags: [...(doc.tags || []), 'Need Category'].filter((tag, idx, arr) => arr.indexOf(tag) === idx)
+      })
+    ));
+    
+    // Delete the category
     await base44.entities.Category.delete(id);
     const cats = await base44.entities.Category.list();
     setCategories(cats);
-    toast.success("Category removed");
+    
+    const msgSuffix = docsToUpdate.length > 0 
+      ? ` (${docsToUpdate.length} document${docsToUpdate.length !== 1 ? 's' : ''} moved to Review Queue)`
+      : '';
+    toast.success(`Category removed${msgSuffix}`);
   };
 
   if (loading) {

@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { FolderPlus, Loader2 } from "lucide-react";
+import { FolderPlus, Loader2, Plus } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
 
@@ -15,6 +15,24 @@ export default function CreateFolderDialog({ open, onOpenChange, folders, catego
   const [categoryId, setCategoryId] = useState("");
   const [description, setDescription] = useState("");
   const [creating, setCreating] = useState(false);
+  const [addingCategory, setAddingCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [localCategories, setLocalCategories] = useState(categories);
+
+  const sortedCategories = [...localCategories].sort((a, b) => a.name.localeCompare(b.name));
+
+  const handleAddNewCategory = async () => {
+    if (!newCategoryName.trim()) return;
+    try {
+      const newCat = await base44.entities.Category.create({ name: newCategoryName.trim() });
+      setLocalCategories([...localCategories, newCat]);
+      setNewCategoryName("");
+      setAddingCategory(false);
+      setCategoryId(newCat.id);
+    } catch (err) {
+      console.error('Failed to create category:', err);
+    }
+  };
 
   const buildPath = (parentFolderId, folderName) => {
     if (!parentFolderId) return `/${folderName}`;
@@ -81,14 +99,43 @@ export default function CreateFolderDialog({ open, onOpenChange, folders, catego
 
           <div>
             <Label className="text-xs">Category (optional)</Label>
-            <Select value={categoryId} onValueChange={setCategoryId}>
-              <SelectTrigger className="mt-1.5"><SelectValue placeholder="Select category..." /></SelectTrigger>
-              <SelectContent>
-                {categories?.map(c => (
-                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {!addingCategory ? (
+              <Select value={categoryId} onValueChange={setCategoryId}>
+                <SelectTrigger className="mt-1.5"><SelectValue placeholder="Select category..." /></SelectTrigger>
+                <SelectContent>
+                  {sortedCategories.map(c => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  ))}
+                  <div className="border-t mt-2">
+                    <button
+                      onClick={() => setAddingCategory(true)}
+                      className="w-full flex items-center gap-2 px-2 py-2 text-sm text-left hover:bg-accent rounded"
+                    >
+                      <Plus className="h-3 w-3" /> Add Category
+                    </button>
+                  </div>
+                </SelectContent>
+              </Select>
+            ) : (
+              <div className="mt-1.5 flex gap-2">
+                <Input
+                  autoFocus
+                  value={newCategoryName}
+                  onChange={e => setNewCategoryName(e.target.value)}
+                  placeholder="Category name"
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') handleAddNewCategory();
+                    if (e.key === 'Escape') setAddingCategory(false);
+                  }}
+                />
+                <Button size="sm" onClick={handleAddNewCategory} disabled={!newCategoryName.trim()}>
+                  Add
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => setAddingCategory(false)}>
+                  Cancel
+                </Button>
+              </div>
+            )}
           </div>
 
           <div>
