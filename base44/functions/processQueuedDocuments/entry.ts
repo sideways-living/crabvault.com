@@ -258,6 +258,15 @@ ${extractedText ? `Content preview:\n${extractedText.substring(0, 3000)}` : ''}`
       ai_data: result,
     });
 
+    // Generate preview image
+    if (!doc.preview_url) {
+      try {
+        await db.functions.invoke('generateDocumentPreview', { documentId: doc.id });
+      } catch (err) {
+        console.error(`Failed to generate preview for ${doc.id}:`, err);
+      }
+    }
+
     processedCount++;
   }
 
