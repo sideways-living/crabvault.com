@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Upload, LayoutGrid, List, Trash2, RefreshCw, ClipboardList, Pencil, CheckSquare, Layout } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -81,10 +82,11 @@ export default function Documents() {
   };
 
   const handleBatchReprocess = async () => {
+    if (!confirm(`Re-process ${selectedIds.length} document(s) with AI?`)) return;
     await Promise.all(selectedIds.map(id => base44.entities.Document.update(id, { processing_status: 'pending', is_searchable_pdf: false })));
-    await base44.functions.invoke('processQueuedDocuments', {});
     setSelectedIds([]);
     loadData();
+    toast.success(`${selectedIds.length} document(s) queued for reprocessing`);
   };
 
   const handleBatchReview = async () => {
