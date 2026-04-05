@@ -1,6 +1,7 @@
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Clock, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
+import { FileText, Clock, CheckCircle2, AlertCircle, Loader2 } from "lucide-react"
 import moment from "moment";
 
 const statusConfig = {
@@ -21,8 +22,13 @@ const fileTypeColors = {
 };
 
 export default function DocumentListView({ documents, categories, selectedIds = [], onToggleSelect }) {
+  const [hoveredDocId, setHoveredDocId] = React.useState(null);
+  const hoveredDoc = hoveredDocId ? documents.find(d => d.id === hoveredDocId) : null;
+
   return (
-    <div className="bg-card rounded-xl border overflow-hidden">
+    <div className="flex gap-4">
+      {/* List */}
+      <div className="flex-1 bg-card rounded-xl border overflow-hidden">
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b bg-muted/30">
@@ -43,8 +49,8 @@ export default function DocumentListView({ documents, categories, selectedIds = 
             const isSelected = selectedIds.includes(doc.id);
 
             return (
-              <tr key={doc.id} className={`border-b last:border-0 hover:bg-muted/20 transition-colors ${isSelected ? 'bg-primary/5' : i % 2 === 0 ? '' : 'bg-muted/10'}`}>
-                <td className="px-4 py-3">
+              <tr key={doc.id} className={`border-b last:border-0 hover:bg-muted/20 transition-colors ${isSelected ? 'bg-primary/5' : i % 2 === 0 ? '' : 'bg-muted/10'}`} onMouseEnter={() => setHoveredDocId(doc.id)} onMouseLeave={() => setHoveredDocId(null)}>
+                <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                   <button
                     onClick={() => onToggleSelect && onToggleSelect(doc.id)}
                     className={`h-5 w-5 rounded border-2 flex items-center justify-center transition-all shadow-sm ${
@@ -90,6 +96,25 @@ export default function DocumentListView({ documents, categories, selectedIds = 
           })}
         </tbody>
       </table>
+    </div>
+
+      {/* Live preview panel */}
+      {hoveredDoc && (
+        <div className="w-48 shrink-0 bg-card rounded-xl border p-3 flex flex-col gap-2 sticky top-0 h-fit">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Preview</p>
+          {hoveredDoc.preview_url ? (
+            <img src={hoveredDoc.preview_url} alt={hoveredDoc.title} className="w-full h-auto rounded-lg border bg-muted object-cover max-h-64" />
+          ) : (
+            <div className="w-full h-40 rounded-lg border bg-muted flex items-center justify-center text-muted-foreground">
+              <FileText className="h-8 w-8" />
+            </div>
+          )}
+          <div className="text-xs space-y-1">
+            <p className="font-medium truncate">{hoveredDoc.title}</p>
+            <p className="text-muted-foreground truncate">{hoveredDoc.original_filename}</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

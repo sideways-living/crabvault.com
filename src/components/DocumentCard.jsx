@@ -16,7 +16,14 @@ export default function DocumentCard({ document, categories, selected, onToggleS
   const category = categories?.find(c => c.id === document.category_id);
 
   return (
-    <div className={`relative group bg-card rounded-xl border p-4 hover:shadow-lg transition-all duration-300 ${selected ? 'border-primary ring-1 ring-primary' : 'hover:border-primary/20'}`}>
+    <div className={`relative group bg-card rounded-xl border overflow-hidden hover:shadow-lg transition-all duration-300 ${selected ? 'border-primary ring-1 ring-primary' : 'hover:border-primary/20'}`}>
+      {/* Preview thumbnail */}
+      {document.preview_url && (
+        <div className="w-full h-32 bg-muted overflow-hidden">
+          <img src={document.preview_url} alt={document.title} className="w-full h-full object-cover" />
+        </div>
+      )}
+
       {/* Checkbox */}
       <button
         onClick={() => onToggleSelect && onToggleSelect(document.id)}
@@ -31,11 +38,13 @@ export default function DocumentCard({ document, categories, selected, onToggleS
         )}
       </button>
 
-      <Link to={`/documents/${document.id}`} className="block pl-6">
+      <Link to={`/documents/${document.id}`} className="block p-4">
         <div className="flex items-start gap-3">
-          <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
-            <FileText className="h-5 w-5 text-primary" />
-          </div>
+          {!document.preview_url && (
+            <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
+              <FileText className="h-5 w-5 text-primary" />
+            </div>
+          )}
           <div className="flex-1 min-w-0">
             <h3 className="font-medium text-sm truncate group-hover:text-primary transition-colors">
               {document.title}
