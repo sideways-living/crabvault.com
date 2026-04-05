@@ -20,12 +20,13 @@ const fileTypeColors = {
   png: "bg-purple-100 text-purple-700",
 };
 
-export default function DocumentListView({ documents, categories }) {
+export default function DocumentListView({ documents, categories, selectedIds = [], onToggleSelect }) {
   return (
     <div className="bg-card rounded-xl border overflow-hidden">
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b bg-muted/30">
+            <th className="w-10 px-4 py-3" />
             <th className="text-left px-4 py-3 font-medium text-muted-foreground">Name</th>
             <th className="text-left px-4 py-3 font-medium text-muted-foreground hidden md:table-cell">Category</th>
             <th className="text-left px-4 py-3 font-medium text-muted-foreground hidden sm:table-cell">Type</th>
@@ -39,9 +40,24 @@ export default function DocumentListView({ documents, categories }) {
             const StatusIcon = status.icon;
             const category = categories.find(c => c.id === doc.category_id);
             const typeColor = fileTypeColors[doc.file_type] || "bg-gray-100 text-gray-700";
+            const isSelected = selectedIds.includes(doc.id);
 
             return (
-              <tr key={doc.id} className={`border-b last:border-0 hover:bg-muted/20 transition-colors ${i % 2 === 0 ? '' : 'bg-muted/10'}`}>
+              <tr key={doc.id} className={`border-b last:border-0 hover:bg-muted/20 transition-colors ${isSelected ? 'bg-primary/5' : i % 2 === 0 ? '' : 'bg-muted/10'}`}>
+                <td className="px-4 py-3">
+                  <button
+                    onClick={() => onToggleSelect && onToggleSelect(doc.id)}
+                    className={`h-5 w-5 rounded border-2 flex items-center justify-center transition-all ${
+                      isSelected ? 'bg-primary border-primary' : 'border-muted-foreground/30 hover:border-primary'
+                    }`}
+                  >
+                    {isSelected && (
+                      <svg className="h-3 w-3 text-primary-foreground" viewBox="0 0 12 12" fill="none">
+                        <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    )}
+                  </button>
+                </td>
                 <td className="px-4 py-3">
                   <Link to={`/documents/${doc.id}`} className="flex items-center gap-2.5 group">
                     <FileText className="h-4 w-4 text-muted-foreground shrink-0" />

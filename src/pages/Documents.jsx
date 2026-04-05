@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { Upload, LayoutGrid, List } from "lucide-react";
+import { Upload, LayoutGrid, List, Trash2, RefreshCw, ClipboardList, Pencil, CheckSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import DocumentCard from "../components/DocumentCard";
 import DocumentListView from "../components/DocumentListView";
 import UploadDialog from "../components/UploadDialog";
+import BatchEditDialog from "../components/BatchEditDialog";
 
 export default function Documents() {
   const [documents, setDocuments] = useState([]);
@@ -18,6 +19,8 @@ export default function Documents() {
   const [filterStatus, setFilterStatus] = useState("all");
   const [quickSearch, setQuickSearch] = useState("");
   const [viewMode, setViewMode] = useState("grid");
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [batchEditOpen, setBatchEditOpen] = useState(false);
 
   const loadData = async () => {
     const [docs, flds, cats] = await Promise.all([
@@ -48,6 +51,35 @@ export default function Documents() {
     return true;
   });
 
+  const toggleSelect = (id) => {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.length === filtered.length) setSelectedIds([]);
+    else setSelectedIds(filtered.map(d => d.id));
+  };
+
+  const handleBatchReprocess = async () => {
+    await Promise.all(selectedIds.map(id => base44.entities.Document.update(id, { processing_status: 'pending', is_searchable_pdf: false })));
+    await base44.functions.invoke('processQueuedDocuments', {});
+    setSelectedIds([]);
+    loadData();
+  };
+
+  const handleBatchReview = async () => {
+    await Promise.all(selectedIds.map(id => base44.entities.Document.update(id, { processing_status: 'needs_review' })));
+    setSelectedIds([]);
+    loadData();
+  };
+
+  const handleBatchDelete = async () => {
+    if (!confirm(`Delete ${selectedIds.length} document(s)? This cannot be undone.`)) return;
+    await Promise.all(selectedIds.map(id => base44.entities.Document.delete(id)));
+    setSelectedIds([]);
+    loadData();
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -74,8 +106,28 @@ export default function Documents() {
         </div>
       </div>
 
+      {/* Bulk action toolbar */}
+      {selectedIds.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 bg-primary/5 border border-primary/20 rounded-xl px-4 py-3">
+          <span className="text-sm font-medium text-primary">{selectedIds.length} selected</span>
+          <div className="h-4 w-px bg-border mx-1" />
+          <Button size="sm" variant="outline" className="gap-1.5" onClick={handleBatchReprocess}><RefreshCw className="h-3.5 w-3.5" /> Re-process with AI</Button>
+          <Button size="sm" variant="outline" className="gap-1.5" onClick={handleBatchReview}><ClipboardList className="h-3.5 w-3.5" /> Send to Review Queue</Button>
+          <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setBatchEditOpen(true)}><Pencil className="h-3.5 w-3.5" /> Batch Edit</Button>
+          <Button size="sm" variant="outline" className="gap-1.5 text-destructive hover:bg-destructive/10 border-destructive/30" onClick={handleBatchDelete}><Trash2 className="h-3.5 w-3.5" /> Delete</Button>
+          <button className="ml-auto text-xs text-muted-foreground hover:text-foreground" onClick={() => setSelectedIds([])}>Clear selection</button>
+        </div>
+      )}
+
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3">
+      <div className="flex flex-col sm:flex-row gap-3 items-center">
+        <button
+          onClick={toggleSelectAll}
+          className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors shrink-0"
+        >
+          <CheckSquare className="h-4 w-4" />
+          {selectedIds.length === filtered.length && filtered.length > 0 ? 'Deselect all' : 'Select all'}
+        </button>
         <Input
           placeholder="Quick search..."
           value={quickSearch}
@@ -117,12 +169,21 @@ export default function Documents() {
       ) : viewMode === 'grid' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map(doc => (
-            <DocumentCard key={doc.id} document={doc} categories={categories} />
+            <DocumentCard key={doc.id} document={doc} categories={categories} selected={selectedIds.includes(doc.id)} onToggleSelect={toggleSelect} />
           ))}
         </div>
       ) : (
-        <DocumentListView documents={filtered} categories={categories} />
+        <DocumentListView documents={filtered} categories={categories} selectedIds={selectedIds} onToggleSelect={toggleSelect} />
       )}
+
+      <BatchEditDialog
+        open={batchEditOpen}
+        onOpenChange={setBatchEditOpen}
+        selectedIds={selectedIds}
+        folders={folders}
+        categories={categories}
+        onDone={() => { setSelectedIds([]); loadData(); }}
+      />
 
       <UploadDialog open={uploadOpen} onOpenChange={setUploadOpen} folders={folders} categories={categories} onUploaded={loadData} />
     </div>
