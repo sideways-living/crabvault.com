@@ -47,7 +47,7 @@ Deno.serve(async (req) => {
           continue;
         }
 
-        // Construct full vault file path
+        // Construct full vault file path (vault_path is relative path within vault)
         const fullVaultPath = `${vaultPath}/${doc.vault_path}`;
         
         // Download file from cloud storage
@@ -59,12 +59,12 @@ Deno.serve(async (req) => {
 
         const fileBuffer = await fileResponse.arrayBuffer();
 
-        // Write to local Cryptomator vault
-        // Note: This assumes the vault is mounted locally via Cryptomator
-        // In production, you'd use a mounted volume or API to write to the vault
-        await Deno.mkdir(`${fullVaultPath}`, { recursive: true });
-        const filename = doc.original_filename || doc.title;
-        await Deno.writeFile(`${fullVaultPath}/${filename}`, new Uint8Array(fileBuffer));
+        // Create directory structure if needed
+        const dirPath = fullVaultPath.substring(0, fullVaultPath.lastIndexOf('/'));
+        await Deno.mkdir(dirPath, { recursive: true });
+        
+        // Write file to vault
+        await Deno.writeFile(fullVaultPath, new Uint8Array(fileBuffer));
 
         // Mark document as synced
         await base44.entities.Document.update(doc.id, { synced_to_vault: true });
