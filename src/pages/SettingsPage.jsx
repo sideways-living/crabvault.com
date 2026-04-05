@@ -93,6 +93,17 @@ export default function SettingsPage() {
     toast.success(res.data?.message || 'Done');
   };
 
+  const handleMoveReviewToPending = async () => {
+    if (!confirm('Move all documents from Review Queue back to Pending for reprocessing? Continue?')) return;
+    setProcessing(true);
+    const reviewDocs = await base44.entities.Document.filter({ processing_status: 'needs_review' }, '-created_date', 10000);
+    await Promise.all(reviewDocs.map(doc =>
+      base44.entities.Document.update(doc.id, { processing_status: 'pending' })
+    ));
+    setProcessing(false);
+    toast.success(`${reviewDocs.length} document${reviewDocs.length !== 1 ? 's' : ''} moved to Pending queue`);
+  };
+
   const handleAddCategory = async () => {
     if (!newCategory.trim()) return;
     await base44.entities.Category.create({ name: newCategory.trim() });
@@ -264,6 +275,10 @@ export default function SettingsPage() {
           <Button onClick={handleSendAllToReview} disabled={queueing || processing || reprocessing} variant="outline" className="border-blue-300 text-blue-700 hover:bg-blue-50">
             {queueing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Play className="h-4 w-4 mr-2" />}
             {queueing ? 'Queueing...' : 'Send All to Review Queue'}
+          </Button>
+          <Button onClick={handleMoveReviewToPending} disabled={processing || reprocessing || queueing} variant="outline" className="border-purple-300 text-purple-700 hover:bg-purple-50">
+            {processing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Play className="h-4 w-4 mr-2" />}
+            {processing ? 'Moving...' : 'Review Queue → Pending'}
           </Button>
           <Button onClick={handleProcessQueue} disabled={processing || reprocessing || queueing} variant="outline">
             {processing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Play className="h-4 w-4 mr-2" />}
