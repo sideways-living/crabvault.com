@@ -7,6 +7,7 @@ import moment from "moment";
 const statusConfig = {
   pending: { icon: Clock, className: "text-amber-600", label: "Pending" },
   processing: { icon: Loader2, className: "text-blue-600", label: "Processing" },
+  needs_review: { icon: AlertCircle, className: "text-purple-600", label: "Review" },
   completed: { icon: CheckCircle2, className: "text-emerald-600", label: "Done" },
   failed: { icon: AlertCircle, className: "text-red-600", label: "Failed" },
 };
