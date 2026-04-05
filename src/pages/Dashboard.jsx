@@ -16,8 +16,9 @@ export default function Dashboard() {
   const [stats, setStats] = useState(null);
 
   const loadData = async () => {
-    const [docs, flds, cats] = await Promise.all([
-      base44.entities.Document.filter({ is_deleted: false }, "-created_date", 500),
+    try {
+      const [docs, flds, cats] = await Promise.all([
+        base44.entities.Document.filter({ is_deleted: false }, "-created_date", 200),
       base44.entities.Folder.list(),
       base44.entities.Category.list(),
     ]);
@@ -63,17 +64,21 @@ export default function Dashboard() {
       value: count
     })).sort((a, b) => b.value - a.value);
     
-    setStats({
-      totalDocuments: docs.length,
-      totalSize,
-      avgFileSize: Math.round(avgFileSize),
-      avgProcessingTime: Math.round(avgProcessingTime),
-      slowestProcessingTime: Math.round(slowestProcessingTime),
-      fastestProcessingTime: Math.round(fastestProcessingTime),
-      completedCount: completedDocs.length,
-      categoryChartData
-    });
-    setLoading(false);
+      setStats({
+        totalDocuments: docs.length,
+        totalSize,
+        avgFileSize: Math.round(avgFileSize),
+        avgProcessingTime: Math.round(avgProcessingTime),
+        slowestProcessingTime: Math.round(slowestProcessingTime),
+        fastestProcessingTime: Math.round(fastestProcessingTime),
+        completedCount: completedDocs.length,
+        categoryChartData
+      });
+    } catch (error) {
+      console.error('Failed to load dashboard data:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { loadData(); }, []);
