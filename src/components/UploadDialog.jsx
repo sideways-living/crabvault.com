@@ -11,7 +11,7 @@ export default function UploadDialog({ open, onOpenChange, folders, categories, 
   const [files, setFiles] = useState([]);
   const [folderId, setFolderId] = useState("");
   const [uploading, setUploading] = useState(false);
-  const [phase, setPhase] = useState("idle"); // idle | uploading | processing | done
+  const [phase, setPhase] = useState("idle"); // idle | uploading | processing | vaulting | done
   const [progressLabel, setProgressLabel] = useState("");
   const fileRef = useRef();
 
@@ -51,11 +51,33 @@ export default function UploadDialog({ open, onOpenChange, folders, categories, 
     // Phase 2: AI processing (summarise, categorise, assign vault path)
     setPhase("processing");
     setProgressLabel("AI is analysing, categorising & assigning vault paths…");
+    const docs = await base44.entities.Document.filter({ processing_status: 'pending' }, '-created_date', files.length);
     await base44.functions.invoke('processQueuedDocuments', {});
 
-    // Phase 3: Done
+    // Phase 3: Upload to vault
+    setPhase("vaulting");
+    setProgressLabel("Uploading to Cryptomator vault…");
+    const user = await base44.auth.me();
+    const userVaultPath = user?.vault_path;
+    if (userVaultPath && docs.length > 0) {
+      const selectedFolder = folderId ? folders?.find(f => f.id === folderId) : null;
+      const folderPath = selectedFolder?.path || '';
+      for (const doc of docs) {
+        try {
+          await base44.functions.invoke('uploadToVault', {
+            documentId: doc.id,
+            vaultPath: userVaultPath,
+            proposedPath: folderPath
+          });
+        } catch (err) {
+          console.error(`Failed to upload ${doc.id} to vault:`, err);
+        }
+      }
+    }
+
+    // Phase 4: Done
     setPhase("done");
-    setProgressLabel("Documents processed and vault paths assigned.");
+    setProgressLabel("Documents uploaded and synced to vault.");
     toast.success(`${files.length} document${files.length > 1 ? 's' : ''} uploaded & processed`);
 
     setTimeout(() => {
@@ -85,18 +107,18 @@ export default function UploadDialog({ open, onOpenChange, folders, categories, 
         <div className="space-y-4">
           {/* Pipeline steps */}
           <div className="flex items-center justify-center gap-1.5 text-xs">
-            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full font-medium transition-all ${stepClass('uploading', ['processing', 'done'])}`}>
-              {phase === 'uploading' ? <Loader2 className="h-3 w-3 animate-spin" /> : ['processing','done'].includes(phase) ? <CheckCircle2 className="h-3 w-3" /> : <Upload className="h-3 w-3" />}
+            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full font-medium transition-all ${stepClass('uploading', ['processing', 'vaulting', 'done'])}`}>
+              {phase === 'uploading' ? <Loader2 className="h-3 w-3 animate-spin" /> : ['processing','vaulting','done'].includes(phase) ? <CheckCircle2 className="h-3 w-3" /> : <Upload className="h-3 w-3" />}
               Upload
             </div>
             <ChevronRight className="h-3 w-3 text-muted-foreground" />
-            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full font-medium transition-all ${stepClass('processing', ['done'])}`}>
-              {phase === 'processing' ? <Loader2 className="h-3 w-3 animate-spin" /> : phase === 'done' ? <CheckCircle2 className="h-3 w-3" /> : <Brain className="h-3 w-3" />}
+            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full font-medium transition-all ${stepClass('processing', ['vaulting', 'done'])}`}>
+              {phase === 'processing' ? <Loader2 className="h-3 w-3 animate-spin" /> : ['vaulting','done'].includes(phase) ? <CheckCircle2 className="h-3 w-3" /> : <Brain className="h-3 w-3" />}
               AI Process
             </div>
             <ChevronRight className="h-3 w-3 text-muted-foreground" />
-            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full font-medium transition-all ${stepClass('done', ['done'])}`}>
-              {phase === 'done' ? <CheckCircle2 className="h-3 w-3" /> : <Lock className="h-3 w-3" />}
+            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full font-medium transition-all ${stepClass('vaulting', ['done'])}`}>
+              {phase === 'vaulting' ? <Loader2 className="h-3 w-3 animate-spin" /> : phase === 'done' ? <CheckCircle2 className="h-3 w-3" /> : <Lock className="h-3 w-3" />}
               Vault
             </div>
           </div>
