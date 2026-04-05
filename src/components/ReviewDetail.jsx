@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Save, Trash2, FileText, ExternalLink, BookOpen, Copy, GitMerge, AlertTriangle } from "lucide-react";
-import { toast } from "sonner";
+  import { base44 } from "@/api/base44Client";
+  import { Button } from "@/components/ui/button";
+  import { Input } from "@/components/ui/input";
+  import { Label } from "@/components/ui/label";
+  import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+  import { Loader2, Save, Trash2, FileText, ExternalLink, BookOpen, Copy, GitMerge, AlertTriangle, CheckCircle2 } from "lucide-react";
+  import { toast } from "sonner";
 
 function DocPreview({ doc }) {
   const isImage = ["jpg", "jpeg", "png"].includes(doc.file_type);
@@ -26,6 +26,7 @@ function DocPreview({ doc }) {
 export default function ReviewDetail({ doc, folders, categories, duplicates = [], onConfirmed }) {
   const ai = doc.ai_data || {};
   const isReceipt = !!(ai.is_receipt);
+  const [showEditForm, setShowEditForm] = useState(false);
 
   const [title, setTitle] = useState(doc.title || "");
   const [folderId, setFolderId] = useState(doc.folder_id || "");
@@ -54,6 +55,7 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
   const [saving, setSaving] = useState(false);
   const [rejecting, setRejecting] = useState(false);
   const [merging, setMerging] = useState(false);
+  const [expandedForm, setExpandedForm] = useState(false);
 
   // Auto-update vault path when folder or title changes
   useEffect(() => {
@@ -223,7 +225,8 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
           </div>
         </div>
 
-        {/* Scrollable fields */}
+        {/* Scrollable fields - only show if expanded */}
+        {expandedForm && (
         <div className="flex-1 overflow-y-auto p-5 space-y-4">
           <div>
             <Label className="text-xs">Proposed Title / Filename</Label>
@@ -417,19 +420,41 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
             </label>
           )}
         </div>
+        )}
       </div>
 
       {/* Action bar */}
       <div className="border-t px-5 py-3 flex items-center gap-3 bg-muted/20">
-        <Button onClick={handleConfirm} disabled={saving || rejecting} className="gap-2">
-          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-          Confirm & Save to Vault
-        </Button>
-        <Button onClick={handleReject} disabled={saving || rejecting} variant="outline" className="gap-2 text-destructive hover:bg-destructive/10 border-destructive/30">
-          {rejecting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-          Reject
-        </Button>
-        <p className="ml-auto text-xs text-muted-foreground">Review and confirm all details before saving to the encrypted vault.</p>
+        {!expandedForm ? (
+          <>
+            <Button onClick={handleConfirm} disabled={saving || rejecting} className="gap-2">
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+              Confirm as-is
+            </Button>
+            <Button onClick={() => setExpandedForm(true)} disabled={saving || rejecting} variant="outline" className="gap-2">
+              <BookOpen className="h-4 w-4" />
+              Edit Details
+            </Button>
+            <Button onClick={handleReject} disabled={saving || rejecting} variant="outline" className="gap-2 text-destructive hover:bg-destructive/10 border-destructive/30">
+              {rejecting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+              Reject
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button onClick={handleConfirm} disabled={saving || rejecting} className="gap-2">
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+              Save & Complete
+            </Button>
+            <Button onClick={() => setExpandedForm(false)} disabled={saving || rejecting} variant="outline" className="gap-2">
+              Close Form
+            </Button>
+            <Button onClick={handleReject} disabled={saving || rejecting} variant="outline" className="gap-2 text-destructive hover:bg-destructive/10 border-destructive/30">
+              {rejecting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+              Reject
+            </Button>
+          </>
+        )}
       </div>
     </div>
   );
