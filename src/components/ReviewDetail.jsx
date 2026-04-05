@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -49,6 +49,7 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
   const [amount, setAmount] = useState(ai.amount != null ? String(ai.amount) : "");
   const [lastFour, setLastFour] = useState(ai.last_four_digits || "");
   const [items, setItems] = useState(ai.items || []);
+  const [docState, setDocState] = useState(doc);
 
   const [saving, setSaving] = useState(false);
   const [rejecting, setRejecting] = useState(false);
@@ -63,6 +64,17 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
       setVaultPath(`${folder.vault_path}/${title}${ext ? "." + ext : ""}`);
     }
   }, [folderId, title]);
+
+  // Generate preview if missing
+  useEffect(() => {
+    if (!docState.preview_url) {
+      base44.functions.invoke('generateDocumentPreview', { documentId: doc.id })
+        .then(() => {
+          setDocState({ ...docState, preview_url: true });
+        })
+        .catch(() => {});
+    }
+  }, [doc.id, docState.preview_url]);
 
   const handleConfirm = async () => {
     setSaving(true);
@@ -197,7 +209,7 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
         {/* Small preview tile at top */}
         <div className="shrink-0 border-b bg-muted/20 p-4 flex gap-4 items-start">
           <div className="w-24 h-32 rounded-lg border bg-background overflow-hidden flex-shrink-0 shadow-sm">
-            <DocPreview doc={doc} />
+            <DocPreview doc={docState} />
           </div>
           <div className="flex-1 min-w-0 space-y-2">
             <div>
