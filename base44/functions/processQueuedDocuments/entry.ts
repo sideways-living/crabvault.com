@@ -86,18 +86,27 @@ Deno.serve(async (req) => {
     const prompt = `Analyse this document and return a JSON response.
 ${learningSummary}
 
-First determine if this document is a RECEIPT (a purchase receipt, invoice, payment confirmation, etc.).
+Classify and name this document using one of the following rules:
 
-If it IS a receipt:
-- Scan the document text carefully to extract the exact transaction date. Format it as YYYYMMDD (e.g. 20240315).
-- Extract vendor_name: the clean company/shop name only (e.g. "Woolworths", "Amazon", "Shell", "Bunnings"). No suffixes like Pty Ltd.
-- suggested_title MUST follow this exact format: "YYYYMMDD - VendorName - Receipt" (e.g. "20240315 - Woolworths - Receipt")
-- is_receipt: true
-- In the summary, list ALL items purchased (name and price if available), e.g. "Receipt from Bunnings on 15 Mar 2024. Items: Spade $29.98, Garden Gloves $12.00, Potting Mix $8.50. Total: $50.48."
+1. RECEIPT (retail purchase, payment confirmation, till receipt):
+   - is_receipt: true
+   - Extract the exact transaction date → format as YYYYMMDD
+   - Extract vendor_name (clean name, e.g. "Woolworths", "Bunnings") — no Pty Ltd etc.
+   - suggested_title: "YYYYMMDD - VendorName - Receipt" (e.g. "20240315 - Woolworths - Receipt")
+   - In summary list ALL items + prices and total.
 
-If it is NOT a receipt:
-- is_receipt: false
-- suggested_title: a clean, descriptive title for the document
+2. QUOTE / INVOICE / PURCHASE ORDER / ESTIMATE (a formal business document with a number, subject, and vendor):
+   - is_receipt: false
+   - Extract: document date (YYYYMMDD), the subject/entity the document is about (e.g. a property address, person name, project), vendor/company issuing it, document type (Quote/Invoice/PO/Estimate), document number if present, and a very short description (3-6 words).
+   - suggested_title MUST follow: "YYYYMMDD - Subject - VendorName DocumentType Number ShortDescription"
+     e.g. "20251001 - 702.50 Lorimer St Docklands - Frameless Impressions Backsplash Quote 16628"
+   - Omit document number if not found. Keep subject concise but specific.
+
+3. ALL OTHER DOCUMENTS:
+   - is_receipt: false
+   - Extract document date if present (YYYYMMDD), key subject or person, and a short description.
+   - If a clear date and subject exist: suggested_title = "YYYYMMDD - Subject - ShortDescription"
+   - Otherwise: suggested_title = a clean, descriptive title
 
 Also provide for ALL documents:
 - summary: 2-3 sentence summary
