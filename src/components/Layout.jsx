@@ -1,5 +1,6 @@
 import { Outlet, Link, useLocation } from "react-router-dom";
 import { LayoutDashboard, FileText, FolderTree, Search, Settings, Shield, Menu, X, BookOpen, ClipboardCheck, Trash2, Lock, Copy, Zap, Briefcase, Image, Film, Receipt } from "lucide-react";
+import ProcessingStatus from "./ProcessingStatus";
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { cn } from "@/lib/utils";
@@ -364,6 +365,9 @@ export default function Layout() {
           <Outlet />
         </main>
       </div>
+
+      {/* Floating Processing Status */}
+      <ProcessingStatus />
     </div>
   );
 }
