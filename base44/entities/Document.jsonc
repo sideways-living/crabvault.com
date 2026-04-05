@@ -111,6 +111,11 @@
       "type": "string",
       "format": "date-time",
       "title": "Deletion Date"
+    },
+    "synced_to_vault": {
+      "type": "boolean",
+      "title": "Synced to Cryptomator Vault",
+      "default": false
     }
   },
   "required": [
