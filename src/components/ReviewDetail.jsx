@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -70,6 +70,7 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
     const folderChanged = folderId !== oldFolderId;
 
     // Update Document
+    // Only mark as completed if user explicitly confirms; otherwise stay in review
     await base44.entities.Document.update(doc.id, {
       title,
       folder_id: folderId || undefined,
@@ -146,6 +147,7 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
     setRejecting(true);
     await base44.entities.Document.update(doc.id, { processing_status: "failed" });
     setRejecting(false);
+    toast.success('Document rejected and removed from queue');
     onConfirmed(doc.id);
   };
 
