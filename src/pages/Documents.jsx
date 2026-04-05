@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { Upload, LayoutGrid, List, Trash2, RefreshCw, ClipboardList, Pencil, CheckSquare } from "lucide-react";
+import { Upload, LayoutGrid, List, Trash2, RefreshCw, ClipboardList, Pencil, CheckSquare, Layout } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -8,9 +8,11 @@ import DocumentCard from "../components/DocumentCard";
 import DocumentListView from "../components/DocumentListView";
 import UploadDialog from "../components/UploadDialog";
 import BatchEditDialog from "../components/BatchEditDialog";
+import DocumentTreeView from "../components/DocumentTreeView";
+import DocumentIconView from "../components/DocumentIconView";
 
 export default function Documents() {
-  const [documents, setDocuments] = useState([]);
+  const [allDocuments, setAllDocuments] = useState([]);
   const [folders, setFolders] = useState([]);
   const [categories, setCategories] = useState([]);
   const [uploadOpen, setUploadOpen] = useState(false);
@@ -21,20 +23,36 @@ export default function Documents() {
   const [viewMode, setViewMode] = useState("grid");
   const [selectedIds, setSelectedIds] = useState([]);
   const [batchEditOpen, setBatchEditOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState("completed");
 
   const loadData = async () => {
     const [docs, flds, cats] = await Promise.all([
-      base44.entities.Document.filter({ processing_status: 'completed', is_deleted: false }, "-created_date", 100),
+      base44.entities.Document.filter({ is_deleted: false }, "-created_date", 200),
       base44.entities.Folder.list(),
       base44.entities.Category.list(),
     ]);
-    setDocuments(docs);
+    setAllDocuments(docs);
     setFolders(flds);
     setCategories(cats);
     setLoading(false);
   };
 
   useEffect(() => { loadData(); }, []);
+
+  const getDocsByStatus = (status) => allDocuments.filter(d => d.processing_status === status);
+  const pendingDocs = getDocsByStatus('pending');
+  const processingDocs = getDocsByStatus('processing');
+  const reviewDocs = getDocsByStatus('needs_review');
+  const completedDocs = getDocsByStatus('completed');
+
+  const sectionDocs = {
+    pending: pendingDocs,
+    processing: processingDocs,
+    review: reviewDocs,
+    completed: completedDocs
+  }[activeSection] || [];
+
+  const documents = sectionDocs;
 
   const filtered = documents.filter(doc => {
     if (filterCategory !== "all" && doc.category_id !== filterCategory) return false;
@@ -91,15 +109,44 @@ export default function Documents() {
 
   return (
     <div className="space-y-6">
+      {/* Section tabs */}
+      <div className="flex gap-2 border-b overflow-x-auto -mx-6 px-6">
+        <button
+          onClick={() => setActiveSection('pending')}
+          className={`text-sm font-medium pb-3 transition-colors border-b-2 ${activeSection === 'pending' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
+        >
+          Pending ({pendingDocs.length})
+        </button>
+        <button
+          onClick={() => setActiveSection('processing')}
+          className={`text-sm font-medium pb-3 transition-colors border-b-2 ${activeSection === 'processing' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
+        >
+          Processing ({processingDocs.length})
+        </button>
+        <button
+          onClick={() => setActiveSection('review')}
+          className={`text-sm font-medium pb-3 transition-colors border-b-2 ${activeSection === 'review' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
+        >
+          Review ({reviewDocs.length})
+        </button>
+        <button
+          onClick={() => setActiveSection('completed')}
+          className={`text-sm font-medium pb-3 transition-colors border-b-2 ${activeSection === 'completed' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
+        >
+          Documents ({completedDocs.length})
+        </button>
+      </div>
+
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Documents</h1>
-          <p className="text-sm text-muted-foreground mt-1">{documents.length} total documents</p>
+          <h1 className="text-2xl font-semibold tracking-tight" style={{ display: 'none' }}>Documents</h1>
         </div>
         <div className="flex items-center gap-2">
           <div className="flex items-center border rounded-md">
             <button onClick={() => setViewMode('grid')} className={`p-2 rounded-l-md transition-colors ${viewMode === 'grid' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}><LayoutGrid className="h-4 w-4" /></button>
-            <button onClick={() => setViewMode('list')} className={`p-2 rounded-r-md transition-colors ${viewMode === 'list' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}><List className="h-4 w-4" /></button>
+            <button onClick={() => setViewMode('list')} className={`p-2 transition-colors ${viewMode === 'list' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}><List className="h-4 w-4" /></button>
+            <button onClick={() => setViewMode('tree')} className={`p-2 transition-colors ${viewMode === 'tree' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}><Layout className="h-4 w-4" /></button>
+            <button onClick={() => setViewMode('icon')} className={`p-2 rounded-r-md transition-colors ${viewMode === 'icon' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}><LayoutGrid className="h-4 w-4" /></button>
           </div>
           <Button onClick={() => setUploadOpen(true)} className="gap-2">
             <Upload className="h-4 w-4" /> Upload
@@ -173,8 +220,12 @@ export default function Documents() {
             <DocumentCard key={doc.id} document={doc} categories={categories} selected={selectedIds.includes(doc.id)} onToggleSelect={toggleSelect} />
           ))}
         </div>
-      ) : (
+      ) : viewMode === 'list' ? (
         <DocumentListView documents={filtered} categories={categories} selectedIds={selectedIds} onToggleSelect={toggleSelect} />
+      ) : viewMode === 'tree' ? (
+        <DocumentTreeView documents={filtered} folders={folders} categories={categories} />
+      ) : (
+        <DocumentIconView documents={filtered} folders={folders} categories={categories} />
       )}
 
       <BatchEditDialog
