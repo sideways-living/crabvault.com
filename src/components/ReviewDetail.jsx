@@ -199,7 +199,16 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
           <div className="w-24 h-32 rounded-lg border bg-background overflow-hidden flex-shrink-0 shadow-sm">
             <DocPreview doc={doc} />
           </div>
-          <div className="flex-1 min-w-0"></div>
+          <div className="flex-1 min-w-0 space-y-2">
+            <div>
+              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Proposed Filename</p>
+              <p className="text-xs font-medium text-foreground truncate">{title}{doc.original_filename?.split('.').slice(-1)[0] ? '.' + doc.original_filename.split('.').pop() : ''}</p>
+            </div>
+            <div>
+              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Folder Location</p>
+              <p className="text-xs font-medium text-foreground truncate">{folderId ? folders.find(f => f.id === folderId)?.path || 'Selected' : '—'}</p>
+            </div>
+          </div>
         </div>
 
         {/* Scrollable fields */}
