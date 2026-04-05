@@ -20,8 +20,8 @@ export default function DocumentCard({ document, categories, selected, onToggleS
       {/* Checkbox */}
       <button
         onClick={() => onToggleSelect && onToggleSelect(document.id)}
-        className={`absolute top-3 left-3 z-10 h-5 w-5 rounded border-2 flex items-center justify-center transition-all ${
-          selected ? 'bg-primary border-primary' : 'border-muted-foreground/30 bg-background hover:border-primary'
+        className={`absolute top-3 left-3 z-10 h-5 w-5 rounded border-2 flex items-center justify-center transition-all shadow-sm ${
+          selected ? 'bg-primary border-primary' : 'border-slate-400 bg-white hover:border-primary'
         }`}
       >
         {selected && (

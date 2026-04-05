@@ -47,8 +47,8 @@ export default function DocumentListView({ documents, categories, selectedIds = 
                 <td className="px-4 py-3">
                   <button
                     onClick={() => onToggleSelect && onToggleSelect(doc.id)}
-                    className={`h-5 w-5 rounded border-2 flex items-center justify-center transition-all ${
-                      isSelected ? 'bg-primary border-primary' : 'border-muted-foreground/30 hover:border-primary'
+                    className={`h-5 w-5 rounded border-2 flex items-center justify-center transition-all shadow-sm ${
+                      isSelected ? 'bg-primary border-primary' : 'border-slate-400 bg-white hover:border-primary'
                     }`}
                   >
                     {isSelected && (
