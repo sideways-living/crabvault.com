@@ -94,6 +94,10 @@ export default function Layout() {
         {/* Footer */}
         <div className="p-4 mx-3 mb-3 rounded-lg bg-sidebar-accent/50">
           <div className="flex flex-col gap-3">
+            <div className="flex items-center justify-center gap-1.5 text-xs text-sidebar-foreground/70">
+              <Shield className="h-3.5 w-3.5" />
+              <span>Encrypted with Cryptomator</span>
+            </div>
             <div className="relative h-16 w-16 mx-auto">
               <img 
                 src={vaultConnected === true ? 'https://media.base44.com/images/public/69d0ddebd2fd28ad3f9192fe/eb5c9c541_cryptomator_online.png' : 'https://media.base44.com/images/public/69d0ddebd2fd28ad3f9192fe/d6af0f46f_cryptomator_offline.png'}
@@ -114,10 +118,6 @@ export default function Layout() {
                   </svg>
                 </div>
               )}
-            </div>
-            <div className="flex items-center justify-center gap-1.5 text-xs text-sidebar-foreground/70">
-              <Shield className="h-3.5 w-3.5" />
-              <span>Encrypted with Cryptomator</span>
             </div>
             <div className="text-center text-xs text-sidebar-foreground/60">
               {vaultConnected === true ? 'Vault Online' : vaultConnected === false ? 'Vault Offline' : 'Checking...'}
