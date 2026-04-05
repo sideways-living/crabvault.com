@@ -67,6 +67,12 @@ export default function UploadDialog({ open, onOpenChange, folders, categories, 
       }
     }
 
+    // Generate previews for all documents
+    setProgressLabel("Generating preview images…");
+    for (const docId of uploadedDocIds) {
+      await base44.functions.invoke('generateDocumentPreview', { documentId: docId }).catch(() => {});
+    }
+
     // Phase 3: Upload to vault
     if (allInReview) {
       setPhase("vaulting");
