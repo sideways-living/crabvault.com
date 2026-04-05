@@ -93,19 +93,30 @@ export default function Layout() {
 
         {/* Footer */}
         <div className="p-4 mx-3 mb-3 rounded-lg bg-sidebar-accent/50">
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-2">
-              <Lock className="h-4 w-4 text-sidebar-foreground" />
+          <div className="flex flex-col gap-3">
+            <div className="relative h-16 w-16 mx-auto">
+              <img 
+                src={vaultConnected === true ? 'https://media.base44.com/images/public/69d0ddebd2fd28ad3f9192fe/eb5c9c541_cryptomator_online.png' : 'https://media.base44.com/images/public/69d0ddebd2fd28ad3f9192fe/d6af0f46f_cryptomator_offline.png'}
+                alt="Cryptomator"
+                className="h-full w-full object-contain"
+              />
+              {vaultConnected === true && (
+                <div className="absolute -bottom-1 -right-1 bg-emerald-500 rounded-full p-1">
+                  <svg className="h-4 w-4 text-white" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
+                  </svg>
+                </div>
+              )}
+              {vaultConnected === false && (
+                <div className="absolute -bottom-1 -right-1 bg-red-500 rounded-full p-1">
+                  <svg className="h-4 w-4 text-white" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z" />
+                  </svg>
+                </div>
+              )}
             </div>
-            <div className="flex items-center gap-2 text-xs text-sidebar-foreground/50">
-              <Shield className="h-3.5 w-3.5" />
-              <span>Encrypted via Cryptomator</span>
-            </div>
-            <div className="flex items-center gap-2 text-xs">
-              <span className={`h-2 w-2 rounded-full ${vaultConnected === true ? 'bg-emerald-400' : vaultConnected === false ? 'bg-red-400' : 'bg-slate-400'}`} />
-              <span className="text-sidebar-foreground/60">
-                {vaultConnected === true ? 'Vault Online' : vaultConnected === false ? 'Vault Offline' : 'Checking...'}
-              </span>
+            <div className="text-center text-xs text-sidebar-foreground/60">
+              {vaultConnected === true ? 'Vault Online' : vaultConnected === false ? 'Vault Offline' : 'Checking...'}
             </div>
           </div>
         </div>
