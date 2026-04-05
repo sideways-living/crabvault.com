@@ -22,26 +22,27 @@ export default function SettingsPage() {
   const [reprocessing, setReprocessing] = useState(false);
   const [queueing, setQueueing] = useState(false);
   const [lastProcessed, setLastProcessed] = useState(null);
-  const [entities, setEntities] = useState([]);
-  const [newEntity, setNewEntity] = useState({ name: "", folderId: "" });
   const [folders, setFolders] = useState([]);
 
   useEffect(() => {
     const load = async () => {
-      const [me, cats, ents, flds] = await Promise.all([
-        base44.auth.me(),
-        base44.entities.Category.list(),
-        base44.entities.Entity?.list?.() || Promise.resolve([]).catch(() => []),
-        base44.entities.Folder.list(),
-      ]);
-      setUser(me);
-      setVaultPath(me.vault_path || "");
-      setSharedFolderPath(me.shared_folder_path || "");
-      setCategories(cats);
-      setEntities(ents);
-      setFolders(flds);
-      setVisibleCategories(me.visible_folder_categories || ['business_cards', 'documents', 'images', 'movies', 'receipts']);
-      setLoading(false);
+      try {
+        const [me, cats, flds] = await Promise.all([
+          base44.auth.me(),
+          base44.entities.Category.list(),
+          base44.entities.Folder.list(),
+        ]);
+        setUser(me);
+        setVaultPath(me.vault_path || "");
+        setSharedFolderPath(me.shared_folder_path || "");
+        setCategories(cats);
+        setFolders(flds);
+        setVisibleCategories(me.visible_folder_categories || ['business_cards', 'documents', 'images', 'movies', 'receipts']);
+      } catch (err) {
+        console.error('Failed to load settings:', err);
+      } finally {
+        setLoading(false);
+      }
     };
     load();
   }, []);
