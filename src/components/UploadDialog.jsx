@@ -30,6 +30,7 @@ export default function UploadDialog({ open, onOpenChange, folders, categories, 
 
     // Phase 1: Upload
     setPhase("uploading");
+    const uploadedDocIds = [];
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       setProgressLabel(`Uploading ${file.name}… (${i + 1}/${files.length})`);
@@ -37,7 +38,7 @@ export default function UploadDialog({ open, onOpenChange, folders, categories, 
       const ext = file.name.split('.').pop().toLowerCase();
       const fileType = ['pdf', 'docx', 'xlsx', 'pptx', 'txt', 'jpg', 'png'].includes(ext) ? ext : 'other';
 
-      await base44.entities.Document.create({
+      const doc = await base44.entities.Document.create({
         title: file.name.replace(/\.[^/.]+$/, ""),
         file_url,
         original_filename: file.name,
@@ -46,31 +47,46 @@ export default function UploadDialog({ open, onOpenChange, folders, categories, 
         folder_id: folderId || undefined,
         processing_status: "pending",
       });
+      uploadedDocIds.push(doc.id);
     }
 
     // Phase 2: AI processing (summarise, categorise, assign vault path)
     setPhase("processing");
     setProgressLabel("AI is analysing, categorising & assigning vault paths…");
-    const docs = await base44.entities.Document.filter({ processing_status: 'pending' }, '-created_date', files.length);
     await base44.functions.invoke('processQueuedDocuments', {});
+    
+    // Wait for documents to be processed and reach review queue
+    let allInReview = false;
+    let attempts = 0;
+    while (!allInReview && attempts < 30) {
+      const updatedDocs = await base44.entities.Document.filter({ id: { $in: uploadedDocIds } });
+      allInReview = updatedDocs.every(d => d.processing_status === 'needs_review');
+      if (!allInReview) {
+        await new Promise(r => setTimeout(r, 500));
+        attempts++;
+      }
+    }
 
     // Phase 3: Upload to vault
-    setPhase("vaulting");
-    setProgressLabel("Uploading to Cryptomator vault…");
-    const user = await base44.auth.me();
-    const userVaultPath = user?.vault_path;
-    if (userVaultPath && docs.length > 0) {
-      const selectedFolder = folderId ? folders?.find(f => f.id === folderId) : null;
-      const folderPath = selectedFolder?.path || '';
-      for (const doc of docs) {
-        try {
-          await base44.functions.invoke('uploadToVault', {
-            documentId: doc.id,
-            vaultPath: userVaultPath,
-            proposedPath: folderPath
-          });
-        } catch (err) {
-          console.error(`Failed to upload ${doc.id} to vault:`, err);
+    if (allInReview) {
+      setPhase("vaulting");
+      setProgressLabel("Uploading to Cryptomator vault…");
+      const user = await base44.auth.me();
+      const userVaultPath = user?.vault_path;
+      if (userVaultPath) {
+        const selectedFolder = folderId ? folders?.find(f => f.id === folderId) : null;
+        const folderPath = selectedFolder?.path || '';
+        const reviewDocs = await base44.entities.Document.filter({ id: { $in: uploadedDocIds } });
+        for (const doc of reviewDocs) {
+          try {
+            await base44.functions.invoke('uploadToVault', {
+              documentId: doc.id,
+              vaultPath: userVaultPath,
+              proposedPath: folderPath
+            });
+          } catch (err) {
+            console.error(`Failed to upload ${doc.id} to vault:`, err);
+          }
         }
       }
     }
