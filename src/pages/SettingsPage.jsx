@@ -19,6 +19,7 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [reprocessing, setReprocessing] = useState(false);
+  const [queueing, setQueueing] = useState(false);
   const [lastProcessed, setLastProcessed] = useState(null);
 
   useEffect(() => {
@@ -50,6 +51,17 @@ export default function SettingsPage() {
     setLastProcessed(res.data);
     setProcessing(false);
     toast.success(res.data?.message || 'Done');
+  };
+
+  const handleSendAllToReview = async () => {
+    if (!confirm('This will move ALL documents into the Review Queue so you can verify AI data. Continue?')) return;
+    setQueueing(true);
+    const allDocs = await base44.entities.Document.list('-created_date', 500);
+    await Promise.all(allDocs.map(doc =>
+      base44.entities.Document.update(doc.id, { processing_status: 'needs_review' })
+    ));
+    setQueueing(false);
+    toast.success(`${allDocs.length} document(s) moved to Review Queue`);
   };
 
   const handleReprocessAll = async () => {
@@ -158,7 +170,11 @@ export default function SettingsPage() {
           </div>
         )}
         <div className="flex flex-wrap gap-2">
-          <Button onClick={handleProcessQueue} disabled={processing || reprocessing} variant="outline">
+          <Button onClick={handleSendAllToReview} disabled={queueing || processing || reprocessing} variant="outline" className="border-blue-300 text-blue-700 hover:bg-blue-50">
+            {queueing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Play className="h-4 w-4 mr-2" />}
+            {queueing ? 'Queueing...' : 'Send All to Review Queue'}
+          </Button>
+          <Button onClick={handleProcessQueue} disabled={processing || reprocessing || queueing} variant="outline">
             {processing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Play className="h-4 w-4 mr-2" />}
             {processing ? 'Processing...' : 'Process All Pending Now'}
           </Button>
