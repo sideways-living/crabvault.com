@@ -399,7 +399,7 @@ export default function DuplicateFinder() {
     setLoading(true);
     setGroups(null);
     const [docs, flds] = await Promise.all([
-      base44.entities.Document.list('-created_date', 500),
+      base44.entities.Document.filter({ is_deleted: false }, '-created_date', 10000),
       base44.entities.Folder.list(),
     ]);
     setFolders(flds);
