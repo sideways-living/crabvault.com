@@ -60,7 +60,11 @@ export default function DocumentListView({ documents, categories, selectedIds = 
                 </td>
                 <td className="px-4 py-3">
                   <Link to={`/documents/${doc.id}`} className="flex items-center gap-2.5 group">
-                    <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                    {doc.preview_url ? (
+                      <img src={doc.preview_url} alt="preview" className="h-6 w-6 rounded object-cover flex-shrink-0" />
+                    ) : (
+                      <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                    )}
                     <span className="font-medium group-hover:text-primary transition-colors truncate max-w-xs">{doc.title}</span>
                   </Link>
                 </td>
