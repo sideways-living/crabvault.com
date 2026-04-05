@@ -115,6 +115,10 @@ export default function Layout() {
                 </div>
               )}
             </div>
+            <div className="flex items-center justify-center gap-1.5 text-xs text-sidebar-foreground/70">
+              <Shield className="h-3.5 w-3.5" />
+              <span>Encrypted with Cryptomator</span>
+            </div>
             <div className="text-center text-xs text-sidebar-foreground/60">
               {vaultConnected === true ? 'Vault Online' : vaultConnected === false ? 'Vault Offline' : 'Checking...'}
             </div>
