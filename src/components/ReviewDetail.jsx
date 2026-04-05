@@ -160,6 +160,14 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
     setItems(prev => prev.map((item, idx) => idx === i ? { ...item, [field]: val } : item));
   };
 
+  const addItem = () => {
+    setItems(prev => [...prev, { name: "", quantity: 1, unit_price: null, total_price: null }]);
+  };
+
+  const removeItem = (i) => {
+    setItems(prev => prev.filter((_, idx) => idx !== i));
+  };
+
   return (
     <div className="bg-card border rounded-xl overflow-hidden flex flex-col gap-0">
       {duplicates.length > 0 && (
@@ -220,9 +228,17 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             <div>
-              <Label className="text-xs">Document Date</Label>
+              <Label className="text-xs text-muted-foreground">Scan Date (uploaded)</Label>
+              <Input
+                className="mt-1 h-8 text-sm bg-muted/30 text-muted-foreground cursor-not-allowed"
+                value={doc.created_date ? new Date(doc.created_date).toLocaleDateString('en-AU') : '—'}
+                readOnly
+              />
+            </div>
+            <div>
+              <Label className="text-xs">Document Date <span className="text-muted-foreground font-normal">(from document)</span></Label>
               <Input type="date" className="mt-1 h-8 text-sm" value={docDate} onChange={e => setDocDate(e.target.value)} />
             </div>
             <div>
@@ -313,41 +329,52 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
               </div>
 
               {/* Items table */}
-              {items.length > 0 && (
-                <div>
-                  <Label className="text-xs mb-2 block">Line Items</Label>
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <Label className="text-xs">Line Items ({items.length})</Label>
+                  <button onClick={addItem} className="text-xs text-primary hover:underline flex items-center gap-1">+ Add row</button>
+                </div>
+                {items.length > 0 ? (
                   <div className="rounded-lg border overflow-hidden text-xs">
                     <table className="w-full">
                       <thead className="bg-muted/40">
                         <tr>
-                          <th className="text-left px-3 py-2 font-medium">Item</th>
+                          <th className="text-left px-3 py-2 font-medium">Item Name</th>
                           <th className="text-right px-2 py-2 font-medium w-14">Qty</th>
-                          <th className="text-right px-2 py-2 font-medium w-20">Unit</th>
-                          <th className="text-right px-2 py-2 font-medium w-20">Total</th>
+                          <th className="text-right px-2 py-2 font-medium w-20">Unit $</th>
+                          <th className="text-right px-2 py-2 font-medium w-20">Total $</th>
+                          <th className="w-6"></th>
                         </tr>
                       </thead>
                       <tbody>
                         {items.map((item, i) => (
-                          <tr key={i} className="border-t">
+                          <tr key={i} className="border-t group">
                             <td className="px-3 py-1.5">
-                              <Input className="h-6 text-xs border-0 p-0 bg-transparent" value={item.name || ""} onChange={e => updateItem(i, "name", e.target.value)} />
+                              <Input className="h-6 text-xs border-0 p-0 bg-transparent" value={item.name || ""} onChange={e => updateItem(i, "name", e.target.value)} placeholder="Item name…" />
                             </td>
                             <td className="px-2 py-1.5">
-                              <Input className="h-6 text-xs text-right border-0 p-0 bg-transparent" type="number" value={item.quantity ?? ""} onChange={e => updateItem(i, "quantity", parseFloat(e.target.value))} />
+                              <Input className="h-6 text-xs text-right border-0 p-0 bg-transparent" type="number" value={item.quantity ?? ""} onChange={e => updateItem(i, "quantity", parseFloat(e.target.value))} placeholder="1" />
                             </td>
                             <td className="px-2 py-1.5">
-                              <Input className="h-6 text-xs text-right border-0 p-0 bg-transparent" type="number" step="0.01" value={item.unit_price ?? ""} onChange={e => updateItem(i, "unit_price", parseFloat(e.target.value))} />
+                              <Input className="h-6 text-xs text-right border-0 p-0 bg-transparent" type="number" step="0.01" value={item.unit_price ?? ""} onChange={e => updateItem(i, "unit_price", parseFloat(e.target.value))} placeholder="0.00" />
                             </td>
                             <td className="px-2 py-1.5">
-                              <Input className="h-6 text-xs text-right border-0 p-0 bg-transparent" type="number" step="0.01" value={item.total_price ?? ""} onChange={e => updateItem(i, "total_price", parseFloat(e.target.value))} />
+                              <Input className="h-6 text-xs text-right border-0 p-0 bg-transparent" type="number" step="0.01" value={item.total_price ?? ""} onChange={e => updateItem(i, "total_price", parseFloat(e.target.value))} placeholder="0.00" />
+                            </td>
+                            <td className="px-1 py-1.5">
+                              <button onClick={() => removeItem(i)} className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all">
+                                <Trash2 className="h-3 w-3" />
+                              </button>
                             </td>
                           </tr>
                         ))}
                       </tbody>
                     </table>
                   </div>
-                </div>
-              )}
+                ) : (
+                  <p className="text-xs text-muted-foreground italic">No items — add rows above if this receipt has line items.</p>
+                )}
+              </div>
             </div>
           )}
 
