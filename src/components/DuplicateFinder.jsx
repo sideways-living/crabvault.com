@@ -131,8 +131,12 @@ function ResolveDialog({ group, folders: initialFolders, onResolved, onClose }) 
 
   const handleMerge = async () => {
     setSaving(true);
+    const keepDoc = group.find(d => d.id === keepId);
+    const ext = keepDoc?.original_filename?.split('.').pop() || keepDoc?.file_type || '';
+    const newFilename = ext ? `${finalTitle}.${ext}` : finalTitle;
     await base44.entities.Document.update(keepId, {
       title: finalTitle,
+      original_filename: newFilename,
       folder_id: finalFolderId || undefined,
     });
     const toDelete = group.filter(d => d.id !== keepId);
