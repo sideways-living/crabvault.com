@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, FileText, FolderTree, Search, Settings, Shield, Menu, X, BookOpen, ClipboardCheck, Trash2, Lock } from "lucide-react";
+import { LayoutDashboard, FileText, FolderTree, Search, Settings, Shield, Menu, X, BookOpen, ClipboardCheck, Trash2, Lock, Copy, Zap } from "lucide-react";
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { cn } from "@/lib/utils";
@@ -90,9 +90,9 @@ export default function Layout() {
             to="/"
             onClick={() => setSidebarOpen(false)}
             className={cn(
-              "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200",
+              "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200 font-bold",
               location.pathname === "/"
-                ? "bg-sidebar-accent text-sidebar-primary font-medium"
+                ? "bg-sidebar-accent text-sidebar-primary"
                 : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
             )}
           >
@@ -102,11 +102,11 @@ export default function Layout() {
 
           {/* Documents with nested stages */}
           <div className="space-y-1">
-            <div className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-sidebar-foreground">
+            <div className="flex items-center gap-3 px-3 py-2.5 text-sm font-bold text-sidebar-foreground">
               <FileText className="h-4 w-4" />
               Documents
             </div>
-            <div className="space-y-1 ml-3 pl-3 border-l border-sidebar-border">
+            <div className="space-y-1 ml-3 pl-3">
               {documentStages.map((stage) => {
                 const params = new URLSearchParams(location.search);
                 const activeSection = params.get("section") || "completed";
@@ -120,10 +120,11 @@ export default function Layout() {
                     className={cn(
                       "flex items-center gap-3 px-3 py-2 rounded-lg text-xs transition-all duration-200",
                       isActive
-                        ? "bg-sidebar-accent text-sidebar-primary font-medium"
+                        ? "bg-sidebar-accent text-sidebar-primary"
                         : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/30"
                     )}
                   >
+                    <FileText className="h-3 w-3 shrink-0" />
                     <span className="flex-1">{stage.label}</span>
                     {stage.badge && count > 0 ? (
                       <span className="bg-primary text-primary-foreground text-[9px] font-bold px-1 py-0.5 rounded-full leading-none">
@@ -144,27 +145,27 @@ export default function Layout() {
               to="/folders"
               onClick={() => setSidebarOpen(false)}
               className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200",
+                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200 font-bold",
                 location.pathname === "/folders"
-                  ? "bg-sidebar-accent text-sidebar-primary font-medium"
+                  ? "bg-sidebar-accent text-sidebar-primary"
                   : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
               )}
             >
               <FolderTree className="h-4 w-4" />
               Folders
             </Link>
-            <div className="space-y-1 ml-3 pl-3 border-l border-sidebar-border">
+            <div className="space-y-1 ml-3 pl-3">
               <Link
                 to="/deleted"
                 onClick={() => setSidebarOpen(false)}
                 className={cn(
                   "flex items-center gap-3 px-3 py-2 rounded-lg text-xs transition-all duration-200",
                   location.pathname === "/deleted"
-                    ? "bg-sidebar-accent text-sidebar-primary font-medium"
+                    ? "bg-sidebar-accent text-sidebar-primary"
                     : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/30"
                 )}
               >
-                <Trash2 className="h-3 w-3" />
+                <Trash2 className="h-3.5 w-3.5" />
                 Recently Deleted
               </Link>
             </div>
@@ -175,9 +176,9 @@ export default function Layout() {
             to="/search"
             onClick={() => setSidebarOpen(false)}
             className={cn(
-              "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200",
+              "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200 font-bold",
               location.pathname === "/search"
-                ? "bg-sidebar-accent text-sidebar-primary font-medium"
+                ? "bg-sidebar-accent text-sidebar-primary"
                 : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
             )}
           >
@@ -190,9 +191,9 @@ export default function Layout() {
             to="/settings"
             onClick={() => setSidebarOpen(false)}
             className={cn(
-              "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200",
+              "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200 font-bold",
               location.pathname === "/settings"
-                ? "bg-sidebar-accent text-sidebar-primary font-medium"
+                ? "bg-sidebar-accent text-sidebar-primary"
                 : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
             )}
           >
@@ -202,21 +203,22 @@ export default function Layout() {
 
           {/* Training with nested items */}
           <div className="space-y-1">
-            <div className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-sidebar-foreground">
+            <div className="flex items-center gap-3 px-3 py-2.5 text-sm font-bold text-sidebar-foreground">
               <BookOpen className="h-4 w-4" />
               Training
             </div>
-            <div className="space-y-1 ml-3 pl-3 border-l border-sidebar-border">
+            <div className="space-y-1 ml-3 pl-3">
               <Link
                 to="/documents"
                 onClick={() => setSidebarOpen(false)}
                 className={cn(
                   "flex items-center gap-3 px-3 py-2 rounded-lg text-xs transition-all duration-200",
                   location.pathname === "/documents"
-                    ? "bg-sidebar-accent text-sidebar-primary font-medium"
+                    ? "bg-sidebar-accent text-sidebar-primary"
                     : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/30"
                 )}
               >
+                <Copy className="h-3.5 w-3.5" />
                 Duplicate Finder
               </Link>
               <Link
@@ -225,10 +227,11 @@ export default function Layout() {
                 className={cn(
                   "flex items-center gap-3 px-3 py-2 rounded-lg text-xs transition-all duration-200",
                   location.pathname === "/receipt-trainer"
-                    ? "bg-sidebar-accent text-sidebar-primary font-medium"
+                    ? "bg-sidebar-accent text-sidebar-primary"
                     : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/30"
                 )}
               >
+                <Zap className="h-3.5 w-3.5" />
                 Receipt Trainer
               </Link>
             </div>
