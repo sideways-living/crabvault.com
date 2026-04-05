@@ -29,15 +29,20 @@ export default function Documents() {
   const activeSection = searchParams.get("section") || "completed";
 
   const loadData = async () => {
-    const [docs, flds, cats] = await Promise.all([
-      base44.entities.Document.filter({ is_deleted: false }, "-created_date", 200),
+    try {
+      const [docs, flds, cats] = await Promise.all([
+        base44.entities.Document.filter({ is_deleted: false }, "-created_date", 100),
       base44.entities.Folder.list(),
       base44.entities.Category.list(),
     ]);
-    setAllDocuments(docs);
-    setFolders(flds);
-    setCategories(cats);
-    setLoading(false);
+      setAllDocuments(docs);
+      setFolders(flds);
+      setCategories(cats);
+    } catch (error) {
+      console.error('Failed to load documents:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { loadData(); }, []);
