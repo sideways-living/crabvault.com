@@ -89,18 +89,18 @@ ${learningSummary}
 Classify and name this document using one of the following rules:
 
 1. RECEIPT (retail purchase, payment confirmation, till receipt):
-   - is_receipt: true
-   - Extract the exact transaction date → format as YYYYMMDD
-   - Extract vendor_name / store_brand (clean name, e.g. "Woolworths", "Bunnings") — no Pty Ltd etc.
-   - Extract store_location (suburb/city and state if visible, e.g. "Docklands VIC")
-   - Extract transaction_type: "purchase", "return", or "exchange"
-   - Extract tender_type: one of cash, mastercard, visa, amex, eftpos, gift_voucher, exchange_voucher, other
-   - Extract amount (total as a number, e.g. 42.50)
-   - Extract last_four_digits of card/voucher if shown (string, e.g. "4321"), otherwise null
-   - Extract transaction_time in HH:MM 24-hour format if shown, otherwise null
-   - Extract items: an array of all line items purchased/returned, each with name, quantity, unit_price, total_price (use null for any fields not visible)
-   - suggested_title: "YYYYMMDD - VendorName - Receipt" (e.g. "20240315 - Woolworths - Receipt")
-   - In summary list ALL items + prices and total.
+    - is_receipt: true
+    - Extract the exact transaction date → format as YYYYMMDD
+    - Extract vendor_name / store_brand (clean name, e.g. "Woolworths", "Bunnings") — no Pty Ltd etc.
+    - Extract store_location (suburb/city and state if visible, e.g. "Docklands VIC")
+    - Extract transaction_type: "purchase", "return", or "exchange"
+    - Extract tender_type: one of cash, mastercard, visa, amex, eftpos, gift_voucher, exchange_voucher, other
+    - Extract amount (total as a number, e.g. 42.50)
+    - Extract last_four_digits of card/voucher if shown (string, e.g. "4321"), otherwise null
+    - Extract transaction_time in HH:MM 24-hour format if shown, otherwise null
+    - Extract items: an array of all line items purchased/returned, each with name, quantity, unit_price, total_price (use null for any fields not visible)
+    - suggested_title: "YYYYMMDD - StoreName Location - TransactionType Receipt" (capitalize transaction_type: Purchase, Return, Exchange). E.g. "20240315 - Woolworths Docklands VIC - Purchase Receipt" or "20240315 - Bunnings Parramatta NSW - Exchange Receipt"
+    - In summary list ALL items + prices and total.
 
 2. QUOTE / INVOICE / PURCHASE ORDER / ESTIMATE (a formal business document with a number, subject, and vendor):
    - is_receipt: false
