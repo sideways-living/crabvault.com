@@ -6,33 +6,46 @@
       "type": "string",
       "title": "Store Brand"
     },
-    "sample_image_url": {
-      "type": "string",
-      "title": "Sample Receipt Image URL"
-    },
-    "field_regions": {
+    "samples": {
       "type": "array",
-      "title": "Field Regions",
+      "title": "Receipt Samples",
       "items": {
         "type": "object",
         "properties": {
-          "field": {
-            "type": "string"
-          },
           "label": {
-            "type": "string"
+            "type": "string",
+            "title": "Sample Label (e.g. POS Type, Purchase, Return)"
           },
-          "x": {
-            "type": "number"
+          "image_url": {
+            "type": "string",
+            "title": "Receipt Image URL"
           },
-          "y": {
-            "type": "number"
-          },
-          "width": {
-            "type": "number"
-          },
-          "height": {
-            "type": "number"
+          "field_regions": {
+            "type": "array",
+            "title": "Field Regions",
+            "items": {
+              "type": "object",
+              "properties": {
+                "field": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "x": {
+                  "type": "number"
+                },
+                "y": {
+                  "type": "number"
+                },
+                "width": {
+                  "type": "number"
+                },
+                "height": {
+                  "type": "number"
+                }
+              }
+            }
           }
         }
       }
