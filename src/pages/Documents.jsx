@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Upload, LayoutGrid, List, Trash2, RefreshCw, ClipboardList, Pencil, CheckSquare, Layout } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -23,7 +24,8 @@ export default function Documents() {
   const [viewMode, setViewMode] = useState("grid");
   const [selectedIds, setSelectedIds] = useState([]);
   const [batchEditOpen, setBatchEditOpen] = useState(false);
-  const [activeSection, setActiveSection] = useState("completed");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeSection = searchParams.get("section") || "completed";
 
   const loadData = async () => {
     const [docs, flds, cats] = await Promise.all([
@@ -112,25 +114,25 @@ export default function Documents() {
       {/* Section tabs */}
       <div className="flex gap-2 border-b overflow-x-auto -mx-6 px-6">
         <button
-          onClick={() => setActiveSection('pending')}
+          onClick={() => setSearchParams({ section: 'pending' })}
           className={`text-sm font-medium pb-3 transition-colors border-b-2 ${activeSection === 'pending' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
         >
           Pending ({pendingDocs.length})
         </button>
         <button
-          onClick={() => setActiveSection('processing')}
+          onClick={() => setSearchParams({ section: 'processing' })}
           className={`text-sm font-medium pb-3 transition-colors border-b-2 ${activeSection === 'processing' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
         >
           Processing ({processingDocs.length})
         </button>
         <button
-          onClick={() => setActiveSection('review')}
+          onClick={() => setSearchParams({ section: 'review' })}
           className={`text-sm font-medium pb-3 transition-colors border-b-2 ${activeSection === 'review' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
         >
           Review ({reviewDocs.length})
         </button>
         <button
-          onClick={() => setActiveSection('completed')}
+          onClick={() => setSearchParams({ section: 'completed' })}
           className={`text-sm font-medium pb-3 transition-colors border-b-2 ${activeSection === 'completed' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
         >
           Documents ({completedDocs.length})

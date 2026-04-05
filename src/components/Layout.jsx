@@ -8,13 +8,17 @@ import { Button } from "@/components/ui/button";
 
 const navItems = [
   { path: "/", label: "Dashboard", icon: LayoutDashboard },
-  { path: "/documents", label: "Documents", icon: FileText },
   { path: "/folders", label: "Folders", icon: FolderTree },
   { path: "/search", label: "Search", icon: Search },
-  { path: "/review", label: "Review Queue", icon: ClipboardCheck, badge: true },
   { path: "/receipt-trainer", label: "Receipt Trainer", icon: BookOpen },
-  { path: "/deleted", label: "Deleted", icon: Trash2 },
   { path: "/settings", label: "Settings", icon: Settings },
+];
+
+const workflowItems = [
+  { path: "/documents?section=pending", label: "Pending", status: "pending" },
+  { path: "/documents?section=processing", label: "Processing", status: "processing" },
+  { path: "/documents?section=review", label: "Review Queue", status: "review", badge: true },
+  { path: "/documents?section=completed", label: "Completed", status: "completed" },
 ];
 
 export default function Layout() {
@@ -23,6 +27,7 @@ export default function Layout() {
   const [reviewCount, setReviewCount] = useState(0);
   const [vaultConnected, setVaultConnected] = useState(null);
   const [vaultHelpOpen, setVaultHelpOpen] = useState(false);
+  const [documentsExpanded, setDocumentsExpanded] = useState(true);
 
   useEffect(() => {
     const checkVault = async () => {
@@ -84,14 +89,69 @@ export default function Layout() {
               >
               <item.icon className="h-4 w-4" />
               {item.label}
-              {item.badge && reviewCount > 0 && (
-                <span className="ml-auto bg-primary text-primary-foreground text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none">
-                  {reviewCount}
-                </span>
-              )}
               </Link>
             );
           })}
+
+          {/* Documents Workflow Section */}
+          <div className="space-y-1">
+            <button
+              onClick={() => setDocumentsExpanded(!documentsExpanded)}
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200 text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
+            >
+              <FileText className="h-4 w-4" />
+              <span className="flex-1 text-left">Documents</span>
+              <svg className={cn("h-3.5 w-3.5 transition-transform", documentsExpanded && "rotate-180")}
+                fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+              </svg>
+            </button>
+            {documentsExpanded && (
+              <div className="space-y-1 ml-3 pl-3 border-l border-sidebar-border">
+                {workflowItems.map((item) => {
+                  const isActive = location.pathname === "/documents";
+                  const params = new URLSearchParams(location.search);
+                  const activeSection = params.get("section") || "completed";
+                  const itemActive = isActive && activeSection === item.status;
+                  return (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      onClick={() => setSidebarOpen(false)}
+                      className={cn(
+                        "flex items-center gap-3 px-3 py-2 rounded-lg text-xs transition-all duration-200",
+                        itemActive
+                          ? "bg-sidebar-accent text-sidebar-primary font-medium"
+                          : "text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-sidebar-accent/30"
+                      )}
+                    >
+                      <span className="flex-1">{item.label}</span>
+                      {item.badge && reviewCount > 0 && (
+                        <span className="bg-primary text-primary-foreground text-[9px] font-bold px-1 py-0.5 rounded-full leading-none">
+                          {reviewCount}
+                        </span>
+                      )}
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Deleted */}
+          <Link
+            to="/deleted"
+            onClick={() => setSidebarOpen(false)}
+            className={cn(
+              "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200",
+              location.pathname === "/deleted"
+                ? "bg-sidebar-accent text-sidebar-primary font-medium"
+                : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
+            )}
+          >
+            <Trash2 className="h-4 w-4" />
+            Deleted
+          </Link>
         </nav>
 
         {/* Footer */}
