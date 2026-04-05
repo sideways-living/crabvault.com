@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, FileText, FolderTree, Search, Settings, Shield, Menu, X, BookOpen, ClipboardCheck, Trash2 } from "lucide-react";
+import { LayoutDashboard, FileText, FolderTree, Search, Settings, Shield, Menu, X, BookOpen, ClipboardCheck, Trash2, Lock } from "lucide-react";
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { cn } from "@/lib/utils";
@@ -19,8 +19,22 @@ export default function Layout() {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [reviewCount, setReviewCount] = useState(0);
+  const [vaultConnected, setVaultConnected] = useState(null);
 
   useEffect(() => {
+    const checkVault = async () => {
+      try {
+        const user = await base44.auth.me();
+        if (user) {
+          // Try to call sync function with test payload - if it succeeds, vault is accessible
+          const res = await base44.functions.invoke('syncDocumentsToVault', { vaultPath: '/tmp/test' });
+          setVaultConnected(!res.data?.error || res.data?.error !== 'Cryptomator vault not connected');
+        }
+      } catch (err) {
+        setVaultConnected(false);
+      }
+    };
+    checkVault();
     base44.entities.Document.filter({ processing_status: "needs_review" }, "-created_date", 100)
       .then(docs => setReviewCount(docs.length))
       .catch(() => {});
@@ -79,9 +93,20 @@ export default function Layout() {
 
         {/* Footer */}
         <div className="p-4 mx-3 mb-3 rounded-lg bg-sidebar-accent/50">
-          <div className="flex items-center gap-2 text-xs text-sidebar-foreground/50">
-            <Shield className="h-3.5 w-3.5" />
-            <span>Encrypted via Cryptomator</span>
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+              <Lock className="h-4 w-4 text-sidebar-foreground" />
+            </div>
+            <div className="flex items-center gap-2 text-xs text-sidebar-foreground/50">
+              <Shield className="h-3.5 w-3.5" />
+              <span>Encrypted via Cryptomator</span>
+            </div>
+            <div className="flex items-center gap-2 text-xs">
+              <span className={`h-2 w-2 rounded-full ${vaultConnected === true ? 'bg-emerald-400' : vaultConnected === false ? 'bg-red-400' : 'bg-slate-400'}`} />
+              <span className="text-sidebar-foreground/60">
+                {vaultConnected === true ? 'Vault Online' : vaultConnected === false ? 'Vault Offline' : 'Checking...'}
+              </span>
+            </div>
           </div>
         </div>
       </aside>
