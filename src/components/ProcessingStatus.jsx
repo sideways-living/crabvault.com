@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 
 export default function ProcessingStatus() {
   const [currentDoc, setCurrentDoc] = useState(null);
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
   const [logs, setLogs] = useState([]);
 
   useEffect(() => {
