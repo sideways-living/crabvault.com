@@ -26,15 +26,24 @@ export default function CreateFolderDialog({ open, onOpenChange, folders, catego
     if (!name.trim()) return;
     setCreating(true);
 
-    await base44.entities.Folder.create({
-      name: name.trim(),
-      parent_folder_id: parentId || undefined,
-      path: buildPath(parentId, name.trim()),
-      category_id: categoryId || undefined,
-      description: description || undefined,
-    });
+    const folderNames = name.trim().split('/').filter(f => f.trim());
+    let currentParentId = parentId || undefined;
+    let lastFolderName = '';
 
-    toast.success(`Folder "${name}" created`);
+    for (const folderName of folderNames) {
+      lastFolderName = folderName.trim();
+      const path = buildPath(currentParentId, lastFolderName);
+      const newFolder = await base44.entities.Folder.create({
+        name: lastFolderName,
+        parent_folder_id: currentParentId,
+        path: path,
+        category_id: categoryId || undefined,
+        description: folderNames.length === 1 ? (description || undefined) : undefined,
+      });
+      currentParentId = newFolder.id;
+    }
+
+    toast.success(`Folder${folderNames.length > 1 ? 's' : ''} "${name}" created`);
     setName("");
     setParentId("");
     setCategoryId("");
@@ -54,7 +63,8 @@ export default function CreateFolderDialog({ open, onOpenChange, folders, catego
         <div className="space-y-4">
           <div>
             <Label className="text-xs">Folder Name</Label>
-            <Input className="mt-1.5" value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Tax Returns 2024" />
+            <Input className="mt-1.5" value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Projects/3D Printing" />
+             <p className="text-xs text-muted-foreground mt-1">Use / to create nested folders</p>
           </div>
 
           <div>
