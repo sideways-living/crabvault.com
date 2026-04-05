@@ -27,6 +27,25 @@ Deno.serve(async (req) => {
   const categoryList = categories.map(c => `${c.id}: ${c.name} - ${c.description || ''}`).join('\n');
   const folderList = folders.map(f => `${f.id}: ${f.path || f.name}`).join('\n');
 
+  // Fetch recent learning logs to guide AI decisions
+  const allLogs = await db.entities.LearningLog.list('-created_date', 50);
+  const learningSummary = allLogs.length > 0
+    ? `\nPAST USER DECISIONS (use these as examples to guide your output):\n` +
+      allLogs.map(l => {
+        const parts = [];
+        if (l.original_title && l.new_title && l.original_title !== l.new_title)
+          parts.push(`- Renamed: "${l.original_title}" → "${l.new_title}"`);
+        if (l.vendor_name) parts.push(`  Vendor: ${l.vendor_name}`);
+        if (l.document_date) parts.push(`  Date: ${l.document_date}`);
+        if (l.is_receipt) parts.push(`  Type: receipt`);
+        if (l.new_folder_id) {
+          const f = folders.find(f => f.id === l.new_folder_id);
+          if (f) parts.push(`  Folder chosen: ${f.path || f.name}`);
+        }
+        return parts.join('\n');
+      }).filter(Boolean).join('\n')
+    : '';
+
   // Ensure a root "Receipts" folder exists
   let receiptsFolder = folders.find(f =>
     f.name.toLowerCase() === 'receipts' && !f.parent_folder_id
@@ -65,6 +84,7 @@ Deno.serve(async (req) => {
 
     // Step 2: Analyse, categorise, assign vault path
     const prompt = `Analyse this document and return a JSON response.
+${learningSummary}
 
 First determine if this document is a RECEIPT (a purchase receipt, invoice, payment confirmation, etc.).
 

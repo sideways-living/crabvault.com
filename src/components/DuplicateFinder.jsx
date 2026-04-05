@@ -180,6 +180,27 @@ Document title: ${doc.title}\nFilename: ${doc.original_filename || ''}`,
     });
     const toDelete = group.filter(d => d.id !== keepId);
     await Promise.all(toDelete.map(d => base44.entities.Document.delete(d.id)));
+
+    // Log this decision so the AI can learn from it
+    const isReceipt = /receipt/i.test(finalTitle);
+    const vendorMatch = finalTitle.match(/^\d{8}\s*-\s*(.+?)\s*-\s*Receipt/i);
+    const dateMatch = finalTitle.match(/^(\d{8})/);
+    await base44.entities.LearningLog.create({
+      action_type: 'duplicate_resolved',
+      original_title: keepDoc?.title || '',
+      new_title: finalTitle,
+      original_filename: keepDoc?.original_filename || '',
+      new_filename: newFilename,
+      original_folder_id: keepDoc?.folder_id || '',
+      new_folder_id: finalFolderId || '',
+      file_type: keepDoc?.file_type || '',
+      is_receipt: isReceipt,
+      vendor_name: vendorMatch ? vendorMatch[1].trim() : '',
+      document_date: dateMatch ? dateMatch[1] : '',
+      duplicates_deleted: toDelete.length,
+      notes: `Resolved ${group.length} duplicates, kept 1`,
+    });
+
     setSaving(false);
     toast.success(`Merged: kept "${finalTitle}", deleted ${toDelete.length} duplicate${toDelete.length !== 1 ? 's' : ''}`);
     onResolved(group);

@@ -1,0 +1,66 @@
+{
+  "name": "LearningLog",
+  "type": "object",
+  "properties": {
+    "action_type": {
+      "type": "string",
+      "title": "Action Type",
+      "enum": [
+        "duplicate_resolved",
+        "document_renamed",
+        "document_refoldered"
+      ]
+    },
+    "original_title": {
+      "type": "string",
+      "title": "Original Title"
+    },
+    "new_title": {
+      "type": "string",
+      "title": "New Title"
+    },
+    "original_folder_id": {
+      "type": "string",
+      "title": "Original Folder ID"
+    },
+    "new_folder_id": {
+      "type": "string",
+      "title": "New Folder ID"
+    },
+    "original_filename": {
+      "type": "string",
+      "title": "Original Filename"
+    },
+    "new_filename": {
+      "type": "string",
+      "title": "New Filename"
+    },
+    "file_type": {
+      "type": "string",
+      "title": "File Type"
+    },
+    "vendor_name": {
+      "type": "string",
+      "title": "Vendor / Company Name"
+    },
+    "document_date": {
+      "type": "string",
+      "title": "Document Date (YYYYMMDD)"
+    },
+    "is_receipt": {
+      "type": "boolean",
+      "title": "Is Receipt"
+    },
+    "duplicates_deleted": {
+      "type": "number",
+      "title": "Duplicates Deleted"
+    },
+    "notes": {
+      "type": "string",
+      "title": "Notes"
+    }
+  },
+  "required": [
+    "action_type"
+  ]
+}
