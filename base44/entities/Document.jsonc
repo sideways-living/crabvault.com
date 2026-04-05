@@ -97,6 +97,16 @@
     "ai_data": {
       "type": "object",
       "title": "Raw AI Extraction Data"
+    },
+    "is_deleted": {
+      "type": "boolean",
+      "title": "Is Deleted",
+      "default": false
+    },
+    "deleted_date": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Deletion Date"
     }
   },
   "required": [

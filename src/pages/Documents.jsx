@@ -24,7 +24,7 @@ export default function Documents() {
 
   const loadData = async () => {
     const [docs, flds, cats] = await Promise.all([
-      base44.entities.Document.list("-created_date", 100),
+      base44.entities.Document.filter({ is_deleted: false }, "-created_date", 100),
       base44.entities.Folder.list(),
       base44.entities.Category.list(),
     ]);
@@ -74,8 +74,9 @@ export default function Documents() {
   };
 
   const handleBatchDelete = async () => {
-    if (!confirm(`Delete ${selectedIds.length} document(s)? This cannot be undone.`)) return;
-    await Promise.all(selectedIds.map(id => base44.entities.Document.delete(id)));
+    if (!confirm(`Move ${selectedIds.length} document(s) to trash?`)) return;
+    const now = new Date().toISOString();
+    await Promise.all(selectedIds.map(id => base44.entities.Document.update(id, { is_deleted: true, deleted_date: now })));
     setSelectedIds([]);
     loadData();
   };

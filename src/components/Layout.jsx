@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, FileText, FolderTree, Search, Settings, Shield, Menu, X, BookOpen, ClipboardCheck } from "lucide-react";
+import { LayoutDashboard, FileText, FolderTree, Search, Settings, Shield, Menu, X, BookOpen, ClipboardCheck, Trash2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { cn } from "@/lib/utils";
@@ -11,6 +11,7 @@ const navItems = [
   { path: "/search", label: "Search", icon: Search },
   { path: "/review", label: "Review Queue", icon: ClipboardCheck, badge: true },
   { path: "/receipt-trainer", label: "Receipt Trainer", icon: BookOpen },
+  { path: "/deleted", label: "Deleted", icon: Trash2 },
   { path: "/settings", label: "Settings", icon: Settings },
 ];
 
