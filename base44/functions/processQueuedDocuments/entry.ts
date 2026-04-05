@@ -86,7 +86,20 @@ Deno.serve(async (req) => {
     const prompt = `Analyse this document and return a JSON response.
 ${learningSummary}
 
-Classify and name this document using one of the following rules:
+Document Naming Format: <date> - <person/entity> - <description> - <reference>
+
+RULES:
+- Date: The date FROM WITHIN the document (e.g., letter written date, not receipt date stamp). Format as YYYYMMDD.
+- Person/Entity: For letters, use addressee in format "FirstName, MiddleName, SURNAME". For business documents (invoices, bills), use the entity name (e.g., "AGL Energy", "702.50 Lorimer St Docklands").
+- Description: 1-5 words describing content (e.g., "Medical Report", "Phone Bill", "Service Invoice").
+- Reference: Any invoice/reference/follow-up number. Omit if none exists.
+
+Examples:
+- "20240315 - John, Paul, SMITH - Medical Report - REF12345"
+- "20240410 - AGL Energy - Electricity Bill - ACC987654"
+- "20241101 - Jane, Marie, JOHNSON - Admission Letter"
+
+Classify and name using these rules:
 
 1. RECEIPT (retail purchase, payment confirmation, till receipt):
     - is_receipt: true
@@ -99,21 +112,23 @@ Classify and name this document using one of the following rules:
     - Extract last_four_digits of card/voucher if shown (string, e.g. "4321"), otherwise null
     - Extract transaction_time in HH:MM 24-hour format if shown, otherwise null
     - Extract items: an array of all line items purchased/returned, each with name, quantity, unit_price, total_price (use null for any fields not visible)
-    - suggested_title: "YYYYMMDD - StoreName Location - TransactionType Receipt" (capitalize transaction_type: Purchase, Return, Exchange). E.g. "20240315 - Woolworths Docklands VIC - Purchase Receipt" or "20240315 - Bunnings Parramatta NSW - Exchange Receipt"
+    - suggested_title: "YYYYMMDD - StoreName Location - Receipt" (e.g. "20240315 - Woolworths Docklands VIC - Receipt")
     - In summary list ALL items + prices and total.
 
-2. QUOTE / INVOICE / PURCHASE ORDER / ESTIMATE (a formal business document with a number, subject, and vendor):
+2. LETTER / DOCUMENT ABOUT A PERSON:
    - is_receipt: false
-   - Extract: document date (YYYYMMDD), the subject/entity the document is about (e.g. a property address, person name, project), vendor/company issuing it, document type (Quote/Invoice/PO/Estimate), document number if present, and a very short description (3-6 words).
-   - suggested_title MUST follow: "YYYYMMDD - Subject - VendorName DocumentType Number ShortDescription"
-     e.g. "20251001 - 702.50 Lorimer St Docklands - Frameless Impressions Backsplash Quote 16628"
-   - Omit document number if not found. Keep subject concise but specific.
+   - Extract: document date (YYYYMMDD), addressee name (format as "FirstName, MiddleName, SURNAME" - uppercase surname), 1-5 word description of content, any reference/letter number.
+   - suggested_title: "YYYYMMDD - FirstName, MiddleName, SURNAME - Description - Reference" (omit Reference if none). E.g. "20240315 - John, Paul, SMITH - Medical Report - MR2024001" or "20240410 - Jane, Marie, JOHNSON - Admission Letter"
 
-3. ALL OTHER DOCUMENTS:
+3. INVOICE / BILL / BUSINESS DOCUMENT:
    - is_receipt: false
-   - Extract document date if present (YYYYMMDD), key subject or person, and a short description.
-   - If a clear date and subject exist: suggested_title = "YYYYMMDD - Subject - ShortDescription"
-   - Otherwise: suggested_title = a clean, descriptive title
+   - Extract: document date (YYYYMMDD), entity/company issuing it or subject matter (e.g., "AGL Energy", property address), 1-5 word description, document/invoice/reference number.
+   - suggested_title: "YYYYMMDD - EntityName - Description - InvoiceNumber" (e.g. "20240410 - AGL Energy - Electricity Bill - ACC987654" or "20251001 - 702.50 Lorimer St Docklands - Backsplash Quote - QT16628")
+
+4. ALL OTHER DOCUMENTS:
+   - is_receipt: false
+   - Extract document date if present (YYYYMMDD), key subject or person, and a 1-5 word description.
+   - suggested_title: "YYYYMMDD - Subject - Description - ReferenceIfAny" or simple descriptive title if no clear date/subject
 
 Also provide for ALL documents:
 - summary: 2-3 sentence summary

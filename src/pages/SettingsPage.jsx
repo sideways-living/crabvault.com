@@ -22,17 +22,24 @@ export default function SettingsPage() {
   const [reprocessing, setReprocessing] = useState(false);
   const [queueing, setQueueing] = useState(false);
   const [lastProcessed, setLastProcessed] = useState(null);
+  const [entities, setEntities] = useState([]);
+  const [newEntity, setNewEntity] = useState({ name: "", folderId: "" });
+  const [folders, setFolders] = useState([]);
 
   useEffect(() => {
     const load = async () => {
-      const [me, cats] = await Promise.all([
+      const [me, cats, ents, flds] = await Promise.all([
         base44.auth.me(),
         base44.entities.Category.list(),
+        base44.entities.Entity?.list?.() || Promise.resolve([]).catch(() => []),
+        base44.entities.Folder.list(),
       ]);
       setUser(me);
       setVaultPath(me.vault_path || "");
       setSharedFolderPath(me.shared_folder_path || "");
       setCategories(cats);
+      setEntities(ents);
+      setFolders(flds);
       setVisibleCategories(me.visible_folder_categories || ['business_cards', 'documents', 'images', 'movies', 'receipts']);
       setLoading(false);
     };
@@ -119,6 +126,34 @@ export default function SettingsPage() {
       ? ` (${docsToUpdate.length} document${docsToUpdate.length !== 1 ? 's' : ''} moved to Review Queue)`
       : '';
     toast.success(`Category removed${msgSuffix}`);
+  };
+
+  const handleAddEntity = async () => {
+    if (!newEntity.name.trim()) return;
+    try {
+      await base44.entities.Entity.create({
+        name: newEntity.name.trim(),
+        folder_id: newEntity.folderId || undefined,
+      });
+      const ents = await base44.entities.Entity.list();
+      setEntities(ents);
+      setNewEntity({ name: "", folderId: "" });
+      toast.success("Entity added");
+    } catch (e) {
+      toast.error("Failed to add entity");
+    }
+  };
+
+  const handleDeleteEntity = async (id) => {
+    if (!confirm("Delete this entity?")) return;
+    try {
+      await base44.entities.Entity.delete(id);
+      const ents = await base44.entities.Entity.list();
+      setEntities(ents);
+      toast.success("Entity deleted");
+    } catch (e) {
+      toast.error("Failed to delete entity");
+    }
   };
 
   if (loading) {
@@ -246,6 +281,54 @@ export default function SettingsPage() {
       <div className="bg-muted/50 rounded-xl p-4 text-xs text-muted-foreground space-y-1">
         <p className="font-medium">💡 Vault Path Auto-Fill</p>
         <p>Set a Vault Path on each Folder (in Folder settings). When a document is assigned to that folder — either manually or by AI — its vault path will be auto-suggested based on the folder's vault path.</p>
+      </div>
+
+      {/* Entities */}
+      <div className="bg-card rounded-xl border p-6 space-y-4">
+        <h2 className="font-semibold">Entities</h2>
+        <p className="text-sm text-muted-foreground">Manage entities (people, companies, properties) used in document naming. Use these in document names for invoices, bills, and business correspondence.</p>
+        <div className="space-y-2 max-h-64 overflow-y-auto">
+          {entities.length > 0 ? (
+            entities.map(entity => {
+              const folder = folders.find(f => f.id === entity.folder_id);
+              return (
+                <div key={entity.id} className="flex items-center gap-2 p-3 bg-muted rounded-lg">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{entity.name}</p>
+                    {folder && <p className="text-xs text-muted-foreground truncate">{folder.path || folder.name}</p>}
+                  </div>
+                  <button onClick={() => handleDeleteEntity(entity.id)} className="text-muted-foreground hover:text-destructive transition-colors">
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              );
+            })
+          ) : (
+            <p className="text-xs text-muted-foreground italic">No entities yet</p>
+          )}
+        </div>
+        <div className="flex flex-col gap-2">
+          <Input
+            value={newEntity.name}
+            onChange={e => setNewEntity({ ...newEntity, name: e.target.value })}
+            placeholder="Entity name (e.g., AGL Energy, Jane Smith, 123 Main St)"
+            className="flex-1"
+            onKeyDown={e => e.key === "Enter" && handleAddEntity()}
+          />
+          <select
+            value={newEntity.folderId}
+            onChange={e => setNewEntity({ ...newEntity, folderId: e.target.value })}
+            className="h-9 rounded border border-input bg-background px-3 text-sm"
+          >
+            <option value="">— no default folder —</option>
+            {folders.map(f => (
+              <option key={f.id} value={f.id}>{f.path || f.name}</option>
+            ))}
+          </select>
+          <Button variant="outline" onClick={handleAddEntity} disabled={!newEntity.name.trim()}>
+            <Plus className="h-4 w-4 mr-1" /> Add Entity
+          </Button>
+        </div>
       </div>
 
       {/* Categories */}
