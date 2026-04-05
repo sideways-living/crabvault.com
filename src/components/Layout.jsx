@@ -1,5 +1,6 @@
 import { Outlet, Link, useLocation } from "react-router-dom";
 import { LayoutDashboard, FileText, FolderTree, Search, Settings, Shield, Menu, X, BookOpen, ClipboardCheck, Trash2, Lock, Copy, Zap, Briefcase, Image, Film, Receipt } from "lucide-react";
+import DocumentBadge from "./DocumentBadge";
 import ProcessingStatus from "./ProcessingStatus";
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
@@ -138,13 +139,7 @@ export default function Layout() {
                   >
                     <FileText className="h-3 w-3 shrink-0" />
                     <span className="flex-1">{stage.label}</span>
-                    {stage.badge && count > 0 ? (
-                      <span className="bg-primary text-primary-foreground text-[9px] font-bold px-1 py-0.5 rounded-full leading-none">
-                        {count}
-                      </span>
-                    ) : count > 0 ? (
-                      <span className="text-[9px] font-medium text-sidebar-foreground/50">{count}</span>
-                    ) : null}
+                    {count > 0 && <DocumentBadge count={count} />}
                   </Link>
                 );
               })}
