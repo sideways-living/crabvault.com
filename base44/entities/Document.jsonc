@@ -80,10 +80,15 @@
       "type": "string",
       "title": "Source Path (shared folder)"
     },
+    "scan_date": {
+      "type": "string",
+      "format": "date",
+      "title": "Scan / Created Date"
+    },
     "document_date": {
       "type": "string",
       "format": "date",
-      "title": "Document Date"
+      "title": "Document Date (from document)"
     },
     "notes": {
       "type": "string",

@@ -33,6 +33,8 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
   const [summary, setSummary] = useState(doc.summary || "");
   const [tags, setTags] = useState((doc.tags || []).join(", "));
   const [docDate, setDocDate] = useState(doc.document_date || "");
+  const defaultScanDate = doc.created_date ? new Date(doc.created_date).toISOString().split('T')[0] : "";
+  const [scanDate, setScanDate] = useState(defaultScanDate);
   const [notes, setNotes] = useState(doc.notes || "");
   const [vaultPath, setVaultPath] = useState(doc.vault_path || "");
   const [createTemplate, setCreateTemplate] = useState(isReceipt);
@@ -75,6 +77,7 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
       summary,
       tags: tags.split(",").map(t => t.trim()).filter(Boolean),
       document_date: docDate || undefined,
+      scan_date: scanDate || undefined,
       notes,
       vault_path: vaultPath || undefined,
       processing_status: "completed",
@@ -230,12 +233,8 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
 
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <Label className="text-xs text-muted-foreground">Scan Date (uploaded)</Label>
-              <Input
-                className="mt-1 h-8 text-sm bg-muted/30 text-muted-foreground cursor-not-allowed"
-                value={doc.created_date ? new Date(doc.created_date).toLocaleDateString('en-AU') : '—'}
-                readOnly
-              />
+              <Label className="text-xs">Scan / Created Date</Label>
+              <Input type="date" className="mt-1 h-8 text-sm" value={scanDate} onChange={e => setScanDate(e.target.value)} />
             </div>
             <div>
               <Label className="text-xs">Document Date <span className="text-muted-foreground font-normal">(from document)</span></Label>
