@@ -7,12 +7,18 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from "@/components/ui/button";
 
 const navItems = [
-  { path: "/", label: "Dashboard", icon: LayoutDashboard },
-  { path: "/folders", label: "Folders", icon: FolderTree },
   { path: "/search", label: "Search", icon: Search },
-  { path: "/receipt-trainer", label: "Receipt Trainer", icon: BookOpen },
-  { path: "/deleted", label: "Deleted", icon: Trash2 },
   { path: "/settings", label: "Settings", icon: Settings },
+];
+
+const mainNavItems = [
+  { label: "Folders", icon: FolderTree, nested: [
+    { label: "Recently Deleted", path: "/deleted" }
+  ]},
+  { label: "Training", icon: BookOpen, nested: [
+    { label: "Duplicate Finder", path: "/documents" },
+    { label: "Receipt Trainer", path: "/receipt-trainer" }
+  ]},
 ];
 
 const documentStages = [
@@ -132,26 +138,101 @@ export default function Layout() {
             </div>
           </div>
 
-          {/* Other Nav Items */}
-          {navItems.map((item) => {
-            const isActive = location.pathname.startsWith(item.path);
-            return (
-              <Link
-              key={item.path}
-              to={item.path}
+          {/* Folders with Recently Deleted nested */}
+          <div className="space-y-1">
+            <Link
+              to="/folders"
               onClick={() => setSidebarOpen(false)}
               className={cn(
                 "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200",
-                isActive
+                location.pathname === "/folders"
                   ? "bg-sidebar-accent text-sidebar-primary font-medium"
                   : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
               )}
+            >
+              <FolderTree className="h-4 w-4" />
+              Folders
+            </Link>
+            <div className="space-y-1 ml-3 pl-3 border-l border-sidebar-border">
+              <Link
+                to="/deleted"
+                onClick={() => setSidebarOpen(false)}
+                className={cn(
+                  "flex items-center gap-3 px-3 py-2 rounded-lg text-xs transition-all duration-200",
+                  location.pathname === "/deleted"
+                    ? "bg-sidebar-accent text-sidebar-primary font-medium"
+                    : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/30"
+                )}
               >
-              <item.icon className="h-4 w-4" />
-              {item.label}
+                <Trash2 className="h-3 w-3" />
+                Recently Deleted
               </Link>
-            );
-          })}
+            </div>
+          </div>
+
+          {/* Search */}
+          <Link
+            to="/search"
+            onClick={() => setSidebarOpen(false)}
+            className={cn(
+              "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200",
+              location.pathname === "/search"
+                ? "bg-sidebar-accent text-sidebar-primary font-medium"
+                : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
+            )}
+          >
+            <Search className="h-4 w-4" />
+            Search
+          </Link>
+
+          {/* Settings */}
+          <Link
+            to="/settings"
+            onClick={() => setSidebarOpen(false)}
+            className={cn(
+              "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200",
+              location.pathname === "/settings"
+                ? "bg-sidebar-accent text-sidebar-primary font-medium"
+                : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
+            )}
+          >
+            <Settings className="h-4 w-4" />
+            Settings
+          </Link>
+
+          {/* Training with nested items */}
+          <div className="space-y-1">
+            <div className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-sidebar-foreground">
+              <BookOpen className="h-4 w-4" />
+              Training
+            </div>
+            <div className="space-y-1 ml-3 pl-3 border-l border-sidebar-border">
+              <Link
+                to="/documents"
+                onClick={() => setSidebarOpen(false)}
+                className={cn(
+                  "flex items-center gap-3 px-3 py-2 rounded-lg text-xs transition-all duration-200",
+                  location.pathname === "/documents"
+                    ? "bg-sidebar-accent text-sidebar-primary font-medium"
+                    : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/30"
+                )}
+              >
+                Duplicate Finder
+              </Link>
+              <Link
+                to="/receipt-trainer"
+                onClick={() => setSidebarOpen(false)}
+                className={cn(
+                  "flex items-center gap-3 px-3 py-2 rounded-lg text-xs transition-all duration-200",
+                  location.pathname === "/receipt-trainer"
+                    ? "bg-sidebar-accent text-sidebar-primary font-medium"
+                    : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/30"
+                )}
+              >
+                Receipt Trainer
+              </Link>
+            </div>
+          </div>
         </nav>
 
         {/* Footer */}
