@@ -8,21 +8,23 @@ import { Button } from "@/components/ui/button";
 
 const navItems = [
   { path: "/", label: "Dashboard", icon: LayoutDashboard },
-  { path: "/documents?section=pending", label: "Pending", icon: FileText, status: "pending" },
-  { path: "/documents?section=processing", label: "Processing", icon: FileText, status: "processing" },
-  { path: "/documents?section=review", label: "Review Queue", icon: ClipboardCheck, status: "review", badge: true },
   { path: "/folders", label: "Folders", icon: FolderTree },
   { path: "/search", label: "Search", icon: Search },
-  { path: "/documents?section=completed", label: "Completed", icon: FileText, status: "completed" },
   { path: "/receipt-trainer", label: "Receipt Trainer", icon: BookOpen },
   { path: "/deleted", label: "Deleted", icon: Trash2 },
   { path: "/settings", label: "Settings", icon: Settings },
 ];
 
+const documentStages = [
+  { label: "Pending", status: "pending" },
+  { label: "Processing", status: "processing" },
+  { label: "Review Queue", status: "review", badge: true },
+  { label: "Completed", status: "completed" },
+];
+
 export default function Layout() {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [reviewCount, setReviewCount] = useState(0);
   const [vaultConnected, setVaultConnected] = useState(null);
   const [vaultHelpOpen, setVaultHelpOpen] = useState(false);
   const [docCounts, setDocCounts] = useState({ pending: 0, processing: 0, review: 0, completed: 0 });
@@ -78,9 +80,7 @@ export default function Layout() {
         {/* Nav */}
         <nav className="flex-1 px-3 space-y-1 mt-2">
           {navItems.map((item) => {
-            const params = new URLSearchParams(location.search);
-            const activeSection = params.get("section");
-            const isActive = item.path === "/" ? location.pathname === "/" : item.status ? (location.pathname === "/documents" && activeSection === item.status) : location.pathname.startsWith(item.path);
+            const isActive = item.path === "/" ? location.pathname === "/" : location.pathname.startsWith(item.path);
             return (
               <Link
               key={item.path}
@@ -94,24 +94,48 @@ export default function Layout() {
               )}
               >
               <item.icon className="h-4 w-4" />
-              <span className="flex-1">{item.label}</span>
-              {item.status && item.status === 'pending' && docCounts.pending > 0 && (
-                <span className="text-[10px] font-medium text-sidebar-foreground/60">{docCounts.pending}</span>
-              )}
-              {item.status && item.status === 'processing' && docCounts.processing > 0 && (
-                <span className="text-[10px] font-medium text-sidebar-foreground/60">{docCounts.processing}</span>
-              )}
-              {item.status && item.status === 'review' && docCounts.review > 0 && (
-                <span className="bg-primary text-primary-foreground text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none">
-                  {docCounts.review}
-                </span>
-              )}
-              {item.status && item.status === 'completed' && docCounts.completed > 0 && (
-                <span className="text-[10px] font-medium text-sidebar-foreground/60">{docCounts.completed}</span>
-              )}
+              {item.label}
               </Link>
             );
           })}
+
+          {/* Documents Section */}
+          <div className="space-y-1 mt-2">
+            <div className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-sidebar-foreground">
+              <FileText className="h-4 w-4" />
+              Documents
+            </div>
+            <div className="space-y-1 ml-3 pl-3 border-l border-sidebar-border">
+              {documentStages.map((stage) => {
+                const params = new URLSearchParams(location.search);
+                const activeSection = params.get("section") || "completed";
+                const isActive = location.pathname === "/documents" && activeSection === stage.status;
+                const count = docCounts[stage.status];
+                return (
+                  <Link
+                    key={stage.status}
+                    to={`/documents?section=${stage.status}`}
+                    onClick={() => setSidebarOpen(false)}
+                    className={cn(
+                      "flex items-center gap-3 px-3 py-2 rounded-lg text-xs transition-all duration-200",
+                      isActive
+                        ? "bg-sidebar-accent text-sidebar-primary font-medium"
+                        : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/30"
+                    )}
+                  >
+                    <span className="flex-1">{stage.label}</span>
+                    {stage.badge && count > 0 ? (
+                      <span className="bg-primary text-primary-foreground text-[9px] font-bold px-1 py-0.5 rounded-full leading-none">
+                        {count}
+                      </span>
+                    ) : count > 0 ? (
+                      <span className="text-[9px] font-medium text-sidebar-foreground/50">{count}</span>
+                    ) : null}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
         </nav>
 
         {/* Footer */}
