@@ -40,20 +40,28 @@ export default function Dashboard() {
     const slowestProcessingTime = processingTimes.length > 0 ? Math.max(...processingTimes) : 0;
     const fastestProcessingTime = processingTimes.length > 0 ? Math.min(...processingTimes) : 0;
     
-    // Documents by category
+    // Documents by category (determined by root folder)
+    const getRootFolder = (folderId) => {
+      let folder = flds.find(f => f.id === folderId);
+      while (folder && folder.parent_folder_id) {
+        folder = flds.find(f => f.id === folder.parent_folder_id);
+      }
+      return folder;
+    };
+    
     const docsByCategory = {};
     docs.forEach(d => {
-      const catId = d.category_id || 'uncategorized';
-      docsByCategory[catId] = (docsByCategory[catId] || 0) + 1;
+      let catName = 'Uncategorized';
+      if (d.folder_id) {
+        const rootFolder = getRootFolder(d.folder_id);
+        catName = rootFolder?.name || 'Uncategorized';
+      }
+      docsByCategory[catName] = (docsByCategory[catName] || 0) + 1;
     });
-    const categoryChartData = Object.entries(docsByCategory).map(([catId, count]) => {
-      const cat = categories.find(c => c.id === catId);
-      return {
-        name: cat?.name || 'Uncategorized',
-        value: count,
-        id: catId
-      };
-    }).sort((a, b) => b.value - a.value);
+    const categoryChartData = Object.entries(docsByCategory).map(([name, count]) => ({
+      name,
+      value: count
+    })).sort((a, b) => b.value - a.value);
     
     setStats({
       totalDocuments: docs.length,
