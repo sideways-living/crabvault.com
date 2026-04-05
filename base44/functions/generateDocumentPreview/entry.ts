@@ -21,21 +21,29 @@ Deno.serve(async (req) => {
     let previewUrl = null;
 
     // For image files, use the file URL directly as preview
-    if (['jpg', 'png'].includes(doc.file_type)) {
+    if (['jpg', 'png', 'gif'].includes(doc.file_type)) {
       previewUrl = doc.file_url;
     }
 
-    // For PDFs, generate a preview image using the file as reference
-    if (doc.file_type === 'pdf' && doc.file_url) {
+    // For document types, generate AI preview images
+    const documentPrompts = {
+      pdf: 'Create a clean, professional thumbnail of a PDF document. Show a document icon with blue and gray tones, subtle gradient background, and a hint of visible text.',
+      docx: 'Create a clean thumbnail of a Word document (.docx). Show a document icon with blue tones, lined paper pattern, and a pen symbol.',
+      doc: 'Create a clean thumbnail of a Word document (.doc). Show a document icon with blue tones, lined paper pattern, and a pen symbol.',
+      xlsx: 'Create a clean thumbnail of an Excel spreadsheet. Show a spreadsheet grid icon with green tones, cells visible, and data indicators.',
+      xls: 'Create a clean thumbnail of an Excel spreadsheet. Show a spreadsheet grid icon with green tones, cells visible, and data indicators.',
+      pptx: 'Create a clean thumbnail of a PowerPoint presentation. Show a presentation slide icon with orange/red tones, slides stacked, and a projection symbol.',
+      ppt: 'Create a clean thumbnail of a PowerPoint presentation. Show a presentation slide icon with orange/red tones, slides stacked, and a projection symbol.'
+    };
+
+    if (documentPrompts[doc.file_type]) {
       try {
         const result = await base44.integrations.Core.GenerateImage({
-          prompt: `Create a clean, professional thumbnail preview of a PDF document. Show the document icon with a subtle gradient background representing a business document. Include a small piece of visible text to indicate content. Colors: blue and gray tones.`,
-          existing_image_urls: [doc.file_url]
+          prompt: documentPrompts[doc.file_type]
         });
         previewUrl = result.url;
       } catch (err) {
-        console.error('Failed to generate PDF preview:', err.message);
-        // Fallback: use a generic PDF icon image
+        console.error(`Failed to generate ${doc.file_type} preview:`, err.message);
         previewUrl = null;
       }
     }
