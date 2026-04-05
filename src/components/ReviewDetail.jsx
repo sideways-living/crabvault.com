@@ -193,10 +193,13 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
           </Button>
         </div>
       )}
-      <div className="flex gap-0 min-h-0" style={{ height: 480 }}>
-        {/* Preview */}
-        <div className="w-72 shrink-0 bg-muted/20 border-r overflow-hidden">
-          <DocPreview doc={doc} />
+      <div className="flex-1 flex flex-col gap-0 min-h-0">
+        {/* Small preview tile at top */}
+        <div className="shrink-0 border-b bg-muted/20 p-4 flex gap-4 items-start">
+          <div className="w-24 h-32 rounded-lg border bg-background overflow-hidden flex-shrink-0 shadow-sm">
+            <DocPreview doc={doc} />
+          </div>
+          <div className="flex-1 min-w-0"></div>
         </div>
 
         {/* Scrollable fields */}
