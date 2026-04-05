@@ -31,7 +31,7 @@ export default function ProcessingStatus() {
     };
 
     checkProcessing();
-    const interval = setInterval(checkProcessing, 1000);
+    const interval = setInterval(checkProcessing, 3000);
     return () => clearInterval(interval);
   }, []);
 
