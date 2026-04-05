@@ -92,9 +92,9 @@ export default function Layout() {
         </nav>
 
         {/* Footer */}
-        <div className="p-4 mx-3 mb-3 rounded-lg bg-sidebar-accent/50">
+        <div className="p-4 mx-3 mb-3 rounded-lg bg-emerald-600">
           <div className="flex flex-col gap-3">
-            <div className="flex items-center justify-center gap-1.5 text-xs text-sidebar-foreground/70">
+            <div className="flex items-center justify-center gap-1.5 text-xs text-white/90">
               <Shield className="h-3.5 w-3.5" />
               <span>Encrypted with Cryptomator</span>
             </div>
@@ -119,7 +119,7 @@ export default function Layout() {
                 </div>
               )}
             </div>
-            <div className="text-center text-xs text-sidebar-foreground/60">
+            <div className="text-center text-xs text-white/80">
               {vaultConnected === true ? 'Vault Online' : vaultConnected === false ? 'Vault Offline' : 'Checking...'}
             </div>
           </div>
