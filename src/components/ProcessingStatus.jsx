@@ -10,7 +10,8 @@ export default function ProcessingStatus() {
 
   useEffect(() => {
     const checkProcessing = async () => {
-      const docs = await base44.entities.Document.filter(
+      try {
+        const docs = await base44.entities.Document.filter(
         { processing_status: 'processing' },
         '-updated_date',
         1
@@ -28,10 +29,13 @@ export default function ProcessingStatus() {
       } else {
         setLogs([]);
       }
+      } catch (error) {
+        console.error('Error checking processing status:', error);
+      }
     };
 
     checkProcessing();
-    const interval = setInterval(checkProcessing, 3000);
+    const interval = setInterval(checkProcessing, 5000);
     return () => clearInterval(interval);
   }, []);
 
