@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Link } from "react-router-dom";
-import { Plus, Upload, ArrowRight } from "lucide-react";
+import { Upload, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import StatsCards from "../components/StatsCards";
 import DocumentCard from "../components/DocumentCard";
 import UploadDialog from "../components/UploadDialog";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 
 export default function Dashboard() {
   const [documents, setDocuments] = useState([]);
@@ -13,31 +13,81 @@ export default function Dashboard() {
   const [categories, setCategories] = useState([]);
   const [uploadOpen, setUploadOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState(null);
 
   const loadData = async () => {
     const [docs, flds, cats] = await Promise.all([
-      base44.entities.Document.filter({ processing_status: 'completed', is_deleted: false }, "-created_date", 50),
+      base44.entities.Document.filter({ is_deleted: false }, "-created_date", 500),
       base44.entities.Folder.list(),
       base44.entities.Category.list(),
     ]);
     setDocuments(docs);
     setFolders(flds);
     setCategories(cats);
+
+    // Calculate statistics
+    const completedDocs = docs.filter(d => d.processing_status === 'completed');
+    const totalSize = docs.reduce((sum, d) => sum + (d.file_size || 0), 0);
+    const avgFileSize = docs.length > 0 ? totalSize / docs.length : 0;
+    
+    // Calculate processing times (updated_date - created_date in minutes)
+    const processingTimes = completedDocs.map(d => {
+      const created = new Date(d.created_date);
+      const updated = new Date(d.updated_date);
+      return (updated - created) / (1000 * 60); // minutes
+    });
+    const avgProcessingTime = processingTimes.length > 0 ? processingTimes.reduce((a, b) => a + b, 0) / processingTimes.length : 0;
+    const slowestProcessingTime = processingTimes.length > 0 ? Math.max(...processingTimes) : 0;
+    const fastestProcessingTime = processingTimes.length > 0 ? Math.min(...processingTimes) : 0;
+    
+    // Documents by category
+    const docsByCategory = {};
+    docs.forEach(d => {
+      const catId = d.category_id || 'uncategorized';
+      docsByCategory[catId] = (docsByCategory[catId] || 0) + 1;
+    });
+    const categoryChartData = Object.entries(docsByCategory).map(([catId, count]) => {
+      const cat = categories.find(c => c.id === catId);
+      return {
+        name: cat?.name || 'Uncategorized',
+        value: count,
+        id: catId
+      };
+    }).sort((a, b) => b.value - a.value);
+    
+    setStats({
+      totalDocuments: docs.length,
+      totalSize,
+      avgFileSize: Math.round(avgFileSize),
+      avgProcessingTime: Math.round(avgProcessingTime),
+      slowestProcessingTime: Math.round(slowestProcessingTime),
+      fastestProcessingTime: Math.round(fastestProcessingTime),
+      completedCount: completedDocs.length,
+      categoryChartData
+    });
     setLoading(false);
   };
 
   useEffect(() => { loadData(); }, []);
 
-  const recentDocs = documents.slice(0, 6);
-  const pendingDocs = [];
+  const recentDocs = documents.filter(d => d.processing_status === 'completed').slice(0, 6);
+  const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
 
-  if (loading) {
+  if (loading || !stats) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
+
+  const formatBytes = (bytes) => {
+    if (!bytes) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
+  };
 
   return (
     <div className="space-y-8">
@@ -52,9 +102,86 @@ export default function Dashboard() {
         </Button>
       </div>
 
-      <StatsCards documents={documents} folders={folders} />
+      {/* Statistics Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-card rounded-xl border p-6">
+          <div className="text-sm text-muted-foreground mb-2">Total Documents</div>
+          <div className="text-3xl font-semibold">{stats.totalDocuments}</div>
+          <div className="text-xs text-muted-foreground mt-2">{stats.completedCount} processed</div>
+        </div>
+        <div className="bg-card rounded-xl border p-6">
+          <div className="text-sm text-muted-foreground mb-2">Total Space Used</div>
+          <div className="text-3xl font-semibold">{formatBytes(stats.totalSize)}</div>
+          <div className="text-xs text-muted-foreground mt-2">Avg: {formatBytes(stats.avgFileSize)}</div>
+        </div>
+        <div className="bg-card rounded-xl border p-6">
+          <div className="text-sm text-muted-foreground mb-2">Avg Processing Time</div>
+          <div className="text-3xl font-semibold">{stats.avgProcessingTime}m</div>
+          <div className="text-xs text-muted-foreground mt-2">Per document</div>
+        </div>
+        <div className="bg-card rounded-xl border p-6">
+          <div className="text-sm text-muted-foreground mb-2">Processing Speed</div>
+          <div className="text-3xl font-semibold">{stats.fastestProcessingTime}m</div>
+          <div className="text-xs text-muted-foreground mt-2">Fastest | {stats.slowestProcessingTime}m Slowest</div>
+        </div>
+      </div>
 
+      {/* Charts Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Category Distribution */}
+        <div className="bg-card rounded-xl border p-6">
+          <h3 className="font-semibold mb-4">Documents by Category</h3>
+          {stats.categoryChartData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={stats.categoryChartData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ name, value }) => `${name} (${value})`}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {stats.categoryChartData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip formatter={(value) => `${value} docs`} />
+              </PieChart>
+            </ResponsiveContainer>
+          ) : (
+            <p className="text-sm text-muted-foreground text-center py-8">No categorized documents yet</p>
+          )}
+        </div>
 
+        {/* Storage Breakdown */}
+        <div className="bg-card rounded-xl border p-6">
+          <h3 className="font-semibold mb-4">Storage Information</h3>
+          <div className="space-y-4">
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm text-muted-foreground">Total Space Used</span>
+                <span className="font-semibold">{formatBytes(stats.totalSize)}</span>
+              </div>
+              <div className="w-full bg-muted rounded-full h-2">
+                <div className="bg-primary h-2 rounded-full" style={{width: '100%'}} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4 mt-6 pt-4 border-t">
+              <div>
+                <div className="text-xs text-muted-foreground">Average File Size</div>
+                <div className="text-lg font-semibold mt-1">{formatBytes(stats.avgFileSize)}</div>
+              </div>
+              <div>
+                <div className="text-xs text-muted-foreground">Largest File</div>
+                <div className="text-lg font-semibold mt-1">{Math.max(...documents.map(d => d.file_size || 0)) > 0 ? formatBytes(Math.max(...documents.map(d => d.file_size || 0))) : '—'}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Recent Documents */}
       <div>
