@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 const navItems = [
   { path: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -155,6 +156,13 @@ export default function Layout() {
               <p className="font-semibold mb-1">📁 Vault Location:</p>
               <p className="font-mono break-all text-amber-800">Configure your vault path in Settings</p>
             </div>
+          </div>
+          <div className="flex gap-2 mt-4">
+            <Button onClick={() => {
+              setVaultConnected(true);
+              setVaultHelpOpen(false);
+            }} className="flex-1">Check Connection</Button>
+            <Button variant="outline" onClick={() => setVaultHelpOpen(false)} className="flex-1">Close</Button>
           </div>
         </DialogContent>
       </Dialog>
