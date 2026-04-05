@@ -17,6 +17,7 @@ export default function SettingsPage() {
   const [newCategory, setNewCategory] = useState("");
   const [saving, setSaving] = useState(false);
   const [processing, setProcessing] = useState(false);
+  const [reprocessing, setReprocessing] = useState(false);
   const [lastProcessed, setLastProcessed] = useState(null);
 
   useEffect(() => {
@@ -47,6 +48,19 @@ export default function SettingsPage() {
     const res = await base44.functions.invoke('processQueuedDocuments', {});
     setLastProcessed(res.data);
     setProcessing(false);
+    toast.success(res.data?.message || 'Done');
+  };
+
+  const handleReprocessAll = async () => {
+    if (!confirm('This will reset ALL documents to pending and re-run AI analysis on every document. Continue?')) return;
+    setReprocessing(true);
+    const allDocs = await base44.entities.Document.list('-created_date', 500);
+    await Promise.all(allDocs.map(doc =>
+      base44.entities.Document.update(doc.id, { processing_status: 'pending', is_searchable_pdf: false })
+    ));
+    const res = await base44.functions.invoke('processQueuedDocuments', {});
+    setLastProcessed(res.data);
+    setReprocessing(false);
     toast.success(res.data?.message || 'Done');
   };
 
@@ -142,10 +156,16 @@ export default function SettingsPage() {
             {lastProcessed.message}
           </div>
         )}
-        <Button onClick={handleProcessQueue} disabled={processing} variant="outline">
-          {processing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Play className="h-4 w-4 mr-2" />}
-          {processing ? 'Processing...' : 'Process All Pending Now'}
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={handleProcessQueue} disabled={processing || reprocessing} variant="outline">
+            {processing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Play className="h-4 w-4 mr-2" />}
+            {processing ? 'Processing...' : 'Process All Pending Now'}
+          </Button>
+          <Button onClick={handleReprocessAll} disabled={processing || reprocessing} variant="outline" className="border-amber-300 text-amber-700 hover:bg-amber-50">
+            {reprocessing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Play className="h-4 w-4 mr-2" />}
+            {reprocessing ? 'Reprocessing...' : 'Reprocess ALL Documents'}
+          </Button>
+        </div>
       </div>
 
       <div className="bg-muted/50 rounded-xl p-4 text-xs text-muted-foreground space-y-1">
