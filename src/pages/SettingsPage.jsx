@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Shield, FolderSync, HardDrive, Loader2, Plus, Trash2, Play, CheckCircle2 } from "lucide-react";
+import DuplicateFinder from "../components/DuplicateFinder";
 import { toast } from "sonner";
 
 export default function SettingsPage() {
@@ -167,6 +168,8 @@ export default function SettingsPage() {
           </Button>
         </div>
       </div>
+
+      <DuplicateFinder />
 
       <div className="bg-muted/50 rounded-xl p-4 text-xs text-muted-foreground space-y-1">
         <p className="font-medium">💡 Vault Path Auto-Fill</p>
