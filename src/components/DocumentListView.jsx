@@ -1,0 +1,75 @@
+import { Link } from "react-router-dom";
+import { Badge } from "@/components/ui/badge";
+import { FileText, Clock, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
+import moment from "moment";
+
+const statusConfig = {
+  pending: { icon: Clock, className: "text-amber-600", label: "Pending" },
+  processing: { icon: Loader2, className: "text-blue-600", label: "Processing" },
+  completed: { icon: CheckCircle2, className: "text-emerald-600", label: "Done" },
+  failed: { icon: AlertCircle, className: "text-red-600", label: "Failed" },
+};
+
+const fileTypeColors = {
+  pdf: "bg-red-100 text-red-700",
+  docx: "bg-blue-100 text-blue-700",
+  xlsx: "bg-green-100 text-green-700",
+  pptx: "bg-orange-100 text-orange-700",
+  txt: "bg-gray-100 text-gray-700",
+  jpg: "bg-purple-100 text-purple-700",
+  png: "bg-purple-100 text-purple-700",
+};
+
+export default function DocumentListView({ documents, categories }) {
+  return (
+    <div className="bg-card rounded-xl border overflow-hidden">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b bg-muted/30">
+            <th className="text-left px-4 py-3 font-medium text-muted-foreground">Name</th>
+            <th className="text-left px-4 py-3 font-medium text-muted-foreground hidden md:table-cell">Category</th>
+            <th className="text-left px-4 py-3 font-medium text-muted-foreground hidden sm:table-cell">Type</th>
+            <th className="text-left px-4 py-3 font-medium text-muted-foreground hidden lg:table-cell">Date</th>
+            <th className="text-left px-4 py-3 font-medium text-muted-foreground">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {documents.map((doc, i) => {
+            const status = statusConfig[doc.processing_status] || statusConfig.pending;
+            const StatusIcon = status.icon;
+            const category = categories.find(c => c.id === doc.category_id);
+            const typeColor = fileTypeColors[doc.file_type] || "bg-gray-100 text-gray-700";
+
+            return (
+              <tr key={doc.id} className={`border-b last:border-0 hover:bg-muted/20 transition-colors ${i % 2 === 0 ? '' : 'bg-muted/10'}`}>
+                <td className="px-4 py-3">
+                  <Link to={`/documents/${doc.id}`} className="flex items-center gap-2.5 group">
+                    <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <span className="font-medium group-hover:text-primary transition-colors truncate max-w-xs">{doc.title}</span>
+                  </Link>
+                </td>
+                <td className="px-4 py-3 hidden md:table-cell">
+                  {category ? <Badge variant="secondary" className="text-xs">{category.name}</Badge> : <span className="text-muted-foreground">—</span>}
+                </td>
+                <td className="px-4 py-3 hidden sm:table-cell">
+                  {doc.file_type ? (
+                    <span className={`text-xs px-2 py-0.5 rounded font-medium uppercase ${typeColor}`}>{doc.file_type}</span>
+                  ) : <span className="text-muted-foreground">—</span>}
+                </td>
+                <td className="px-4 py-3 hidden lg:table-cell text-muted-foreground">
+                  {doc.document_date ? moment(doc.document_date).format("D MMM YYYY") : moment(doc.created_date).format("D MMM YYYY")}
+                </td>
+                <td className="px-4 py-3">
+                  <span className={`flex items-center gap-1 ${status.className}`}>
+                    <StatusIcon className={`h-3.5 w-3.5 ${doc.processing_status === 'processing' ? 'animate-spin' : ''}`} />
+                    <span className="hidden sm:inline text-xs">{status.label}</span>
+                  </span>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
