@@ -48,7 +48,7 @@ export default function DocumentListView({ documents, categories, selectedIds = 
                   <button
                     onClick={() => onToggleSelect && onToggleSelect(doc.id)}
                     className={`h-5 w-5 rounded border-2 flex items-center justify-center transition-all shadow-sm ${
-                      isSelected ? 'bg-primary border-primary' : 'border-slate-400 bg-white hover:border-primary'
+                      isSelected ? 'bg-primary border-primary' : 'border-slate-400 bg-muted hover:border-primary'
                     }`}
                   >
                     {isSelected && (
