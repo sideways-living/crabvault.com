@@ -10,10 +10,12 @@ const FIELDS = [
   { key: "store_brand",       label: "Store Brand",      color: "#3b82f6" },
   { key: "store_location",    label: "Store Location",   color: "#8b5cf6" },
   { key: "transaction_date",  label: "Date",             color: "#f59e0b" },
+  { key: "transaction_time",  label: "Time",             color: "#f97316" },
   { key: "transaction_type",  label: "Transaction Type", color: "#ec4899" },
   { key: "tender_type",       label: "Tender Type",      color: "#10b981" },
   { key: "amount",            label: "Amount",           color: "#ef4444" },
   { key: "last_four_digits",  label: "Last 4 Digits",    color: "#6366f1" },
+  { key: "items",             label: "Items",            color: "#14b8a6" },
 ];
 
 function AnnotationCanvas({ imageUrl, regions, onRegionsChange }) {

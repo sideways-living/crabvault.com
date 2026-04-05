@@ -97,6 +97,8 @@ Classify and name this document using one of the following rules:
    - Extract tender_type: one of cash, mastercard, visa, amex, eftpos, gift_voucher, exchange_voucher, other
    - Extract amount (total as a number, e.g. 42.50)
    - Extract last_four_digits of card/voucher if shown (string, e.g. "4321"), otherwise null
+   - Extract transaction_time in HH:MM 24-hour format if shown, otherwise null
+   - Extract items: an array of all line items purchased/returned, each with name, quantity, unit_price, total_price (use null for any fields not visible)
    - suggested_title: "YYYYMMDD - VendorName - Receipt" (e.g. "20240315 - Woolworths - Receipt")
    - In summary list ALL items + prices and total.
 
@@ -141,6 +143,19 @@ ${extractedText ? `Content preview:\n${extractedText.substring(0, 3000)}` : ''}`
           tender_type: { type: 'string' },
           amount: { type: 'number' },
           last_four_digits: { type: 'string' },
+          transaction_time: { type: 'string' },
+          items: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                name: { type: 'string' },
+                quantity: { type: 'number' },
+                unit_price: { type: 'number' },
+                total_price: { type: 'number' },
+              },
+            },
+          },
           suggested_title: { type: 'string' },
           summary: { type: 'string' },
           category_id: { type: 'string' },
@@ -161,10 +176,12 @@ ${extractedText ? `Content preview:\n${extractedText.substring(0, 3000)}` : ''}`
         store_brand: result.store_brand || result.vendor_name || '',
         store_location: result.store_location || '',
         transaction_date: result.transaction_date || '',
+        transaction_time: result.transaction_time || undefined,
         transaction_type: result.transaction_type || 'purchase',
         tender_type: result.tender_type || 'other',
         amount: result.amount || undefined,
         last_four_digits: result.last_four_digits || undefined,
+        items: result.items?.length ? result.items : undefined,
       });
     }
 

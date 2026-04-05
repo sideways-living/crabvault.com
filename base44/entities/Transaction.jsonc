@@ -18,6 +18,10 @@
       "type": "string",
       "title": "Transaction Date (YYYYMMDD)"
     },
+    "transaction_time": {
+      "type": "string",
+      "title": "Transaction Time (HH:MM)"
+    },
     "transaction_type": {
       "type": "string",
       "title": "Transaction Type",
@@ -48,6 +52,31 @@
     "last_four_digits": {
       "type": "string",
       "title": "Last 4 Digits"
+    },
+    "items": {
+      "type": "array",
+      "title": "Items",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Item Name"
+          },
+          "quantity": {
+            "type": "number",
+            "title": "Quantity"
+          },
+          "unit_price": {
+            "type": "number",
+            "title": "Unit Price"
+          },
+          "total_price": {
+            "type": "number",
+            "title": "Total Price"
+          }
+        }
+      }
     },
     "notes": {
       "type": "string",
