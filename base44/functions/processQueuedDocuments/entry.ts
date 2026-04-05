@@ -198,12 +198,40 @@ ${extractedText ? `Content preview:\n${extractedText.substring(0, 3000)}` : ''}`
       }
     }
 
+    // Determine category from folder structure
+    let categoryTag = null;
+    if (targetFolderId) {
+      const allFolders = await db.entities.Folder.list();
+      let folder = allFolders.find(f => f.id === targetFolderId);
+      
+      // For root-level Receipts/Business Cards
+      if (folder && !folder.parent_folder_id) {
+        categoryTag = folder.name;
+      } else if (folder) {
+        // For 2nd level folders (under Documents/Images/Movies)
+        let parent = folder;
+        while (parent && parent.parent_folder_id) {
+          parent = allFolders.find(f => f.id === parent.parent_folder_id);
+        }
+        if (parent && ['documents', 'images', 'movies'].includes(parent.name.toLowerCase())) {
+          categoryTag = folder.name;
+        } else if (parent) {
+          categoryTag = parent.name;
+        }
+      }
+    }
+
+    const tags = result.tags || [];
+    if (categoryTag && !tags.includes(categoryTag)) {
+      tags.push(categoryTag);
+    }
+
     await db.entities.Document.update(doc.id, {
       title: result.suggested_title || doc.title,
       summary: result.summary,
       category_id: result.category_id || undefined,
       folder_id: targetFolderId,
-      tags: result.tags || [],
+      tags: tags,
       document_date: result.transaction_date || result.document_date || undefined,
       processing_status: 'needs_review',
       vault_path: vaultPath || undefined,
