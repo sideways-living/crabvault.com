@@ -79,6 +79,62 @@ export default function Layout() {
 
         {/* Nav */}
         <nav className="flex-1 px-3 space-y-1 mt-2">
+          {/* Dashboard */}
+          <div className="space-y-1">
+            <Link
+              to="/"
+              onClick={() => setSidebarOpen(false)}
+              className={cn(
+                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200",
+                location.pathname === "/"
+                  ? "bg-sidebar-accent text-sidebar-primary font-medium"
+                  : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
+              )}
+            >
+              <LayoutDashboard className="h-4 w-4" />
+              Dashboard
+            </Link>
+
+            {/* Documents Section Nested */}
+            <div className="space-y-1 ml-3 pl-3 border-l border-sidebar-border">
+              <div className="flex items-center gap-3 px-3 py-2 text-xs font-medium text-sidebar-foreground/80">
+                <FileText className="h-4 w-4" />
+                Documents
+              </div>
+              <div className="space-y-1">
+                {documentStages.map((stage) => {
+                  const params = new URLSearchParams(location.search);
+                  const activeSection = params.get("section") || "completed";
+                  const isActive = location.pathname === "/documents" && activeSection === stage.status;
+                  const count = docCounts[stage.status];
+                  return (
+                    <Link
+                      key={stage.status}
+                      to={`/documents?section=${stage.status}`}
+                      onClick={() => setSidebarOpen(false)}
+                      className={cn(
+                        "flex items-center gap-3 px-3 py-2 rounded-lg text-xs transition-all duration-200",
+                        isActive
+                          ? "bg-sidebar-accent text-sidebar-primary font-medium"
+                          : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/30"
+                      )}
+                    >
+                      <span className="flex-1">{stage.label}</span>
+                      {stage.badge && count > 0 ? (
+                        <span className="bg-primary text-primary-foreground text-[9px] font-bold px-1 py-0.5 rounded-full leading-none">
+                          {count}
+                        </span>
+                      ) : count > 0 ? (
+                        <span className="text-[9px] font-medium text-sidebar-foreground/50">{count}</span>
+                      ) : null}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Other Nav Items */}
           {navItems.map((item) => {
             const isActive = item.path === "/" ? location.pathname === "/" : location.pathname.startsWith(item.path);
             return (
@@ -98,44 +154,6 @@ export default function Layout() {
               </Link>
             );
           })}
-
-          {/* Documents Section */}
-          <div className="space-y-1 mt-2">
-            <div className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-sidebar-foreground">
-              <FileText className="h-4 w-4" />
-              Documents
-            </div>
-            <div className="space-y-1 ml-3 pl-3 border-l border-sidebar-border">
-              {documentStages.map((stage) => {
-                const params = new URLSearchParams(location.search);
-                const activeSection = params.get("section") || "completed";
-                const isActive = location.pathname === "/documents" && activeSection === stage.status;
-                const count = docCounts[stage.status];
-                return (
-                  <Link
-                    key={stage.status}
-                    to={`/documents?section=${stage.status}`}
-                    onClick={() => setSidebarOpen(false)}
-                    className={cn(
-                      "flex items-center gap-3 px-3 py-2 rounded-lg text-xs transition-all duration-200",
-                      isActive
-                        ? "bg-sidebar-accent text-sidebar-primary font-medium"
-                        : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/30"
-                    )}
-                  >
-                    <span className="flex-1">{stage.label}</span>
-                    {stage.badge && count > 0 ? (
-                      <span className="bg-primary text-primary-foreground text-[9px] font-bold px-1 py-0.5 rounded-full leading-none">
-                        {count}
-                      </span>
-                    ) : count > 0 ? (
-                      <span className="text-[9px] font-medium text-sidebar-foreground/50">{count}</span>
-                    ) : null}
-                  </Link>
-                );
-              })}
-            </div>
-          </div>
         </nav>
 
         {/* Footer */}
