@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Shield, FolderSync, HardDrive, Loader2, Plus, Trash2, Play, CheckCircle2 } from "lucide-react";
+import { Shield, FolderSync, HardDrive, Loader2, Plus, Trash2, Play, CheckCircle2, Briefcase, FileText, Image, Film, Receipt } from "lucide-react";
 import DuplicateFinder from "../components/DuplicateFinder";
 import { toast } from "sonner";
 
@@ -15,6 +15,7 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [vaultPath, setVaultPath] = useState("");
   const [sharedFolderPath, setSharedFolderPath] = useState("");
+  const [visibleCategories, setVisibleCategories] = useState(['business_cards', 'documents', 'images', 'movies', 'receipts']);
   const [newCategory, setNewCategory] = useState("");
   const [saving, setSaving] = useState(false);
   const [processing, setProcessing] = useState(false);
@@ -32,6 +33,7 @@ export default function SettingsPage() {
       setVaultPath(me.vault_path || "");
       setSharedFolderPath(me.shared_folder_path || "");
       setCategories(cats);
+      setVisibleCategories(me.visible_folder_categories || ['business_cards', 'documents', 'images', 'movies', 'receipts']);
       setLoading(false);
     };
     load();
@@ -41,8 +43,15 @@ export default function SettingsPage() {
     await base44.auth.updateMe({
       vault_path: vaultPath,
       shared_folder_path: sharedFolderPath,
+      visible_folder_categories: visibleCategories,
     });
     toast.success("Settings saved");
+  };
+
+  const toggleCategory = (cat) => {
+    setVisibleCategories(prev =>
+      prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat]
+    );
   };
 
   const handleProcessQueue = async () => {
@@ -146,6 +155,35 @@ export default function SettingsPage() {
             onChange={e => setSharedFolderPath(e.target.value)}
             placeholder="/path/to/shared/folder"
           />
+        </div>
+      </div>
+
+      {/* Folder Categories Visibility */}
+      <div className="bg-card rounded-xl border p-6 space-y-4">
+        <h2 className="font-semibold">Folder Categories in Sidebar</h2>
+        <p className="text-sm text-muted-foreground">Choose which folder categories to display in the sidebar.</p>
+        <div className="space-y-2">
+          {[
+            { id: 'business_cards', label: 'Business Cards', icon: Briefcase },
+            { id: 'documents', label: 'Documents', icon: FileText },
+            { id: 'images', label: 'Images', icon: Image },
+            { id: 'movies', label: 'Movies', icon: Film },
+            { id: 'receipts', label: 'Receipts', icon: Receipt },
+          ].map(cat => {
+            const IconComp = cat.icon;
+            return (
+              <label key={cat.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={visibleCategories.includes(cat.id)}
+                  onChange={() => toggleCategory(cat.id)}
+                  className="h-4 w-4 rounded border-input"
+                />
+                <IconComp className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm">{cat.label}</span>
+              </label>
+            );
+          })}
         </div>
       </div>
 

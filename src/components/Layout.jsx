@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, FileText, FolderTree, Search, Settings, Shield, Menu, X, BookOpen, ClipboardCheck, Trash2, Lock, Copy, Zap } from "lucide-react";
+import { LayoutDashboard, FileText, FolderTree, Search, Settings, Shield, Menu, X, BookOpen, ClipboardCheck, Trash2, Lock, Copy, Zap, Briefcase, Image, Film, Receipt } from "lucide-react";
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { cn } from "@/lib/utils";
@@ -155,6 +155,31 @@ export default function Layout() {
               Folders
             </Link>
             <div className="space-y-1 ml-3 pl-3">
+              {user?.visible_folder_categories?.includes('business_cards') !== false && (
+                <Link to="/folders?filter=business_cards" onClick={() => setSidebarOpen(false)} className="flex items-center gap-3 px-3 py-2 rounded-lg text-xs text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/30 transition-all">
+                  <Briefcase className="h-3.5 w-3.5" /> Business Cards
+                </Link>
+              )}
+              {user?.visible_folder_categories?.includes('documents') !== false && (
+                <Link to="/folders?filter=documents" onClick={() => setSidebarOpen(false)} className="flex items-center gap-3 px-3 py-2 rounded-lg text-xs text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/30 transition-all">
+                  <FileText className="h-3.5 w-3.5" /> Documents
+                </Link>
+              )}
+              {user?.visible_folder_categories?.includes('images') !== false && (
+                <Link to="/folders?filter=images" onClick={() => setSidebarOpen(false)} className="flex items-center gap-3 px-3 py-2 rounded-lg text-xs text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/30 transition-all">
+                  <Image className="h-3.5 w-3.5" /> Images
+                </Link>
+              )}
+              {user?.visible_folder_categories?.includes('movies') !== false && (
+                <Link to="/folders?filter=movies" onClick={() => setSidebarOpen(false)} className="flex items-center gap-3 px-3 py-2 rounded-lg text-xs text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/30 transition-all">
+                  <Film className="h-3.5 w-3.5" /> Movies
+                </Link>
+              )}
+              {user?.visible_folder_categories?.includes('receipts') !== false && (
+                <Link to="/folders?filter=receipts" onClick={() => setSidebarOpen(false)} className="flex items-center gap-3 px-3 py-2 rounded-lg text-xs text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/30 transition-all">
+                  <Receipt className="h-3.5 w-3.5" /> Receipts
+                </Link>
+              )}
               <Link
                 to="/deleted"
                 onClick={() => setSidebarOpen(false)}
