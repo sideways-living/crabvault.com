@@ -114,7 +114,7 @@ ${extractedText ? `Content preview:\n${extractedText.substring(0, 3000)}` : ''}`
 
     const result = await db.integrations.Core.InvokeLLM({
       prompt,
-      file_urls: (doc.file_type === 'pdf' && doc.file_url && !extractedText) ? [doc.file_url] : undefined,
+      file_urls: doc.file_url ? [doc.file_url] : undefined,
       response_json_schema: {
         type: 'object',
         properties: {
