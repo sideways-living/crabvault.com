@@ -98,6 +98,8 @@ function ResolveDialog({ group, folders: initialFolders, onResolved, onClose }) 
   const [showNewFolder, setShowNewFolder] = useState(false);
   const [saving, setSaving] = useState(false);
   const [previewDoc, setPreviewDoc] = useState(group[0]);
+  const [suggestedTitle, setSuggestedTitle] = useState(null);
+  const [suggestingTitle, setSuggestingTitle] = useState(false);
 
   const folderName = (folderId) => {
     if (!folderId) return '(no folder)';
@@ -105,9 +107,45 @@ function ResolveDialog({ group, folders: initialFolders, onResolved, onClose }) 
     return f ? (f.path || f.name) : '(unknown folder)';
   };
 
-  const finalTitle = useCustomTitle ? customTitle : (group.find(d => d.id === titleSource)?.title || '');
+  const finalTitle = useCustomTitle
+    ? customTitle
+    : suggestedTitle && titleSource === '__suggested__'
+      ? suggestedTitle
+      : (group.find(d => d.id === titleSource)?.title || '');
   const finalFolderId = useCustomFolder ? customFolderId : (group.find(d => d.id === folderSource)?.folder_id || undefined);
   const finalFolderName = folderName(finalFolderId);
+
+  const handleSuggestTitle = async () => {
+    setSuggestingTitle(true);
+    const doc = previewDoc;
+    const result = await base44.integrations.Core.InvokeLLM({
+      prompt: `Scan this document and extract:
+1. Is it a receipt/invoice/payment? (true/false)
+2. The exact transaction/document date (format as YYYYMMDD)
+3. The vendor/shop/company name (clean name only, e.g. "Woolworths", "Shell", "Amazon")
+
+If it IS a receipt, return suggested_title as: "YYYYMMDD - VendorName - Receipt"
+If NOT a receipt, return a clean descriptive title.
+
+Document title: ${doc.title}\nFilename: ${doc.original_filename || ''}`,
+      file_urls: doc.file_url ? [doc.file_url] : undefined,
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          is_receipt: { type: 'boolean' },
+          date_yyyymmdd: { type: 'string' },
+          vendor_name: { type: 'string' },
+          suggested_title: { type: 'string' },
+        },
+      },
+    });
+    if (result.suggested_title) {
+      setSuggestedTitle(result.suggested_title);
+      setTitleSource('__suggested__');
+      setUseCustomTitle(false);
+    }
+    setSuggestingTitle(false);
+  };
 
   const handleCreateFolder = async () => {
     if (!newFolderName.trim()) return;
@@ -206,8 +244,21 @@ function ResolveDialog({ group, folders: initialFolders, onResolved, onClose }) 
 
             {/* Step 2: Title */}
             <div>
-              <p className="font-medium mb-2">2. Which title?</p>
+              <div className="flex items-center justify-between mb-2">
+                <p className="font-medium">2. Which title?</p>
+                <Button size="sm" variant="outline" className="h-6 text-xs gap-1" onClick={handleSuggestTitle} disabled={suggestingTitle}>
+                  {suggestingTitle ? <Loader2 className="h-3 w-3 animate-spin" /> : <FileText className="h-3 w-3" />}
+                  {suggestingTitle ? 'Scanning...' : 'Suggest with AI'}
+                </Button>
+              </div>
               <div className="space-y-1.5">
+                {suggestedTitle && (
+                  <label className={`flex items-center gap-3 border rounded-lg px-3 py-2 cursor-pointer transition-colors ${!useCustomTitle && titleSource === '__suggested__' ? 'border-primary bg-primary/5' : 'hover:bg-muted/40'}`}>
+                    <input type="radio" name="title" checked={!useCustomTitle && titleSource === '__suggested__'} onChange={() => { setTitleSource('__suggested__'); setUseCustomTitle(false); }} />
+                    <span className="truncate">{suggestedTitle}</span>
+                    <Badge variant="secondary" className="text-[10px] px-1.5 shrink-0">AI</Badge>
+                  </label>
+                )}
                 {group.map(doc => (
                   <label key={doc.id} className={`flex items-center gap-3 border rounded-lg px-3 py-2 cursor-pointer transition-colors ${!useCustomTitle && titleSource === doc.id ? 'border-primary bg-primary/5' : 'hover:bg-muted/40'}`}>
                     <input type="radio" name="title" value={doc.id} checked={!useCustomTitle && titleSource === doc.id} onChange={() => { setTitleSource(doc.id); setUseCustomTitle(false); }} />

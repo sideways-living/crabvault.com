@@ -69,8 +69,9 @@ Deno.serve(async (req) => {
 First determine if this document is a RECEIPT (a purchase receipt, invoice, payment confirmation, etc.).
 
 If it IS a receipt:
-- Extract: transaction_date (YYYY-MM-DD), vendor_name (clean company name, e.g. "Woolworths", "Amazon", "Shell")
-- suggested_title should follow the format: "YYYYMMDD - Vendor - Receipt" (e.g. "20240315 - Woolworths - Receipt")
+- Scan the document text carefully to extract the exact transaction date. Format it as YYYYMMDD (e.g. 20240315).
+- Extract vendor_name: the clean company/shop name only (e.g. "Woolworths", "Amazon", "Shell", "Bunnings"). No suffixes like Pty Ltd.
+- suggested_title MUST follow this exact format: "YYYYMMDD - VendorName - Receipt" (e.g. "20240315 - Woolworths - Receipt")
 - is_receipt: true
 - In the summary, list ALL items purchased (name and price if available), e.g. "Receipt from Bunnings on 15 Mar 2024. Items: Spade $29.98, Garden Gloves $12.00, Potting Mix $8.50. Total: $50.48."
 
