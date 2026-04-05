@@ -1,0 +1,60 @@
+{
+  "name": "Transaction",
+  "type": "object",
+  "properties": {
+    "document_id": {
+      "type": "string",
+      "title": "Document ID"
+    },
+    "store_brand": {
+      "type": "string",
+      "title": "Store Brand"
+    },
+    "store_location": {
+      "type": "string",
+      "title": "Store Location"
+    },
+    "transaction_date": {
+      "type": "string",
+      "title": "Transaction Date (YYYYMMDD)"
+    },
+    "transaction_type": {
+      "type": "string",
+      "title": "Transaction Type",
+      "enum": [
+        "purchase",
+        "return",
+        "exchange"
+      ]
+    },
+    "tender_type": {
+      "type": "string",
+      "title": "Tender Type",
+      "enum": [
+        "cash",
+        "mastercard",
+        "visa",
+        "amex",
+        "eftpos",
+        "gift_voucher",
+        "exchange_voucher",
+        "other"
+      ]
+    },
+    "amount": {
+      "type": "number",
+      "title": "Amount"
+    },
+    "last_four_digits": {
+      "type": "string",
+      "title": "Last 4 Digits"
+    },
+    "notes": {
+      "type": "string",
+      "title": "Notes"
+    }
+  },
+  "required": [
+    "document_id"
+  ]
+}

@@ -91,7 +91,12 @@ Classify and name this document using one of the following rules:
 1. RECEIPT (retail purchase, payment confirmation, till receipt):
    - is_receipt: true
    - Extract the exact transaction date → format as YYYYMMDD
-   - Extract vendor_name (clean name, e.g. "Woolworths", "Bunnings") — no Pty Ltd etc.
+   - Extract vendor_name / store_brand (clean name, e.g. "Woolworths", "Bunnings") — no Pty Ltd etc.
+   - Extract store_location (suburb/city and state if visible, e.g. "Docklands VIC")
+   - Extract transaction_type: "purchase", "return", or "exchange"
+   - Extract tender_type: one of cash, mastercard, visa, amex, eftpos, gift_voucher, exchange_voucher, other
+   - Extract amount (total as a number, e.g. 42.50)
+   - Extract last_four_digits of card/voucher if shown (string, e.g. "4321"), otherwise null
    - suggested_title: "YYYYMMDD - VendorName - Receipt" (e.g. "20240315 - Woolworths - Receipt")
    - In summary list ALL items + prices and total.
 
@@ -129,7 +134,13 @@ ${extractedText ? `Content preview:\n${extractedText.substring(0, 3000)}` : ''}`
         properties: {
           is_receipt: { type: 'boolean' },
           vendor_name: { type: 'string' },
+          store_brand: { type: 'string' },
+          store_location: { type: 'string' },
           transaction_date: { type: 'string' },
+          transaction_type: { type: 'string' },
+          tender_type: { type: 'string' },
+          amount: { type: 'number' },
+          last_four_digits: { type: 'string' },
           suggested_title: { type: 'string' },
           summary: { type: 'string' },
           category_id: { type: 'string' },
@@ -143,18 +154,28 @@ ${extractedText ? `Content preview:\n${extractedText.substring(0, 3000)}` : ''}`
     let targetFolderId = result.folder_id || doc.folder_id || undefined;
     let vaultPath = doc.vault_path;
 
-    if (result.is_receipt && result.vendor_name) {
-      const vendorName = result.vendor_name.trim();
+    // Save structured transaction record for receipts
+    if (result.is_receipt) {
+      await db.entities.Transaction.create({
+        document_id: doc.id,
+        store_brand: result.store_brand || result.vendor_name || '',
+        store_location: result.store_location || '',
+        transaction_date: result.transaction_date || '',
+        transaction_type: result.transaction_type || 'purchase',
+        tender_type: result.tender_type || 'other',
+        amount: result.amount || undefined,
+        last_four_digits: result.last_four_digits || undefined,
+      });
+    }
 
-      // Reload folders to catch any just-created ones
+    if (result.is_receipt && (result.store_brand || result.vendor_name)) {
+      const vendorName = (result.store_brand || result.vendor_name).trim();
+
       const freshFolders = await db.entities.Folder.list();
-
-      // Find or create a vendor subfolder under Receipts
       let vendorFolder = freshFolders.find(f =>
         f.parent_folder_id === receiptsFolder.id &&
         f.name.toLowerCase() === vendorName.toLowerCase()
       );
-
       if (!vendorFolder) {
         vendorFolder = await db.entities.Folder.create({
           name: vendorName,
@@ -162,15 +183,9 @@ ${extractedText ? `Content preview:\n${extractedText.substring(0, 3000)}` : ''}`
           path: `/Receipts/${vendorName}`,
         });
       }
-
       targetFolderId = vendorFolder.id;
 
       // Auto-assign vault path if the vendor folder has one
-      if (!vaultPath && vendorFolder.vault_path) {
-        const filename = (result.suggested_title || doc.title) + '.' + (doc.original_filename?.split('.').pop() || 'pdf');
-        vaultPath = `${vendorFolder.vault_path}/${filename}`;
-      }
-    } else if (!vaultPath && targetFolderId) {
       // Non-receipt: auto-suggest vault path from folder
       const allFolders = await db.entities.Folder.list();
       const folder = allFolders.find(f => f.id === targetFolderId);
