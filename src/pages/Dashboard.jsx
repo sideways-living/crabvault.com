@@ -16,7 +16,7 @@ export default function Dashboard() {
 
   const loadData = async () => {
     const [docs, flds, cats] = await Promise.all([
-      base44.entities.Document.list("-created_date", 50),
+      base44.entities.Document.filter({ processing_status: 'completed', is_deleted: false }, "-created_date", 50),
       base44.entities.Folder.list(),
       base44.entities.Category.list(),
     ]);
@@ -29,7 +29,7 @@ export default function Dashboard() {
   useEffect(() => { loadData(); }, []);
 
   const recentDocs = documents.slice(0, 6);
-  const pendingDocs = documents.filter(d => d.processing_status === "pending" || d.processing_status === "processing");
+  const pendingDocs = [];
 
   if (loading) {
     return (
@@ -54,17 +54,7 @@ export default function Dashboard() {
 
       <StatsCards documents={documents} folders={folders} />
 
-      {/* Pending Processing */}
-      {pendingDocs.length > 0 && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-          <h3 className="font-medium text-amber-900 text-sm">
-            {pendingDocs.length} document{pendingDocs.length > 1 ? 's' : ''} awaiting processing
-          </h3>
-          <p className="text-xs text-amber-700 mt-1">
-            Open each document and click "AI Process" to summarize and categorize.
-          </p>
-        </div>
-      )}
+
 
       {/* Recent Documents */}
       <div>

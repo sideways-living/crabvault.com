@@ -24,7 +24,7 @@ export default function Documents() {
 
   const loadData = async () => {
     const [docs, flds, cats] = await Promise.all([
-      base44.entities.Document.list("-created_date", 100).then(all => all.filter(d => d.is_deleted !== true)),
+      base44.entities.Document.filter({ processing_status: 'completed', is_deleted: false }, "-created_date", 100),
       base44.entities.Folder.list(),
       base44.entities.Category.list(),
     ]);
