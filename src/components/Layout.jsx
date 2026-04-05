@@ -8,17 +8,15 @@ import { Button } from "@/components/ui/button";
 
 const navItems = [
   { path: "/", label: "Dashboard", icon: LayoutDashboard },
+  { path: "/documents?section=pending", label: "Pending", icon: FileText, status: "pending" },
+  { path: "/documents?section=processing", label: "Processing", icon: FileText, status: "processing" },
+  { path: "/documents?section=review", label: "Review Queue", icon: ClipboardCheck, status: "review", badge: true },
   { path: "/folders", label: "Folders", icon: FolderTree },
   { path: "/search", label: "Search", icon: Search },
+  { path: "/documents?section=completed", label: "Completed", icon: FileText, status: "completed" },
   { path: "/receipt-trainer", label: "Receipt Trainer", icon: BookOpen },
+  { path: "/deleted", label: "Deleted", icon: Trash2 },
   { path: "/settings", label: "Settings", icon: Settings },
-];
-
-const workflowItems = [
-  { path: "/documents?section=pending", label: "Pending", status: "pending" },
-  { path: "/documents?section=processing", label: "Processing", status: "processing" },
-  { path: "/documents?section=review", label: "Review Queue", status: "review", badge: true },
-  { path: "/documents?section=completed", label: "Completed", status: "completed" },
 ];
 
 export default function Layout() {
@@ -27,14 +25,13 @@ export default function Layout() {
   const [reviewCount, setReviewCount] = useState(0);
   const [vaultConnected, setVaultConnected] = useState(null);
   const [vaultHelpOpen, setVaultHelpOpen] = useState(false);
-  const [documentsExpanded, setDocumentsExpanded] = useState(true);
+  const [docCounts, setDocCounts] = useState({ pending: 0, processing: 0, review: 0, completed: 0 });
 
   useEffect(() => {
     const checkVault = async () => {
       try {
         const user = await base44.auth.me();
         if (user) {
-          // Try to call sync function with test payload - if it succeeds, vault is accessible
           const res = await base44.functions.invoke('syncDocumentsToVault', { vaultPath: '/tmp/test' });
           setVaultConnected(!res.data?.error || res.data?.error !== 'Cryptomator vault not connected');
         }
@@ -43,8 +40,15 @@ export default function Layout() {
       }
     };
     checkVault();
-    base44.entities.Document.filter({ processing_status: "needs_review" }, "-created_date", 100)
-      .then(docs => setReviewCount(docs.length))
+    base44.entities.Document.filter({ is_deleted: false }, "-created_date", 500)
+      .then(docs => {
+        setDocCounts({
+          pending: docs.filter(d => d.processing_status === 'pending').length,
+          processing: docs.filter(d => d.processing_status === 'processing').length,
+          review: docs.filter(d => d.processing_status === 'needs_review').length,
+          completed: docs.filter(d => d.processing_status === 'completed').length,
+        });
+      })
       .catch(() => {});
   }, [location.pathname]);
 
@@ -74,7 +78,9 @@ export default function Layout() {
         {/* Nav */}
         <nav className="flex-1 px-3 space-y-1 mt-2">
           {navItems.map((item) => {
-            const isActive = item.path === "/" ? location.pathname === "/" : location.pathname.startsWith(item.path);
+            const params = new URLSearchParams(location.search);
+            const activeSection = params.get("section");
+            const isActive = item.path === "/" ? location.pathname === "/" : item.status ? (location.pathname === "/documents" && activeSection === item.status) : location.pathname.startsWith(item.path);
             return (
               <Link
               key={item.path}
@@ -88,70 +94,24 @@ export default function Layout() {
               )}
               >
               <item.icon className="h-4 w-4" />
-              {item.label}
+              <span className="flex-1">{item.label}</span>
+              {item.status && item.status === 'pending' && docCounts.pending > 0 && (
+                <span className="text-[10px] font-medium text-sidebar-foreground/60">{docCounts.pending}</span>
+              )}
+              {item.status && item.status === 'processing' && docCounts.processing > 0 && (
+                <span className="text-[10px] font-medium text-sidebar-foreground/60">{docCounts.processing}</span>
+              )}
+              {item.status && item.status === 'review' && docCounts.review > 0 && (
+                <span className="bg-primary text-primary-foreground text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none">
+                  {docCounts.review}
+                </span>
+              )}
+              {item.status && item.status === 'completed' && docCounts.completed > 0 && (
+                <span className="text-[10px] font-medium text-sidebar-foreground/60">{docCounts.completed}</span>
+              )}
               </Link>
             );
           })}
-
-          {/* Documents Workflow Section */}
-          <div className="space-y-1">
-            <button
-              onClick={() => setDocumentsExpanded(!documentsExpanded)}
-              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200 text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
-            >
-              <FileText className="h-4 w-4" />
-              <span className="flex-1 text-left">Documents</span>
-              <svg className={cn("h-3.5 w-3.5 transition-transform", documentsExpanded && "rotate-180")}
-                fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-              </svg>
-            </button>
-            {documentsExpanded && (
-              <div className="space-y-1 ml-3 pl-3 border-l border-sidebar-border">
-                {workflowItems.map((item) => {
-                  const isActive = location.pathname === "/documents";
-                  const params = new URLSearchParams(location.search);
-                  const activeSection = params.get("section") || "completed";
-                  const itemActive = isActive && activeSection === item.status;
-                  return (
-                    <Link
-                      key={item.path}
-                      to={item.path}
-                      onClick={() => setSidebarOpen(false)}
-                      className={cn(
-                        "flex items-center gap-3 px-3 py-2 rounded-lg text-xs transition-all duration-200",
-                        itemActive
-                          ? "bg-sidebar-accent text-sidebar-primary font-medium"
-                          : "text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-sidebar-accent/30"
-                      )}
-                    >
-                      <span className="flex-1">{item.label}</span>
-                      {item.badge && reviewCount > 0 && (
-                        <span className="bg-primary text-primary-foreground text-[9px] font-bold px-1 py-0.5 rounded-full leading-none">
-                          {reviewCount}
-                        </span>
-                      )}
-                    </Link>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          {/* Deleted */}
-          <Link
-            to="/deleted"
-            onClick={() => setSidebarOpen(false)}
-            className={cn(
-              "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200",
-              location.pathname === "/deleted"
-                ? "bg-sidebar-accent text-sidebar-primary font-medium"
-                : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
-            )}
-          >
-            <Trash2 className="h-4 w-4" />
-            Deleted
-          </Link>
         </nav>
 
         {/* Footer */}
