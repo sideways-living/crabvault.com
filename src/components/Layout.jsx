@@ -3,6 +3,7 @@ import { LayoutDashboard, FileText, FolderTree, Search, Settings, Shield, Menu, 
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { cn } from "@/lib/utils";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 const navItems = [
   { path: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -20,6 +21,7 @@ export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [reviewCount, setReviewCount] = useState(0);
   const [vaultConnected, setVaultConnected] = useState(null);
+  const [vaultHelpOpen, setVaultHelpOpen] = useState(false);
 
   useEffect(() => {
     const checkVault = async () => {
@@ -98,7 +100,10 @@ export default function Layout() {
               <Shield className="h-3.5 w-3.5" />
               <span>Encrypted with Cryptomator</span>
             </div>
-            <div className="relative h-16 w-16 mx-auto">
+            <button
+              onClick={() => vaultConnected === false && setVaultHelpOpen(true)}
+              className={cn("relative h-16 w-16 mx-auto transition-opacity", vaultConnected === false ? 'cursor-pointer hover:opacity-80' : '')}
+            >
               <img 
                 src={vaultConnected === true ? 'https://media.base44.com/images/public/69d0ddebd2fd28ad3f9192fe/eb5c9c541_cryptomator_online.png' : 'https://media.base44.com/images/public/69d0ddebd2fd28ad3f9192fe/d6af0f46f_cryptomator_offline.png'}
                 alt="Cryptomator"
@@ -118,13 +123,41 @@ export default function Layout() {
                   </svg>
                 </div>
               )}
-            </div>
+            </button>
             <div className="text-center text-xs text-white/80">
               {vaultConnected === true ? 'Vault Online' : vaultConnected === false ? 'Vault Offline' : 'Checking...'}
             </div>
           </div>
         </div>
       </aside>
+
+      {/* Vault Help Modal */}
+      <Dialog open={vaultHelpOpen} onOpenChange={setVaultHelpOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Cryptomator Vault Offline</DialogTitle>
+            <DialogDescription>
+              Your encrypted vault is not currently accessible. Here's how to reconnect it:
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 text-sm text-foreground">
+            <div className="space-y-2">
+              <h4 className="font-semibold">Steps to reconnect:</h4>
+              <ol className="list-decimal list-inside space-y-1 text-muted-foreground">
+                <li>Open Cryptomator on your device</li>
+                <li>Unlock your vault with your password</li>
+                <li>Ensure the vault path is properly mounted</li>
+                <li>Check your network connection if using a remote vault</li>
+                <li>Refresh this page once the vault is online</li>
+              </ol>
+            </div>
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-900">
+              <p className="font-semibold mb-1">📁 Vault Location:</p>
+              <p className="font-mono break-all text-amber-800">Configure your vault path in Settings</p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Main content */}
       <div className="flex-1 flex flex-col min-h-screen">
