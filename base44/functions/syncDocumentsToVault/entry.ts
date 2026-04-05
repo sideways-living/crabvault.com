@@ -14,6 +14,18 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'vaultPath required' }, { status: 400 });
     }
 
+    // Check if vault is mounted/accessible
+    try {
+      await Deno.stat(vaultPath);
+    } catch (err) {
+      return Response.json({
+        error: 'Cryptomator vault not connected',
+        vaultPath,
+        guidance: 'Please mount your Cryptomator vault and ensure the path is correct. Steps: 1) Open Cryptomator 2) Unlock your vault 3) Check that the mount path matches the configured vault path',
+        mounted: false
+      }, { status: 503 });
+    }
+
     // Fetch all completed, non-deleted documents that haven't been synced yet
     const docs = await base44.entities.Document.filter({
       processing_status: 'completed',
