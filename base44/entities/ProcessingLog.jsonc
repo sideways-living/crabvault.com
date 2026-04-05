@@ -1,0 +1,33 @@
+{
+  "name": "ProcessingLog",
+  "type": "object",
+  "properties": {
+    "document_id": {
+      "type": "string",
+      "title": "Document ID"
+    },
+    "task": {
+      "type": "string",
+      "title": "Task Description"
+    },
+    "status": {
+      "type": "string",
+      "title": "Status",
+      "enum": [
+        "pending",
+        "in_progress",
+        "completed",
+        "failed"
+      ],
+      "default": "pending"
+    },
+    "details": {
+      "type": "string",
+      "title": "Details"
+    }
+  },
+  "required": [
+    "document_id",
+    "task"
+  ]
+}

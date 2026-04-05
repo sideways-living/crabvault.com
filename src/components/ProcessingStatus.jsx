@@ -1,43 +1,41 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { FileText, Loader2, ChevronUp } from "lucide-react";
+import { FileText, Loader2, ChevronUp, CheckCircle2, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function ProcessingStatus() {
-  const [processing, setProcessing] = useState([]);
+  const [currentDoc, setCurrentDoc] = useState(null);
   const [expanded, setExpanded] = useState(true);
-  const [logs, setLogs] = useState({});
+  const [logs, setLogs] = useState([]);
 
   useEffect(() => {
     const checkProcessing = async () => {
       const docs = await base44.entities.Document.filter(
         { processing_status: 'processing' },
         '-updated_date',
-        10
+        1
       );
-      setProcessing(docs);
+      setCurrentDoc(docs[0] || null);
 
-      // Initialize logs for new documents
-      const newLogs = { ...logs };
-      docs.forEach(doc => {
-        if (!newLogs[doc.id]) {
-          newLogs[doc.id] = [
-            { time: new Date().toLocaleTimeString(), task: 'Starting processing...' }
-          ];
-        }
-      });
-      setLogs(newLogs);
+      // Fetch logs for current document
+      if (docs[0]) {
+        const docLogs = await base44.entities.ProcessingLog.filter(
+          { document_id: docs[0].id },
+          'created_date',
+          50
+        );
+        setLogs(docLogs);
+      } else {
+        setLogs([]);
+      }
     };
 
     checkProcessing();
-    const interval = setInterval(checkProcessing, 2000);
+    const interval = setInterval(checkProcessing, 1000);
     return () => clearInterval(interval);
   }, []);
 
-  if (processing.length === 0) return null;
-
-  const currentDoc = processing[0];
-  const currentLogs = logs[currentDoc.id] || [];
+  if (!currentDoc) return null;
 
   return (
     <div className="fixed bottom-6 right-6 z-40 bg-card border rounded-xl shadow-xl overflow-hidden" style={{ width: 560, maxHeight: 280 }}>
@@ -45,7 +43,7 @@ export default function ProcessingStatus() {
       <div className="flex items-center justify-between bg-muted/40 px-4 py-3 border-b">
         <div className="flex items-center gap-2 min-w-0">
           <Loader2 className="h-4 w-4 animate-spin shrink-0 text-primary" />
-          <span className="text-sm font-medium truncate">Processing {processing.length} document{processing.length !== 1 ? 's' : ''}</span>
+          <span className="text-sm font-medium truncate">{currentDoc.title}</span>
         </div>
         <button
           onClick={() => setExpanded(!expanded)}
@@ -77,16 +75,19 @@ export default function ProcessingStatus() {
 
           {/* Right: Task Log */}
           <div className="flex-1 flex flex-col overflow-hidden">
-            <div className="flex-1 overflow-y-auto px-3 py-2 space-y-1 text-xs">
-              {currentLogs.length === 0 ? (
-                <div className="text-muted-foreground italic">Initializing...</div>
+            <div className="flex-1 overflow-y-auto px-3 py-2 space-y-2 text-xs">
+              {logs.length === 0 ? (
+                <div className="text-muted-foreground italic">Starting...</div>
               ) : (
-                currentLogs.map((log, idx) => (
-                  <div key={idx} className="flex gap-2 text-muted-foreground">
-                    <span className="text-[9px] shrink-0 font-mono opacity-60">
-                      {log.time}
-                    </span>
-                    <span className="line-clamp-2">{log.task}</span>
+                logs.map((log) => (
+                  <div key={log.id} className="flex gap-2">
+                    {log.status === 'completed' && <CheckCircle2 className="h-3 w-3 text-emerald-600 shrink-0 mt-0.5" />}
+                    {log.status === 'failed' && <AlertCircle className="h-3 w-3 text-destructive shrink-0 mt-0.5" />}
+                    {log.status === 'in_progress' && <Loader2 className="h-3 w-3 text-primary animate-spin shrink-0 mt-0.5" />}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-muted-foreground">{log.task}</p>
+                      {log.details && <p className="text-[10px] text-destructive mt-0.5">{log.details}</p>}
+                    </div>
                   </div>
                 ))
               )}
