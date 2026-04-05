@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, FileText, FolderTree, Search, Settings, Shield, Menu, X } from "lucide-react";
+import { LayoutDashboard, FileText, FolderTree, Search, Settings, Shield, Menu, X, BookOpen } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 
@@ -8,6 +8,7 @@ const navItems = [
   { path: "/documents", label: "Documents", icon: FileText },
   { path: "/folders", label: "Folders", icon: FolderTree },
   { path: "/search", label: "Search", icon: Search },
+  { path: "/receipt-trainer", label: "Receipt Trainer", icon: BookOpen },
   { path: "/settings", label: "Settings", icon: Settings },
 ];
 

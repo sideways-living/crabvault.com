@@ -12,6 +12,7 @@ import DocumentDetail from './pages/DocumentDetail';
 import Folders from './pages/Folders';
 import SearchPage from './pages/SearchPage';
 import SettingsPage from './pages/SettingsPage';
+import ReceiptTrainer from './pages/ReceiptTrainer';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -46,6 +47,7 @@ const AuthenticatedApp = () => {
         <Route path="/folders" element={<Folders />} />
         <Route path="/search" element={<SearchPage />} />
         <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/receipt-trainer" element={<ReceiptTrainer />} />
         <Route path="*" element={<PageNotFound />} />
       </Route>
     </Routes>

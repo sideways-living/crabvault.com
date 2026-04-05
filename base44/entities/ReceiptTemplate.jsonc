@@ -1,0 +1,48 @@
+{
+  "name": "ReceiptTemplate",
+  "type": "object",
+  "properties": {
+    "store_brand": {
+      "type": "string",
+      "title": "Store Brand"
+    },
+    "sample_image_url": {
+      "type": "string",
+      "title": "Sample Receipt Image URL"
+    },
+    "field_regions": {
+      "type": "array",
+      "title": "Field Regions",
+      "items": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "x": {
+            "type": "number"
+          },
+          "y": {
+            "type": "number"
+          },
+          "width": {
+            "type": "number"
+          },
+          "height": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "notes": {
+      "type": "string",
+      "title": "Notes"
+    }
+  },
+  "required": [
+    "store_brand"
+  ]
+}
