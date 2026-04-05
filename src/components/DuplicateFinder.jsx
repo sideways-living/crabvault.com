@@ -87,8 +87,9 @@ function ResolveDialog({ group, folders: initialFolders, onResolved, onClose }) 
   const [titleSource, setTitleSource] = useState(group[0].id);
   const [customTitle, setCustomTitle] = useState('');
   const [useCustomTitle, setUseCustomTitle] = useState(false);
-  const [folderSource, setFolderSource] = useState(group[0].id);
-  const [useCustomFolder, setUseCustomFolder] = useState(false);
+  const docsWithFolders = group.filter(d => d.folder_id);
+  const [folderSource, setFolderSource] = useState(docsWithFolders[0]?.id || group[0].id);
+  const [useCustomFolder, setUseCustomFolder] = useState(docsWithFolders.length === 0);
   const [customFolderId, setCustomFolderId] = useState('');
   const [folders, setFolders] = useState(initialFolders);
   const [newFolderName, setNewFolderName] = useState('');
@@ -231,7 +232,8 @@ function ResolveDialog({ group, folders: initialFolders, onResolved, onClose }) 
             <div>
               <p className="font-medium mb-2">3. Which folder?</p>
               <div className="space-y-1.5">
-                {group.map(doc => (
+                {/* Only show options for docs that actually have a folder */}
+                {group.filter(doc => doc.folder_id).map(doc => (
                   <label key={doc.id} className={`flex items-center gap-3 border rounded-lg px-3 py-2 cursor-pointer transition-colors ${!useCustomFolder && folderSource === doc.id ? 'border-primary bg-primary/5' : 'hover:bg-muted/40'}`}>
                     <input type="radio" name="folder" value={doc.id} checked={!useCustomFolder && folderSource === doc.id} onChange={() => { setFolderSource(doc.id); setUseCustomFolder(false); }} />
                     <span className="text-muted-foreground">{folderName(doc.folder_id)}</span>
