@@ -143,9 +143,14 @@ Document title: ${doc.title}
 Filename: ${doc.original_filename || ''}
 ${extractedText ? `Content preview:\n${extractedText.substring(0, 3000)}` : ''}`;
 
+    // Only include image file if it's a supported format (png, jpeg, gif, webp)
+    const supportedImageFormats = ['png', 'jpeg', 'jpg', 'gif', 'webp'];
+    const fileExt = doc.file_type?.toLowerCase();
+    const isUnsupportedImage = doc.file_type && !['pdf', 'docx', 'xlsx', 'pptx', 'txt'].includes(fileExt) && !supportedImageFormats.includes(fileExt);
+    
     const result = await db.integrations.Core.InvokeLLM({
       prompt,
-      file_urls: doc.file_url ? [doc.file_url] : undefined,
+      file_urls: doc.file_url && !isUnsupportedImage ? [doc.file_url] : undefined,
       response_json_schema: {
         type: 'object',
         properties: {
