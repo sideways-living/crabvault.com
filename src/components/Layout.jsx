@@ -60,6 +60,15 @@ export default function Layout() {
         });
       })
       .catch(() => {});
+    
+    // Poll user data when on settings page to catch category visibility changes
+    if (location.pathname === '/settings') {
+      const interval = setInterval(async () => {
+        const currentUser = await base44.auth.me();
+        setUser(currentUser);
+      }, 500);
+      return () => clearInterval(interval);
+    }
   }, [location.pathname]);
 
   return (
