@@ -100,7 +100,19 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
   }, [folderId, title]);
 
   const folderObj = folders.find(f => f.id === folderId);
-  const folderDisplay = folderObj?.path || folderObj?.name || "No folder assigned";
+  const folderDisplay = (() => {
+    if (!folderObj) return "No folder assigned";
+    let path = folderObj.path || folderObj.name;
+    let current = folderObj;
+    while (current.parent_folder_id) {
+      current = folders.find(f => f.id === current.parent_folder_id);
+      if (current) {
+        const parentPath = current.path || current.name;
+        path = parentPath.endsWith('/') ? `${parentPath}${path}` : `${parentPath}/${path}`;
+      }
+    }
+    return path;
+  })();
   const categoryObj = categories.find(c => c.id === categoryId);
 
   const handleAccept = async () => {
@@ -261,9 +273,7 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
                   onValueChange={setFolderId}
                   folders={folders}
                   onFolderCreated={() => {}}
-                  onDone={() => {
-                    setShowFolderPicker(false);
-                  }}
+                  onDone={() => setShowFolderPicker(false)}
                 />
               ) : (
                <button
