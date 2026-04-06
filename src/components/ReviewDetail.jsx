@@ -261,11 +261,7 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
                   onValueChange={setFolderId}
                   folders={folders}
                   onFolderCreated={() => {}}
-                  onDone={(path) => {
-                    const matchedFolder = folders.find(f => f.path === path);
-                    if (matchedFolder) {
-                      setFolderId(matchedFolder.id);
-                    }
+                  onDone={() => {
                     setShowFolderPicker(false);
                   }}
                 />
