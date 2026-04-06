@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Loader2, CheckCircle2, ClipboardList, Copy } from "lucide-react";
-import ReviewDetail from "../components/ReviewDetail";
+import ReviewDetail from "../components/ReviewDetail.jsx";
 
 export default function DocumentReview() {
   const [queue, setQueue] = useState([]);
