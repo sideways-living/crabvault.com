@@ -122,9 +122,6 @@ export default function HierarchicalFolderPicker({ value, onValueChange, folders
         <div>
           <p className="text-xs font-semibold text-amber-600 uppercase tracking-wide px-3 mb-2">Receipts</p>
           <FolderOption folder={receiptsRoot} />
-          {getSubfolders(receiptsRoot.id).map(sub => (
-            <FolderOption key={sub.id} folder={sub} level={1} />
-          ))}
         </div>
       )}
 
@@ -132,12 +129,7 @@ export default function HierarchicalFolderPicker({ value, onValueChange, folders
         <div>
           <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide px-3 mb-2">Documents</p>
           {documentRoots.map(root => (
-            <div key={root.id}>
-              <FolderOption folder={root} />
-              {getSubfolders(root.id).map(sub => (
-                <FolderOption key={sub.id} folder={sub} level={1} />
-              ))}
-            </div>
+            <FolderOption key={root.id} folder={root} />
           ))}
         </div>
       )}
