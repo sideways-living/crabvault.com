@@ -34,9 +34,18 @@ export default function Folders() {
     );
   }
 
+  // Split root folders into Documents and Receipts columns by category name
+  const rootFolders = folders.filter(f => !f.parent_folder_id);
+  const docCatIds = new Set(categories.filter(c => /document/i.test(c.name)).map(c => c.id));
+  const recCatIds = new Set(categories.filter(c => /receipt/i.test(c.name)).map(c => c.id));
+  const docRootIds = new Set(rootFolders.filter(f => docCatIds.has(f.category_id) || /document/i.test(f.name)).map(f => f.id));
+  const recRootIds = new Set(rootFolders.filter(f => recCatIds.has(f.category_id) || /receipt/i.test(f.name)).map(f => f.id));
+  const otherRootIds = new Set(rootFolders.filter(f => !docRootIds.has(f.id) && !recRootIds.has(f.id)).map(f => f.id));
+  const showTwoCol = docRootIds.size > 0 || recRootIds.size > 0;
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">        
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Folders</h1>
           <p className="text-sm text-muted-foreground mt-1">Browse your document hierarchy</p>
@@ -46,9 +55,22 @@ export default function Folders() {
         </Button>
       </div>
 
-      <div className="bg-card rounded-xl border p-4">
-        <FolderTreeView folders={folders} documents={documents} onFoldersChanged={loadData} />
-      </div>
+      {showTwoCol ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="bg-card rounded-xl border p-4">
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Documents</h2>
+            <FolderTreeView folders={folders} documents={documents} onFoldersChanged={loadData} onlyRootIds={new Set([...docRootIds, ...otherRootIds])} />
+          </div>
+          <div className="bg-card rounded-xl border p-4">
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Receipts</h2>
+            <FolderTreeView folders={folders} documents={documents} onFoldersChanged={loadData} onlyRootIds={recRootIds} />
+          </div>
+        </div>
+      ) : (
+        <div className="bg-card rounded-xl border p-4">
+          <FolderTreeView folders={folders} documents={documents} onFoldersChanged={loadData} />
+        </div>
+      )}
 
       <CreateFolderDialog open={createOpen} onOpenChange={setCreateOpen} folders={folders} categories={categories} onCreated={loadData} />
     </div>

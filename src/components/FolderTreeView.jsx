@@ -114,10 +114,13 @@ function FolderNode({ folder, allFolders, documents, depth, onDrop, draggingId, 
   );
 }
 
-export default function FolderTreeView({ folders, documents, onFoldersChanged }) {
+export default function FolderTreeView({ folders, documents, onFoldersChanged, onlyRootIds }) {
   const [draggingId, setDraggingId] = useState(null);
   const [rootDragOver, setRootDragOver] = useState(false);
-  const rootFolders = folders.filter(f => !f.parent_folder_id);
+  const allRootFolders = folders.filter(f => !f.parent_folder_id);
+  const rootFolders = onlyRootIds
+    ? allRootFolders.filter(f => onlyRootIds.has(f.id))
+    : allRootFolders;
 
   const handleDrop = async (draggedId, newParentId) => {
     const dragged = folders.find(f => f.id === draggedId);
