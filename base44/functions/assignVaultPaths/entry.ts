@@ -32,21 +32,27 @@ Deno.serve(async (req) => {
     if (doc.folder_id) {
       const folder = folders.find(f => f.id === doc.folder_id);
       if (folder?.vault_path) {
-        const ext = doc.original_filename?.split('.').pop() || (doc.file_type || 'pdf');
+        const ext = doc.original_filename ? doc.original_filename.split('.').pop() : (doc.file_type || 'pdf');
         const filename = doc.title || doc.original_filename || doc.id;
         vaultPath = `${folder.vault_path}/${filename}.${ext}`;
       }
     }
 
-    if (vaultPath) {
-      await db.entities.Document.update(doc.id, { vault_path: vaultPath });
-      updated++;
+    // Always assign a path, even without a folder
+    if (!vaultPath) {
+      const ext = doc.original_filename ? doc.original_filename.split('.').pop() : (doc.file_type || 'pdf');
+      const filename = doc.title || doc.original_filename || doc.id;
+      vaultPath = `/${filename}.${ext}`;
     }
+
+    // Update document
+    await db.entities.Document.update(doc.id, { vault_path: vaultPath });
+    updated++;
   }
 
   return Response.json({
     message: `Assigned vault paths to ${updated} document(s)`,
     updated,
-    skipped: noVaultPath.length - updated,
+    skipped: 0,
   });
 });
