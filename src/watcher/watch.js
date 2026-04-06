@@ -55,6 +55,26 @@ function saveUploadedLog() {
   fs.writeFileSync(UPLOADED_LOG, JSON.stringify([...uploadedFiles]), 'utf8');
 }
 
+// Lockfile: prevent multiple watcher instances from running simultaneously
+const LOCK_FILE = path.join(__dirname, '.watcher.lock');
+if (fs.existsSync(LOCK_FILE)) {
+  const pid = fs.readFileSync(LOCK_FILE, 'utf8').trim();
+  // Check if that PID is still alive
+  try {
+    process.kill(parseInt(pid), 0); // signal 0 = check existence only
+    console.error(`❌  Another watcher instance is already running (PID ${pid}). Exiting.`);
+    console.error(`    If that process is gone, delete ${LOCK_FILE} and retry.`);
+    process.exit(1);
+  } catch {
+    // PID not found — stale lockfile, safe to continue
+    console.warn(`⚠️  Stale lockfile found (PID ${pid} not running). Continuing.`);
+  }
+}
+fs.writeFileSync(LOCK_FILE, String(process.pid), 'utf8');
+process.on('exit', () => { try { fs.unlinkSync(LOCK_FILE); } catch {} });
+process.on('SIGINT', () => process.exit());
+process.on('SIGTERM', () => process.exit());
+
 const seen = uploadedFiles; // alias — same set
 console.log(`👀  Watching: ${WATCH_FOLDER}`);
 console.log(`📤  Uploading to: ${INGEST_URL}`);
