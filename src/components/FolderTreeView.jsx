@@ -8,7 +8,7 @@ import { toast } from "sonner";
 function FolderNode({ folder, allFolders, documents, depth, onDrop, draggingId, setDraggingId }) {
   const [expanded, setExpanded] = useState(depth < 2);
   const [dragOver, setDragOver] = useState(false);
-  const children = allFolders.filter(f => f.parent_folder_id === folder.id);
+  const children = allFolders.filter(f => f.parent_folder_id === folder.id).sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
   const folderDocs = documents.filter(d => d.folder_id === folder.id);
   const hasChildren = children.length > 0 || folderDocs.length > 0;
 
@@ -117,7 +117,7 @@ function FolderNode({ folder, allFolders, documents, depth, onDrop, draggingId, 
 export default function FolderTreeView({ folders, documents, onFoldersChanged, onlyRootIds }) {
   const [draggingId, setDraggingId] = useState(null);
   const [rootDragOver, setRootDragOver] = useState(false);
-  const allRootFolders = folders.filter(f => !f.parent_folder_id);
+  const allRootFolders = folders.filter(f => !f.parent_folder_id).sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
   const rootFolders = onlyRootIds
     ? allRootFolders.filter(f => onlyRootIds.has(f.id))
     : allRootFolders;
