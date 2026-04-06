@@ -88,6 +88,7 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
   const [rejecting, setRejecting] = useState(false);
   const [merging, setMerging] = useState(false);
   const [reprocessing, setReprocessing] = useState(false);
+  const [showFolderPicker, setShowFolderPicker] = useState(false);
 
   useEffect(() => {
     if (!folderId) return;
