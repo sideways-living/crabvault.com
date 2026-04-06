@@ -15,24 +15,25 @@ Deno.serve(async (req) => {
 
   const db = base44.asServiceRole;
 
-  const allDocs = await db.entities.Document.list();
-
   // Reset any docs stuck in 'processing' for more than 10 minutes back to 'pending'
   const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
-  const stuckDocs = allDocs.filter(d =>
-    d.processing_status === 'processing' &&
+  const stuckDocs = await db.entities.Document.filter({
+    processing_status: 'processing',
+  }, '-updated_date', 50);
+  const reallyStuck = stuckDocs.filter(d =>
     new Date(d.updated_date) < tenMinutesAgo
   );
-  if (stuckDocs.length > 0) {
-    await Promise.all(stuckDocs.map(d =>
+  if (reallyStuck.length > 0) {
+    await Promise.all(reallyStuck.map(d =>
       db.entities.Document.update(d.id, { processing_status: 'pending' })
     ));
-    console.log(`Reset ${stuckDocs.length} stuck document(s) back to pending`);
+    console.log(`Reset ${reallyStuck.length} stuck document(s) back to pending`);
   }
 
-  const pending = allDocs
-    .filter(d => d.processing_status === 'pending')
-    .concat(stuckDocs.map(d => ({ ...d, processing_status: 'pending' })));
+  // Fetch only next 5 pending documents to avoid timeout
+  const pending = await db.entities.Document.filter({
+    processing_status: 'pending',
+  }, 'created_date', 5);
 
   if (pending.length === 0) {
     return Response.json({ message: 'No pending documents', processed: 0 });
@@ -220,8 +221,7 @@ ${extractedText ? `Content preview:\n${extractedText.substring(0, 3000)}` : ''}`
     if (result.is_receipt && (result.store_brand || result.vendor_name)) {
       const vendorName = (result.store_brand || result.vendor_name).trim();
 
-      const freshFolders = await db.entities.Folder.list();
-      let vendorFolder = freshFolders.find(f =>
+      let vendorFolder = folders.find(f =>
         f.parent_folder_id === receiptsFolder.id &&
         f.name.toLowerCase() === vendorName.toLowerCase()
       );
@@ -235,9 +235,7 @@ ${extractedText ? `Content preview:\n${extractedText.substring(0, 3000)}` : ''}`
       targetFolderId = vendorFolder.id;
 
       // Auto-assign vault path if the vendor folder has one
-      // Non-receipt: auto-suggest vault path from folder
-      const allFolders = await db.entities.Folder.list();
-      const folder = allFolders.find(f => f.id === targetFolderId);
+      const folder = folders.find(f => f.id === targetFolderId);
       if (folder?.vault_path) {
         const filename = (result.suggested_title || doc.title);
         vaultPath = `${folder.vault_path}/${filename}`;
@@ -247,8 +245,7 @@ ${extractedText ? `Content preview:\n${extractedText.substring(0, 3000)}` : ''}`
     // Determine category from folder structure
     let categoryTag = null;
     if (targetFolderId) {
-      const allFolders = await db.entities.Folder.list();
-      let folder = allFolders.find(f => f.id === targetFolderId);
+      let folder = folders.find(f => f.id === targetFolderId);
       
       // For root-level Receipts/Business Cards
       if (folder && !folder.parent_folder_id) {
@@ -257,7 +254,7 @@ ${extractedText ? `Content preview:\n${extractedText.substring(0, 3000)}` : ''}`
         // For 2nd level folders (under Documents/Images/Movies)
         let parent = folder;
         while (parent && parent.parent_folder_id) {
-          parent = allFolders.find(f => f.id === parent.parent_folder_id);
+          parent = folders.find(f => f.id === parent.parent_folder_id);
         }
         if (parent && ['documents', 'images', 'movies'].includes(parent.name.toLowerCase())) {
           categoryTag = folder.name;
