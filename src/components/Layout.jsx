@@ -197,7 +197,10 @@ export default function Layout() {
                 </Link>
               )}
               {user?.visible_folder_categories?.includes('receipts') !== false && (
-                <Link to="/folders?filter=receipts" onClick={() => setSidebarOpen(false)} className="flex items-center gap-3 px-3 py-2 rounded-lg text-xs text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/30 transition-all">
+                <Link to="/receipts" onClick={() => setSidebarOpen(false)} className={cn(
+                  "flex items-center gap-3 px-3 py-2 rounded-lg text-xs transition-all",
+                  location.pathname === "/receipts" ? "bg-sidebar-accent text-sidebar-primary" : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/30"
+                )}>
                   <Receipt className="h-3.5 w-3.5" /> Receipts
                 </Link>
               )}

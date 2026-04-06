@@ -16,6 +16,7 @@ import ReceiptTrainer from './pages/ReceiptTrainer';
 import DocumentReview from './pages/DocumentReview';
 import DuplicateFinderPage from './pages/DuplicateFinderPage';
 import DeletedDocuments from './pages/DeletedDocuments';
+import ReceiptsPage from './pages/ReceiptsPage';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -57,6 +58,7 @@ const AuthenticatedApp = () => {
         <Route path="/review" element={<DocumentReview />} />
         <Route path="/duplicate-finder" element={<DuplicateFinderPage />} />
         <Route path="/deleted" element={<DeletedDocuments />} />
+        <Route path="/receipts" element={<ReceiptsPage />} />
         <Route path="*" element={<PageNotFound />} />
       </Route>
     </Routes>
