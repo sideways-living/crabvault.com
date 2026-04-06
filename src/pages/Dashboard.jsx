@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Link } from "react-router-dom";
-import { Upload, ArrowRight } from "lucide-react";
+import { Upload, ArrowRight, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import DocumentCard from "../components/DocumentCard";
 import UploadDialog from "../components/UploadDialog";
@@ -14,6 +15,7 @@ export default function Dashboard() {
   const [uploadOpen, setUploadOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState(null);
+  const [assigningPaths, setAssigningPaths] = useState(false);
 
   const loadData = async () => {
     try {
@@ -81,6 +83,19 @@ export default function Dashboard() {
     }
   };
 
+  const handleAssignVaultPaths = async () => {
+    setAssigningPaths(true);
+    try {
+      const result = await base44.functions.invoke('assignVaultPaths', {});
+      toast.success(`Updated ${result.updated} document(s) with vault paths`);
+      loadData();
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setAssigningPaths(false);
+    }
+  };
+
   useEffect(() => { loadData(); }, []);
 
   const recentDocs = documents.filter(d => d.processing_status === 'completed').slice(0, 6);
@@ -110,9 +125,15 @@ export default function Dashboard() {
           <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
           <p className="text-sm text-muted-foreground mt-1">Your document management overview</p>
         </div>
-        <Button onClick={() => setUploadOpen(true)} className="gap-2">
-          <Upload className="h-4 w-4" /> Upload Documents
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={() => setUploadOpen(true)} className="gap-2">
+            <Upload className="h-4 w-4" /> Upload Documents
+          </Button>
+          <Button onClick={handleAssignVaultPaths} disabled={assigningPaths} variant="outline" className="gap-2">
+            {assigningPaths ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
+            Assign Vault Paths
+          </Button>
+        </div>
       </div>
 
       {/* Statistics Grid */}
