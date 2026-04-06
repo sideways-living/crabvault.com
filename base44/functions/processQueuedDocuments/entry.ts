@@ -115,7 +115,10 @@ Examples:
 - "20240410 - AGL Energy - Electricity Bill - ACC987654"
 - "20241101 - Jane, Marie, JOHNSON - Admission Letter"
 
-Classify and name using these rules:
+=== RECEIPT DETECTION (VERY IMPORTANT) ===
+A document IS a receipt if it contains ANY of: till/POS printout, store name + items + prices, transaction total, payment method (cash/card/eftpos), receipt/transaction number, barcode at bottom of page, "Thank you for shopping", subtotal/GST lines, or any retail purchase confirmation.
+Do NOT require all fields — even a partial till receipt with just a store name and total qualifies.
+When in doubt, set is_receipt: true.
 
 1. RECEIPT (retail purchase, payment confirmation, till receipt):
     - is_receipt: true
@@ -132,6 +135,7 @@ Classify and name using these rules:
     - Extract tax_amount (GST/VAT amount, as a number) if shown, otherwise null
     - Extract receipt_number (till/transaction/receipt reference number shown on receipt), otherwise null
     - suggested_title: "YYYYMMDD - StoreName Location - Receipt" (e.g. "20240315 - Woolworths Docklands VIC - Receipt")
+    - folder_id: use the receipts folder structure from the folder list below
     - In summary list ALL items + prices and total.
 
 2. LETTER / DOCUMENT ABOUT A PERSON:
@@ -153,7 +157,7 @@ Also provide for ALL documents:
 - summary: 2-3 sentence summary
 - category_id: best match from this list (or null):
 ${categoryList}
-- folder_id: best match from this list (or null). For receipts, leave null — folder will be handled separately:
+- folder_id: best match from this list (or null). For receipts, pick the best matching receipt subfolder if one exists:
 ${folderList}
 - tags: 3-5 relevant tags
 - document_date: best guess at document date (YYYY-MM-DD) or null

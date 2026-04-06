@@ -18,6 +18,16 @@ Deno.serve(async (req) => {
   const base44 = createClientFromRequest(req);
   const db = base44.asServiceRole;
 
+  // Dedup check: reject if a non-failed doc with same filename already exists
+  const existing = await db.entities.Document.filter({ original_filename: filename });
+  const active = existing.filter(d =>
+    !['completed', 'failed'].includes(d.processing_status) && !d.is_deleted
+  );
+  if (active.length > 0) {
+    console.log(`⚠️  Duplicate rejected: ${filename} already exists as ${active[0].processing_status}`);
+    return Response.json({ success: true, document_id: active[0].id, filename, duplicate: true });
+  }
+
   // Upload the file
   const { file_url } = await db.integrations.Core.UploadFile({ file });
 

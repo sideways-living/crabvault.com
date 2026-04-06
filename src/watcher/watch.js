@@ -37,10 +37,25 @@ if (!WATCH_FOLDER || !INGEST_URL || !API_KEY) {
   process.exit(1);
 }
 
-const seen = new Set();
+// Persist uploaded filenames across restarts to prevent re-uploading
+const UPLOADED_LOG = path.join(__dirname, '.uploaded.json');
+let uploadedFiles = new Set();
+if (fs.existsSync(UPLOADED_LOG)) {
+  try {
+    const data = JSON.parse(fs.readFileSync(UPLOADED_LOG, 'utf8'));
+    uploadedFiles = new Set(data);
+    console.log(`📋  Loaded ${uploadedFiles.size} previously uploaded filenames from log`);
+  } catch { /* ignore corrupt log */ }
+}
+// Also seed with existing files in folder so we don't re-upload on first run
+fs.readdirSync(WATCH_FOLDER).forEach(f => uploadedFiles.add(f));
+saveUploadedLog();
 
-// Seed seen with files already in the folder on startup (don't re-upload existing files)
-fs.readdirSync(WATCH_FOLDER).forEach(f => seen.add(f));
+function saveUploadedLog() {
+  fs.writeFileSync(UPLOADED_LOG, JSON.stringify([...uploadedFiles]), 'utf8');
+}
+
+const seen = uploadedFiles; // alias — same set
 console.log(`👀  Watching: ${WATCH_FOLDER}`);
 console.log(`📤  Uploading to: ${INGEST_URL}`);
 console.log(`⏱️   Poll interval: ${POLL_INTERVAL}ms\n`);
@@ -105,6 +120,7 @@ async function poll() {
     if (!stat.isFile()) { seen.add(filename); continue; }
 
     seen.add(filename); // mark early to avoid double-upload on slow systems
+    saveUploadedLog();   // persist immediately so restarts don't re-upload
     console.log(`📄  New file detected: ${filename}`);
 
     try {
