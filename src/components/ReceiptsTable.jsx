@@ -22,57 +22,92 @@ function fmt(num) {
 
 function fmtDate(d) {
   if (!d) return "—";
-  if (d.length === 8) return `${d.slice(6,8)}/${d.slice(4,6)}/${d.slice(0,4)}`;
+  const s = String(d).replace(/-/g, "");
+  if (s.length === 8) return `${s.slice(6,8)}/${s.slice(4,6)}/${s.slice(0,4)}`;
   return d;
 }
 
+// Merge a Transaction record with a Document's ai_data, preferring Transaction fields
+function mergeReceiptData(doc, txn) {
+  const ai = doc.ai_data || {};
+  const t = txn || {};
+  return {
+    id: doc.id,
+    document_id: doc.id,
+    doc,
+    store_brand: t.store_brand || ai.store_brand || ai.vendor_name || "",
+    store_location: t.store_location || ai.store_location || "",
+    transaction_date: t.transaction_date || ai.transaction_date || doc.document_date || "",
+    transaction_time: t.transaction_time || ai.transaction_time || "",
+    transaction_type: t.transaction_type || ai.transaction_type || "",
+    tender_type: t.tender_type || ai.tender_type || "",
+    amount: t.amount ?? ai.amount ?? null,
+    subtotal: t.subtotal ?? ai.subtotal ?? null,
+    tax_amount: t.tax_amount ?? ai.tax_amount ?? null,
+    last_four_digits: t.last_four_digits || ai.last_four_digits || "",
+    receipt_number: t.receipt_number || ai.receipt_number || "",
+    items: t.items || ai.items || [],
+  };
+}
+
 export default function ReceiptsTable() {
-  const [transactions, setTransactions] = useState([]);
-  const [documents, setDocuments] = useState([]);
+  const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [expanded, setExpanded] = useState(null);
 
   useEffect(() => {
     Promise.all([
-      base44.entities.Transaction.list("-created_date", 500),
-      base44.entities.Document.filter({ processing_status: "completed" }, "-created_date", 500),
-    ]).then(([txns, docs]) => {
-      setTransactions(txns);
-      setDocuments(docs);
+      base44.entities.Document.list("-created_date", 1000),
+      base44.entities.Transaction.list("-created_date", 1000),
+      base44.entities.Folder.list(),
+    ]).then(([docs, txns, folders]) => {
+      // Find all receipt folder IDs (Receipts root + children)
+      const receiptsRoot = folders.find(f => f.name.toLowerCase() === "receipts" && !f.parent_folder_id);
+      const receiptFolderIds = new Set();
+      if (receiptsRoot) {
+        receiptFolderIds.add(receiptsRoot.id);
+        folders.forEach(f => { if (f.parent_folder_id === receiptsRoot.id) receiptFolderIds.add(f.id); });
+      }
+
+      const txnByDocId = Object.fromEntries(txns.map(t => [t.document_id, t]));
+
+      // Include docs that are receipts (ai_data.is_receipt) OR in receipt folders
+      const receiptDocs = docs.filter(d =>
+        !d.is_deleted &&
+        (d.ai_data?.is_receipt === true || receiptFolderIds.has(d.folder_id))
+      );
+
+      setRows(receiptDocs.map(d => mergeReceiptData(d, txnByDocId[d.id])));
       setLoading(false);
     });
   }, []);
 
-  const docMap = useMemo(() => Object.fromEntries(documents.map(d => [d.id, d])), [documents]);
-
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
-    if (!q) return transactions;
-    return transactions.filter(t => {
-      const doc = docMap[t.document_id];
+    if (!q) return rows;
+    return rows.filter(r => {
       const fields = [
-        t.store_brand, t.store_location, t.transaction_date, t.transaction_time,
-        t.transaction_type, t.tender_type, t.receipt_number, t.last_four_digits,
-        t.amount != null ? String(t.amount) : "",
-        t.subtotal != null ? String(t.subtotal) : "",
-        t.tax_amount != null ? String(t.tax_amount) : "",
-        doc?.title, doc?.original_filename,
-        ...(t.items || []).map(i => i.name),
+        r.store_brand, r.store_location, r.transaction_date, r.transaction_time,
+        r.transaction_type, r.tender_type, r.receipt_number, r.last_four_digits,
+        r.amount != null ? String(r.amount) : "",
+        r.doc?.title, r.doc?.original_filename,
+        ...(r.items || []).map(i => i.name),
       ].filter(Boolean).map(s => s.toLowerCase());
       return fields.some(f => f.includes(q));
     });
-  }, [transactions, search, docMap]);
+  }, [rows, search]);
 
   if (loading) {
     return <div className="flex justify-center py-12"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>;
   }
 
-  if (transactions.length === 0) {
+  if (rows.length === 0) {
     return (
       <div className="text-center py-12 text-muted-foreground">
         <Receipt className="h-8 w-8 mx-auto mb-2 opacity-40" />
-        <p className="text-sm">No receipts yet</p>
+        <p className="text-sm">No receipts found</p>
+        <p className="text-xs mt-1">Receipts will appear here once documents are processed</p>
       </div>
     );
   }
@@ -109,47 +144,44 @@ export default function ReceiptsTable() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {filtered.map(t => {
-                const doc = docMap[t.document_id];
-                const isOpen = expanded === t.id;
+              {filtered.map(r => {
+                const isOpen = expanded === r.id;
                 return (
                   <>
                     <tr
-                      key={t.id}
+                      key={r.id}
                       className="hover:bg-muted/30 cursor-pointer transition-colors"
-                      onClick={() => setExpanded(isOpen ? null : t.id)}
+                      onClick={() => setExpanded(isOpen ? null : r.id)}
                     >
                       <td className="px-3 py-2.5 whitespace-nowrap font-mono text-xs">
-                        <div>{fmtDate(t.transaction_date)}</div>
-                        {t.transaction_time && <div className="text-muted-foreground">{t.transaction_time}</div>}
+                        <div>{fmtDate(r.transaction_date)}</div>
+                        {r.transaction_time && <div className="text-muted-foreground">{r.transaction_time}</div>}
                       </td>
-                      <td className="px-3 py-2.5 font-medium">{t.store_brand || "—"}</td>
-                      <td className="px-3 py-2.5 text-muted-foreground text-xs">{t.store_location || "—"}</td>
+                      <td className="px-3 py-2.5 font-medium">{r.store_brand || "—"}</td>
+                      <td className="px-3 py-2.5 text-muted-foreground text-xs">{r.store_location || "—"}</td>
                       <td className="px-3 py-2.5">
-                        {t.transaction_type ? (
-                          <span className={`text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded ${TYPE_COLORS[t.transaction_type] || "bg-muted text-muted-foreground"}`}>
-                            {t.transaction_type}
+                        {r.transaction_type ? (
+                          <span className={`text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded ${TYPE_COLORS[r.transaction_type] || "bg-muted text-muted-foreground"}`}>
+                            {r.transaction_type}
                           </span>
                         ) : "—"}
                       </td>
                       <td className="px-3 py-2.5 text-xs">
-                        <div>{TENDER_LABELS[t.tender_type] || t.tender_type || "—"}</div>
-                        {t.last_four_digits && <div className="text-muted-foreground font-mono">••{t.last_four_digits}</div>}
+                        <div>{TENDER_LABELS[r.tender_type] || r.tender_type || "—"}</div>
+                        {r.last_four_digits && <div className="text-muted-foreground font-mono">••{r.last_four_digits}</div>}
                       </td>
-                      <td className="px-3 py-2.5 text-right font-mono text-xs">{fmt(t.subtotal)}</td>
-                      <td className="px-3 py-2.5 text-right font-mono text-xs">{fmt(t.tax_amount)}</td>
-                      <td className="px-3 py-2.5 text-right font-mono font-semibold">{fmt(t.amount)}</td>
-                      <td className="px-3 py-2.5 text-xs text-muted-foreground font-mono">{t.receipt_number || "—"}</td>
+                      <td className="px-3 py-2.5 text-right font-mono text-xs">{fmt(r.subtotal)}</td>
+                      <td className="px-3 py-2.5 text-right font-mono text-xs">{fmt(r.tax_amount)}</td>
+                      <td className="px-3 py-2.5 text-right font-mono font-semibold">{fmt(r.amount)}</td>
+                      <td className="px-3 py-2.5 text-xs text-muted-foreground font-mono">{r.receipt_number || "—"}</td>
                       <td className="px-3 py-2.5 text-center">
-                        {doc ? (
-                          <Link to={`/documents/${doc.id}`} onClick={e => e.stopPropagation()} className="text-primary hover:text-primary/80">
-                            <ExternalLink className="h-3.5 w-3.5 inline" />
-                          </Link>
-                        ) : "—"}
+                        <Link to={`/documents/${r.doc.id}`} onClick={e => e.stopPropagation()} className="text-primary hover:text-primary/80">
+                          <ExternalLink className="h-3.5 w-3.5 inline" />
+                        </Link>
                       </td>
                     </tr>
-                    {isOpen && (t.items || []).length > 0 && (
-                      <tr key={`${t.id}-items`} className="bg-amber-50/40">
+                    {isOpen && (r.items || []).length > 0 && (
+                      <tr key={`${r.id}-items`} className="bg-amber-50/40">
                         <td colSpan={10} className="px-6 py-3">
                           <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide mb-2">Line Items</p>
                           <table className="w-full text-xs">
@@ -162,7 +194,7 @@ export default function ReceiptsTable() {
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-amber-100">
-                              {t.items.map((item, i) => (
+                              {r.items.map((item, i) => (
                                 <tr key={i}>
                                   <td className="py-1">{item.name || "—"}</td>
                                   <td className="py-1 text-right text-muted-foreground">{item.quantity ?? ""}</td>
