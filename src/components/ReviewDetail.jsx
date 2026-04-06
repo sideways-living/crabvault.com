@@ -8,15 +8,15 @@ import { Loader2, Save, Trash2, FileText, ExternalLink, BookOpen, GitMerge, Aler
 import { toast } from "sonner";
 
 function DocPreview({ doc }) {
-  const isImage = ["jpg", "jpeg", "png"].includes(doc.file_type);
-  const isPdf = doc.file_type === "pdf";
+  const isImage = ["jpg", "jpeg", "png"].includes((doc.file_type || "").toLowerCase());
+  const isPdf = (doc.file_type || "").toLowerCase() === "pdf";
   if (!doc.file_url) return (
     <div className="flex items-center justify-center h-full text-muted-foreground">
       <FileText className="h-16 w-16 opacity-30" />
     </div>
   );
-  if (isImage) return <img src={doc.file_url} alt={doc.title} className="w-full h-full object-contain" />;
-  if (isPdf) return <iframe src={doc.file_url} title={doc.title} className="w-full h-full border-0" />;
+  if (isImage) return <img src={doc.file_url} alt={doc.title} style={{width:'100%',height:'100%',objectFit:'contain',display:'block'}} />;
+  if (isPdf) return <iframe src={doc.file_url} title={doc.title} style={{width:'100%',height:'100%',border:'none',display:'block'}} />;
   return (
     <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground">
       <FileText className="h-12 w-12 opacity-40" />
@@ -200,8 +200,8 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
 
       <div className="flex flex-1 min-h-0">
         {/* Large document preview */}
-        <div className="w-1/2 border-r bg-muted/10 flex flex-col min-h-0">
-          <div className="flex-1 min-h-0">
+        <div className="w-1/2 border-r bg-muted/10 flex flex-col" style={{minHeight:0}}>
+          <div style={{flex:1, minHeight:0, overflow:'hidden'}}>
             <DocPreview doc={docState} />
           </div>
           <div className="shrink-0 border-t px-4 py-2 bg-muted/20 text-xs text-muted-foreground flex items-center gap-2">
