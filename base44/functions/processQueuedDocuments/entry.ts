@@ -172,46 +172,54 @@ ${extractedText ? `Content preview:\n${extractedText.substring(0, 3000)}` : ''}`
     const fileExt = doc.file_type?.toLowerCase();
     const isUnsupportedImage = doc.file_type && !['pdf', 'docx', 'xlsx', 'pptx', 'txt'].includes(fileExt) && !supportedImageFormats.includes(fileExt);
     
-    const result = await db.integrations.Core.InvokeLLM({
-      prompt,
-      file_urls: doc.file_url && !isUnsupportedImage ? [doc.file_url] : undefined,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          is_receipt: { type: 'boolean' },
-          vendor_name: { type: 'string' },
-          store_brand: { type: 'string' },
-          store_location: { type: 'string' },
-          transaction_date: { type: 'string' },
-          transaction_type: { type: 'string' },
-          tender_type: { type: 'string' },
-          amount: { type: 'number' },
-          last_four_digits: { type: 'string' },
-          transaction_time: { type: 'string' },
-          subtotal: { type: 'number' },
-          tax_amount: { type: 'number' },
-          receipt_number: { type: 'string' },
-          items: {
-            type: 'array',
+    let result;
+    try {
+      result = await db.integrations.Core.InvokeLLM({
+        prompt,
+        file_urls: doc.file_url && !isUnsupportedImage ? [doc.file_url] : undefined,
+        response_json_schema: {
+          type: 'object',
+          properties: {
+            is_receipt: { type: 'boolean' },
+            vendor_name: { type: 'string' },
+            store_brand: { type: 'string' },
+            store_location: { type: 'string' },
+            transaction_date: { type: 'string' },
+            transaction_type: { type: 'string' },
+            tender_type: { type: 'string' },
+            amount: { type: 'number' },
+            last_four_digits: { type: 'string' },
+            transaction_time: { type: 'string' },
+            subtotal: { type: 'number' },
+            tax_amount: { type: 'number' },
+            receipt_number: { type: 'string' },
             items: {
-              type: 'object',
-              properties: {
-                name: { type: 'string' },
-                quantity: { type: 'number' },
-                unit_price: { type: 'number' },
-                total_price: { type: 'number' },
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  name: { type: 'string' },
+                  quantity: { type: 'number' },
+                  unit_price: { type: 'number' },
+                  total_price: { type: 'number' },
+                },
               },
             },
+            suggested_title: { type: 'string' },
+            summary: { type: 'string' },
+            category_id: { type: 'string' },
+            folder_id: { type: 'string' },
+            tags: { type: 'array', items: { type: 'string' } },
+            document_date: { type: 'string' },
           },
-          suggested_title: { type: 'string' },
-          summary: { type: 'string' },
-          category_id: { type: 'string' },
-          folder_id: { type: 'string' },
-          tags: { type: 'array', items: { type: 'string' } },
-          document_date: { type: 'string' },
         },
-      },
-    });
+      });
+    } catch (err) {
+      console.error(`LLM failed for ${doc.id}: ${err.message}`);
+      await db.entities.Document.update(doc.id, { processing_status: 'failed' });
+      processedCount++;
+      continue;
+    }
 
     let targetFolderId = result.folder_id || doc.folder_id || undefined;
     let vaultPath = doc.vault_path;
