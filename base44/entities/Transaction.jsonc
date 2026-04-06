@@ -47,11 +47,23 @@
     },
     "amount": {
       "type": "number",
-      "title": "Amount"
+      "title": "Total Amount"
+    },
+    "subtotal": {
+      "type": "number",
+      "title": "Subtotal (before tax)"
+    },
+    "tax_amount": {
+      "type": "number",
+      "title": "Tax Amount (GST/VAT)"
     },
     "last_four_digits": {
       "type": "string",
       "title": "Last 4 Digits"
+    },
+    "receipt_number": {
+      "type": "string",
+      "title": "Receipt / Transaction Number"
     },
     "items": {
       "type": "array",

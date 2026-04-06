@@ -111,7 +111,10 @@ Classify and name using these rules:
     - Extract amount (total as a number, e.g. 42.50)
     - Extract last_four_digits of card/voucher if shown (string, e.g. "4321"), otherwise null
     - Extract transaction_time in HH:MM 24-hour format if shown, otherwise null
-    - Extract items: an array of all line items purchased/returned, each with name, quantity, unit_price, total_price (use null for any fields not visible)
+    - Extract items: an array of ALL line items purchased/returned, each with name, quantity, unit_price, total_price (use null for any fields not visible)
+    - Extract subtotal (amount before tax, as a number) if shown, otherwise null
+    - Extract tax_amount (GST/VAT amount, as a number) if shown, otherwise null
+    - Extract receipt_number (till/transaction/receipt reference number shown on receipt), otherwise null
     - suggested_title: "YYYYMMDD - StoreName Location - Receipt" (e.g. "20240315 - Woolworths Docklands VIC - Receipt")
     - In summary list ALL items + prices and total.
 
@@ -164,6 +167,9 @@ ${extractedText ? `Content preview:\n${extractedText.substring(0, 3000)}` : ''}`
           amount: { type: 'number' },
           last_four_digits: { type: 'string' },
           transaction_time: { type: 'string' },
+          subtotal: { type: 'number' },
+          tax_amount: { type: 'number' },
+          receipt_number: { type: 'string' },
           items: {
             type: 'array',
             items: {

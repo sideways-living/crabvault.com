@@ -79,6 +79,9 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
   const [amount, setAmount] = useState(ai.amount != null ? String(ai.amount) : "");
   const [lastFour, setLastFour] = useState(ai.last_four_digits || "");
   const [items, setItems] = useState(ai.items || []);
+  const [subtotal, setSubtotal] = useState(ai.subtotal != null ? String(ai.subtotal) : "");
+  const [taxAmount, setTaxAmount] = useState(ai.tax_amount != null ? String(ai.tax_amount) : "");
+  const [receiptNumber, setReceiptNumber] = useState(ai.receipt_number || "");
 
   const [saving, setSaving] = useState(false);
   const [rejecting, setRejecting] = useState(false);
@@ -122,6 +125,9 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
         transaction_type: txType,
         tender_type: tenderType,
         amount: amount ? parseFloat(amount) : undefined,
+        subtotal: subtotal ? parseFloat(subtotal) : undefined,
+        tax_amount: taxAmount ? parseFloat(taxAmount) : undefined,
+        receipt_number: receiptNumber || undefined,
         last_four_digits: lastFour || undefined,
         items: items.length ? items : undefined,
       });
@@ -321,7 +327,10 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
                             ["Type", txType],
                             ["Tender", tenderType + (lastFour ? ` ••${lastFour}` : "")],
                             ["Amount", amount ? `$${parseFloat(amount).toFixed(2)}` : null],
-                          ].filter(([, v]) => v).map(([label, value]) => (
+                            ["Subtotal", subtotal ? `$${parseFloat(subtotal).toFixed(2)}` : null],
+                            ["Tax (GST)", taxAmount ? `$${parseFloat(taxAmount).toFixed(2)}` : null],
+                            ["Receipt #", receiptNumber || null],
+                            ].filter(([, v]) => v).map(([label, value]) => (
                             <tr key={label}>
                               <td className="px-3 py-2 text-xs text-amber-700 font-medium w-24">{label}</td>
                               <td className="px-3 py-2 text-sm font-semibold text-foreground">{value}</td>
@@ -437,6 +446,11 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
                       <div><Label className="text-xs">Amount ($)</Label><Input className="mt-1 h-8 text-sm" type="number" step="0.01" value={amount} onChange={e => setAmount(e.target.value)} /></div>
                     </div>
                     <div><Label className="text-xs">Card Last 4</Label><Input className="mt-1 h-8 text-sm w-28" value={lastFour} onChange={e => setLastFour(e.target.value)} maxLength={4} /></div>
+                    <div className="grid grid-cols-3 gap-3">
+                      <div><Label className="text-xs">Subtotal ($)</Label><Input className="mt-1 h-8 text-sm" type="number" step="0.01" value={subtotal} onChange={e => setSubtotal(e.target.value)} /></div>
+                      <div><Label className="text-xs">Tax / GST ($)</Label><Input className="mt-1 h-8 text-sm" type="number" step="0.01" value={taxAmount} onChange={e => setTaxAmount(e.target.value)} /></div>
+                      <div><Label className="text-xs">Receipt #</Label><Input className="mt-1 h-8 text-sm" value={receiptNumber} onChange={e => setReceiptNumber(e.target.value)} /></div>
+                    </div>
                     <div>
                       <div className="flex items-center justify-between mb-2">
                         <Label className="text-xs">Line Items</Label>

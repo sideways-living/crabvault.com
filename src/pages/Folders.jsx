@@ -4,6 +4,7 @@ import { FolderPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import FolderTreeView from "../components/FolderTreeView";
 import CreateFolderDialog from "../components/CreateFolderDialog";
+import ReceiptsTable from "../components/ReceiptsTable";
 
 export default function Folders() {
   const [folders, setFolders] = useState([]);
@@ -56,14 +57,20 @@ export default function Folders() {
       </div>
 
       {showTwoCol ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-card rounded-xl border p-4">
-            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Documents</h2>
-            <FolderTreeView folders={folders} documents={documents} onFoldersChanged={loadData} onlyRootIds={new Set([...docRootIds, ...otherRootIds])} />
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-card rounded-xl border p-4">
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Documents</h2>
+              <FolderTreeView folders={folders} documents={documents} onFoldersChanged={loadData} onlyRootIds={new Set([...docRootIds, ...otherRootIds])} />
+            </div>
+            <div className="bg-card rounded-xl border p-4">
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Receipt Folders</h2>
+              <FolderTreeView folders={folders} documents={documents} onFoldersChanged={loadData} onlyRootIds={recRootIds} />
+            </div>
           </div>
           <div className="bg-card rounded-xl border p-4">
-            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Receipts</h2>
-            <FolderTreeView folders={folders} documents={documents} onFoldersChanged={loadData} onlyRootIds={recRootIds} />
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">All Receipts</h2>
+            <ReceiptsTable />
           </div>
         </div>
       ) : (
