@@ -34,12 +34,18 @@ function SampleEditor({ sample, index, onChange, onRemove }) {
         </button>
       </div>
       {sample.image_url ? (
-        <AnnotationCanvas
-          imageUrl={sample.image_url}
-          regions={sample.field_regions || []}
-          onRegionsChange={regions => onChange({ ...sample, field_regions: regions })}
-          fields={FIELDS}
-        />
+        sample.image_url.toLowerCase().includes('.pdf') || sample.image_url.includes('pdf') ? (
+          <div className="w-full rounded-xl overflow-hidden border bg-zinc-50" style={{ height: 500 }}>
+            <iframe src={sample.image_url} title="Receipt PDF" className="w-full h-full border-0" />
+          </div>
+        ) : (
+          <AnnotationCanvas
+            imageUrl={sample.image_url}
+            regions={sample.field_regions || []}
+            onRegionsChange={regions => onChange({ ...sample, field_regions: regions })}
+            fields={FIELDS}
+          />
+        )
       ) : (
         <UploadImageSlot onUploaded={url => onChange({ ...sample, image_url: url })} />
       )}
@@ -69,8 +75,8 @@ function UploadImageSlot({ onUploaded }) {
         ? <Loader2 className="h-7 w-7 text-muted-foreground mx-auto mb-2 animate-spin" />
         : <Upload className="h-7 w-7 text-muted-foreground mx-auto mb-2" />}
       <p className="text-sm font-medium">{uploading ? "Uploading…" : "Click to upload receipt image"}</p>
-      <p className="text-xs text-muted-foreground mt-1">JPG or PNG</p>
-      <input ref={fileRef} type="file" accept="image/jpeg,image/png" className="hidden" onChange={handleFile} />
+      <p className="text-xs text-muted-foreground mt-1">JPG, PNG or PDF</p>
+      <input ref={fileRef} type="file" accept="image/jpeg,image/png,application/pdf" className="hidden" onChange={handleFile} />
     </div>
   );
 }
@@ -101,7 +107,11 @@ function TemplateCard({ template, onDelete }) {
               <p className="text-xs font-medium text-muted-foreground">Sample {i + 1}{s.label ? ` — ${s.label}` : ''}</p>
               <div className="flex gap-3">
                 {s.image_url && (
-                  <img src={s.image_url} alt="" className="w-20 h-24 object-cover rounded-lg border shrink-0" />
+                  s.image_url.toLowerCase().includes('.pdf') || s.image_url.includes('pdf') ? (
+                    <iframe src={s.image_url} title="" className="w-20 h-24 rounded-lg border shrink-0" />
+                  ) : (
+                    <img src={s.image_url} alt="" className="w-20 h-24 object-cover rounded-lg border shrink-0" />
+                  )
                 )}
                 <div className="flex flex-wrap gap-1 content-start">
                   {(s.field_regions || []).map((r, j) => {
