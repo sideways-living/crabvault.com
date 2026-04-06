@@ -47,7 +47,7 @@ ${document.extracted_text ? `Content preview: ${document.extracted_text.substrin
       folder_id: result.folder_id || document.folder_id || undefined,
       tags: result.tags || [],
       document_date: result.document_date || undefined,
-      processing_status: "completed",
+      processing_status: "needs_review",
     });
 
     toast.success("Document processed successfully");
