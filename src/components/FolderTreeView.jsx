@@ -5,6 +5,143 @@ import { cn } from "@/lib/utils";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
 
+function FolderNode({ folder, allFolders, documents, depth, onDrop, onDocDrop, draggingId, setDraggingId, draggingDocId, setDraggingDocId, onRename, onDelete }) {
+  const [expanded, setExpanded] = useState(depth < 2);
+  const [dragOver, setDragOver] = useState(false);
+  const [renaming, setRenaming] = useState(false);
+  const [renameVal, setRenameVal] = useState(folder.name);
+  const children = allFolders.filter(f => f.parent_folder_id === folder.id).sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+  const folderDocs = documents.filter(d => d.folder_id === folder.id);
+  const hasChildren = children.length > 0 || folderDocs.length > 0;
+
+  const isDescendant = (potentialChildId, targetId) => {
+    const ch = allFolders.filter(f => f.parent_folder_id === targetId);
+    return ch.some(c => c.id === potentialChildId || isDescendant(potentialChildId, c.id));
+  };
+
+  const handleDragStart = (e) => {
+    e.stopPropagation();
+    setDraggingId(folder.id);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('folderId', folder.id);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const canDropFolder = draggingId && draggingId !== folder.id && !isDescendant(folder.id, draggingId);
+    const canDropDoc = !!draggingDocId;
+    if (canDropFolder || canDropDoc) { setDragOver(true); e.dataTransfer.dropEffect = 'move'; }
+  };
+
+  const handleDragLeave = (e) => { e.stopPropagation(); setDragOver(false); };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOver(false);
+    const draggedFolderId = e.dataTransfer.getData('folderId');
+    const draggedDocId = e.dataTransfer.getData('docId');
+    if (draggedFolderId && draggedFolderId !== folder.id && !isDescendant(folder.id, draggedFolderId)) {
+      onDrop(draggedFolderId, folder.id);
+      setExpanded(true);
+    } else if (draggedDocId) {
+      onDocDrop(draggedDocId, folder.id);
+      setExpanded(true);
+    }
+  };
+
+  return (
+    <div>
+      <div
+        draggable={!renaming}
+        onDragStart={handleDragStart}
+        onDragEnd={() => setDraggingId(null)}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        className={cn(
+          'flex items-center gap-2 py-1.5 px-2 rounded-lg cursor-pointer transition-all duration-150 group select-none',
+          dragOver ? 'bg-primary/10 ring-1 ring-primary/40' : 'hover:bg-muted/50',
+          draggingId === folder.id && 'opacity-40'
+        )}
+        style={{ paddingLeft: `${depth * 20 + 8}px` }}
+        onClick={() => !renaming && setExpanded(!expanded)}
+      >
+        <GripVertical className="h-3.5 w-3.5 text-muted-foreground/30 group-hover:text-muted-foreground cursor-grab shrink-0" />
+        {hasChildren
+          ? (expanded ? <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" /> : <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />)
+          : <span className="w-3.5 shrink-0" />}
+        {expanded
+          ? <FolderOpen className="h-4 w-4 text-primary shrink-0" />
+          : <Folder className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />}
+        {renaming ? (
+          <input
+            autoFocus
+            className="text-sm font-medium flex-1 border rounded px-1 py-0 h-6 bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+            value={renameVal}
+            onChange={e => setRenameVal(e.target.value)}
+            onClick={e => e.stopPropagation()}
+            onKeyDown={e => {
+              if (e.key === 'Enter') { onRename(folder, renameVal); setRenaming(false); }
+              if (e.key === 'Escape') { setRenameVal(folder.name); setRenaming(false); }
+            }}
+          />
+        ) : (
+          <span className="text-sm font-medium truncate flex-1">{folder.name}</span>
+        )}
+        <span className="text-[10px] text-muted-foreground">{folderDocs.length}</span>
+        {renaming ? (
+          <>
+            <button onClick={e => { e.stopPropagation(); onRename(folder, renameVal); setRenaming(false); }} className="text-emerald-600 hover:text-emerald-700 p-0.5"><Check className="h-3.5 w-3.5" /></button>
+            <button onClick={e => { e.stopPropagation(); setRenameVal(folder.name); setRenaming(false); }} className="text-muted-foreground hover:text-foreground p-0.5"><X className="h-3.5 w-3.5" /></button>
+          </>
+        ) : (
+          <div className="opacity-0 group-hover:opacity-100 flex items-center gap-0.5" onClick={e => e.stopPropagation()}>
+            <button onClick={() => { setRenameVal(folder.name); setRenaming(true); }} className="text-muted-foreground hover:text-foreground p-0.5 rounded"><Pencil className="h-3 w-3" /></button>
+            <button onClick={() => onDelete(folder)} className="text-muted-foreground hover:text-destructive p-0.5 rounded"><Trash2 className="h-3 w-3" /></button>
+          </div>
+        )}
+      </div>
+      {expanded && (
+        <div>
+          {children.map(child => (
+            <FolderNode
+              key={child.id}
+              folder={child}
+              allFolders={allFolders}
+              documents={documents}
+              depth={depth + 1}
+              onDrop={onDrop}
+              onDocDrop={onDocDrop}
+              draggingId={draggingId}
+              setDraggingId={setDraggingId}
+              draggingDocId={draggingDocId}
+              setDraggingDocId={setDraggingDocId}
+              onRename={onRename}
+              onDelete={onDelete}
+            />
+          ))}
+          {folderDocs.map(doc => (
+            <div
+              key={doc.id}
+              draggable
+              onDragStart={e => { e.stopPropagation(); setDraggingDocId(doc.id); e.dataTransfer.setData('docId', doc.id); e.dataTransfer.effectAllowed = 'move'; }}
+              onDragEnd={() => setDraggingDocId(null)}
+              className={cn('group/doc flex items-center gap-2 py-1.5 px-2 rounded-lg hover:bg-muted/50 transition-colors text-sm cursor-grab', draggingDocId === doc.id && 'opacity-40')}
+              style={{ paddingLeft: `${(depth + 1) * 20 + 8}px` }}
+            >
+              <GripVertical className="h-3 w-3 text-muted-foreground/30 group-hover/doc:text-muted-foreground shrink-0" />
+              <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              <Link to={`/documents/${doc.id}`} className="truncate text-muted-foreground hover:text-foreground flex-1" onClick={e => e.stopPropagation()}>{doc.title}</Link>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function FolderTreeView({ folders, documents, onFoldersChanged, onlyRootIds }) {
   const [draggingId, setDraggingId] = useState(null);
   const [draggingDocId, setDraggingDocId] = useState(null);
@@ -73,6 +210,9 @@ export default function FolderTreeView({ folders, documents, onFoldersChanged, o
       await handleDocDrop(draggedDocId, null);
     }
   };
+
+  const allRootFolders = folders.filter(f => !f.parent_folder_id).sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+  const rootFolders = onlyRootIds ? allRootFolders.filter(f => onlyRootIds.has(f.id)) : allRootFolders;
 
   if (folders.length === 0) {
     return (
