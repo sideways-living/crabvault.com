@@ -8,7 +8,7 @@ import {
   Loader2, Save, Trash2, FileText, ExternalLink, BookOpen,
   GitMerge, AlertTriangle, CheckCircle2, Calendar, FolderOpen,
   Tag, Hash, CreditCard, ShoppingCart, MapPin, Clock, X,
-  ChevronRight, Pencil, FileCheck
+  ChevronRight, Pencil, FileCheck, RefreshCw
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -85,6 +85,7 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
   const [saving, setSaving] = useState(false);
   const [rejecting, setRejecting] = useState(false);
   const [merging, setMerging] = useState(false);
+  const [reprocessing, setReprocessing] = useState(false);
 
   // Auto-suggest vault path when folder changes
   useEffect(() => {
@@ -158,6 +159,24 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
     await base44.entities.Document.update(doc.id, { processing_status: "failed" });
     setRejecting(false);
     toast.success("Document rejected");
+    onConfirmed(doc.id);
+  };
+
+  const handleReprocess = async () => {
+    if (!confirm("Reset this document and reprocess from scratch? All AI data will be cleared.")) return;
+    setReprocessing(true);
+    await base44.entities.Document.update(doc.id, {
+      processing_status: "pending",
+      ai_data: null,
+      summary: null,
+      tags: [],
+      folder_id: null,
+      category_id: null,
+      vault_path: null,
+      document_date: null,
+    });
+    setReprocessing(false);
+    toast.success("Document reset — will be reprocessed");
     onConfirmed(doc.id);
   };
 
@@ -487,14 +506,11 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
             <div className="flex items-center gap-2">
               <Button
                 onClick={handleAccept}
-                disabled={saving || rejecting}
+                disabled={saving || rejecting || reprocessing}
                 size="lg"
                 className="gap-2 flex-1"
               >
-                {saving
-                  ? <Loader2 className="h-4 w-4 animate-spin" />
-                  : <FileCheck className="h-4 w-4" />
-                }
+                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileCheck className="h-4 w-4" />}
                 {saving ? "Accepting…" : "Accept AI Processing"}
               </Button>
               <Button
@@ -507,8 +523,18 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
                 Edit &amp; Learn
               </Button>
               <Button
+                onClick={handleReprocess}
+                disabled={saving || rejecting || reprocessing}
+                variant="outline"
+                size="lg"
+                title="Reprocess from scratch"
+                className="gap-2 text-amber-700 border-amber-300 hover:bg-amber-50 px-3"
+              >
+                {reprocessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+              </Button>
+              <Button
                 onClick={handleReject}
-                disabled={saving || rejecting}
+                disabled={saving || rejecting || reprocessing}
                 variant="ghost"
                 size="lg"
                 className="gap-2 text-destructive hover:bg-destructive/10 px-3"
