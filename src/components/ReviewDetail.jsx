@@ -5,10 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  Loader2, Save, Trash2, FileText, ExternalLink, BookOpen,
-  GitMerge, AlertTriangle, CheckCircle2, Calendar, FolderOpen,
-  Tag, Hash, CreditCard, ShoppingCart, MapPin, Clock, X,
-  ChevronRight, Pencil, FileCheck, RefreshCw
+  Loader2, Save, Trash2, FileText, ExternalLink,
+  GitMerge, AlertTriangle, FolderOpen,
+  X, Pencil, FileCheck, RefreshCw
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -59,9 +58,8 @@ function InfoRow({ label, value, mono }) {
 export default function ReviewDetail({ doc, folders, categories, duplicates = [], onConfirmed }) {
   const ai = doc.ai_data || {};
   const isReceipt = !!ai.is_receipt;
-  const [mode, setMode] = useState("review"); // "review" | "edit"
+  const [mode, setMode] = useState("review");
 
-  // Editable fields
   const [title, setTitle] = useState(doc.title || "");
   const [folderId, setFolderId] = useState(doc.folder_id || "");
   const [categoryId, setCategoryId] = useState(doc.category_id || "");
@@ -71,7 +69,6 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
   const [notes, setNotes] = useState(doc.notes || "");
   const [vaultPath, setVaultPath] = useState(doc.vault_path || "");
 
-  // Receipt fields
   const [storeBrand, setStoreBrand] = useState(ai.store_brand || ai.vendor_name || "");
   const [storeLocation, setStoreLocation] = useState(ai.store_location || "");
   const [txDate, setTxDate] = useState(ai.transaction_date || "");
@@ -87,7 +84,6 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
   const [merging, setMerging] = useState(false);
   const [reprocessing, setReprocessing] = useState(false);
 
-  // Auto-suggest vault path when folder changes
   useEffect(() => {
     if (!folderId) return;
     const folder = folders.find(f => f.id === folderId);
@@ -104,7 +100,6 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
   const handleAccept = async () => {
     setSaving(true);
     const oldFolderId = doc.folder_id;
-
     await base44.entities.Document.update(doc.id, {
       title,
       folder_id: folderId || undefined,
@@ -116,7 +111,6 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
       vault_path: vaultPath || undefined,
       processing_status: "completed",
     });
-
     if (isReceipt) {
       await base44.entities.Transaction.create({
         document_id: doc.id,
@@ -131,7 +125,6 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
         items: items.length ? items : undefined,
       });
     }
-
     if (folderId !== oldFolderId && (folderId || oldFolderId)) {
       await base44.entities.LearningLog.create({
         action_type: "document_refoldered",
@@ -147,7 +140,6 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
         document_date: txDate || docDate,
       });
     }
-
     toast.success(`"${title}" accepted`);
     setSaving(false);
     onConfirmed(doc.id);
@@ -198,327 +190,310 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
 
   return (
     <div className="flex flex-col h-full bg-card border rounded-xl overflow-hidden">
+
+      {/* ── Top row: preview + info ── */}
       <div className="flex flex-1 min-h-0">
 
-      {/* ── LEFT: Document Preview ── */}
-      <div className="flex flex-col border-r bg-zinc-50" style={{ width: "55%", minWidth: 0 }}>
-
-        {/* Duplicate warning */}
-        {duplicates.length > 0 && (
-          <div className="shrink-0 flex items-center gap-2 px-4 py-2.5 bg-amber-50 border-b border-amber-200">
-            <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" />
-            <p className="text-xs text-amber-800 flex-1">
-              <strong>{duplicates.length} possible duplicate{duplicates.length > 1 ? "s" : ""}</strong> detected
-            </p>
-            <Button size="sm" variant="outline" onClick={handleMergeAndDelete} disabled={merging}
-              className="text-xs h-7 gap-1 border-amber-300 text-amber-700 hover:bg-amber-100">
-              {merging ? <Loader2 className="h-3 w-3 animate-spin" /> : <GitMerge className="h-3 w-3" />}
-              Keep this, delete others
-            </Button>
+        {/* LEFT: Document Preview */}
+        <div className="flex flex-col border-r bg-zinc-50" style={{ width: "55%", minWidth: 0 }}>
+          <div style={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
+            <DocPreview doc={doc} />
           </div>
-        )}
-
-        {/* Proposed filename & folder — always visible, very prominent */}
-        <div className="shrink-0 bg-primary/5 border-b px-5 py-4 space-y-3">
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-primary mb-1">Proposed Filename</p>
-            {mode === "review" ? (
-              <p className="text-sm font-semibold text-foreground leading-snug break-all">{title || "—"}</p>
-            ) : (
-              <Input
-                value={title}
-                onChange={e => setTitle(e.target.value)}
-                className="font-semibold text-sm h-8"
-              />
+          <div className="shrink-0 border-t px-4 py-2 bg-white flex items-center gap-2 text-xs text-muted-foreground">
+            <FileText className="h-3.5 w-3.5 shrink-0" />
+            <span className="truncate font-mono">{doc.original_filename || doc.title}</span>
+            {doc.file_type && (
+              <span className="ml-auto uppercase font-semibold bg-muted px-1.5 py-0.5 rounded text-[10px] shrink-0">
+                {doc.file_type}
+              </span>
+            )}
+            {doc.file_url && (
+              <a href={doc.file_url} target="_blank" rel="noopener noreferrer"
+                className="shrink-0 hover:text-primary transition-colors">
+                <ExternalLink className="h-3.5 w-3.5" />
+              </a>
             )}
           </div>
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-primary mb-1">Destination Folder</p>
-            {mode === "review" ? (
-              <div className="flex items-center gap-1.5 text-sm text-foreground">
-                <FolderOpen className="h-4 w-4 text-primary shrink-0" />
-                <span className="font-medium">{folderDisplay}</span>
-              </div>
-            ) : (
-              <Select value={folderId} onValueChange={setFolderId}>
-                <SelectTrigger className="h-8 text-sm">
-                  <SelectValue placeholder="No folder" />
-                </SelectTrigger>
-                <SelectContent>
-                  {folders.map(f => (
-                    <SelectItem key={f.id} value={f.id}>{f.path || f.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          </div>
-          {vaultPath && (
+        </div>
+
+        {/* RIGHT: Info panel */}
+        <div className="flex flex-col" style={{ width: "45%", minWidth: 0 }}>
+
+          {/* Duplicate warning */}
+          {duplicates.length > 0 && (
+            <div className="shrink-0 flex items-center gap-2 px-4 py-2.5 bg-amber-50 border-b border-amber-200">
+              <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" />
+              <p className="text-xs text-amber-800 flex-1">
+                <strong>{duplicates.length} possible duplicate{duplicates.length > 1 ? "s" : ""}</strong> detected
+              </p>
+              <Button size="sm" variant="outline" onClick={handleMergeAndDelete} disabled={merging}
+                className="text-xs h-7 gap-1 border-amber-300 text-amber-700 hover:bg-amber-100">
+                {merging ? <Loader2 className="h-3 w-3 animate-spin" /> : <GitMerge className="h-3 w-3" />}
+                Keep this, delete others
+              </Button>
+            </div>
+          )}
+
+          {/* Proposed filename & folder */}
+          <div className="shrink-0 bg-primary/5 border-b px-5 py-4 space-y-3">
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Vault Path</p>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-primary mb-1">Proposed Filename</p>
               {mode === "review" ? (
-                <p className="text-xs font-mono text-muted-foreground break-all">{vaultPath}</p>
+                <p className="text-sm font-semibold text-foreground leading-snug break-all">{title || "—"}</p>
               ) : (
-                <Input
-                  value={vaultPath}
-                  onChange={e => setVaultPath(e.target.value)}
-                  className="font-mono text-xs h-7"
-                />
+                <Input value={title} onChange={e => setTitle(e.target.value)} className="font-semibold text-sm h-8" />
               )}
             </div>
-          )}
-        </div>
-
-        {/* Scrollable info / edit area */}
-        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
-
-          {mode === "review" ? (
-            <>
-              {/* AI Summary */}
-              {summary && (
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2">AI Summary</p>
-                  <p className="text-xs leading-relaxed text-foreground bg-muted/40 rounded-lg px-3 py-2.5">{summary}</p>
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-primary mb-1">Destination Folder</p>
+              {mode === "review" ? (
+                <div className="flex items-center gap-1.5 text-sm text-foreground">
+                  <FolderOpen className="h-4 w-4 text-primary shrink-0" />
+                  <span className="font-medium">{folderDisplay}</span>
                 </div>
+              ) : (
+                <Select value={folderId} onValueChange={setFolderId}>
+                  <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="No folder" /></SelectTrigger>
+                  <SelectContent>
+                    {folders.map(f => <SelectItem key={f.id} value={f.id}>{f.path || f.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               )}
-
-              {/* Document metadata table */}
+            </div>
+            {vaultPath && (
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2">Document Details</p>
-                <table className="w-full">
-                  <tbody>
-                    <InfoRow label="Document Date" value={docDate} />
-                    <InfoRow label="Category" value={categoryObj?.name} />
-                    {(doc.tags || []).length > 0 && (
-                      <tr className="border-b border-border/30">
-                        <td className="py-2 pr-4 text-xs text-muted-foreground font-medium whitespace-nowrap w-32">Tags</td>
-                        <td className="py-2">
-                          <div className="flex flex-wrap gap-1">
-                            {(doc.tags || []).map(t => (
-                              <span key={t} className="text-xs bg-secondary px-2 py-0.5 rounded-full">{t}</span>
-                            ))}
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                    <InfoRow label="Original File" value={doc.original_filename} mono />
-                  </tbody>
-                </table>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Vault Path</p>
+                {mode === "review" ? (
+                  <p className="text-xs font-mono text-muted-foreground break-all">{vaultPath}</p>
+                ) : (
+                  <Input value={vaultPath} onChange={e => setVaultPath(e.target.value)} className="font-mono text-xs h-7" />
+                )}
               </div>
+            )}
+          </div>
 
-              {/* Receipt data */}
-              {isReceipt && (
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-amber-600 mb-2">Receipt Data</p>
-                  <div className="border border-amber-200 rounded-xl overflow-hidden bg-amber-50/40">
-                    <table className="w-full px-3">
-                      <tbody className="divide-y divide-amber-100">
-                        {[
-                          ["Store", storeBrand],
-                          ["Location", storeLocation],
-                          ["Date", txDate],
-                          ["Time", txTime],
-                          ["Type", txType],
-                          ["Tender", tenderType + (lastFour ? ` ••${lastFour}` : "")],
-                          ["Amount", amount ? `$${parseFloat(amount).toFixed(2)}` : null],
-                        ].filter(([, v]) => v).map(([label, value]) => (
-                          <tr key={label}>
-                            <td className="px-3 py-2 text-xs text-amber-700 font-medium w-24">{label}</td>
-                            <td className="px-3 py-2 text-sm font-semibold text-foreground">{value}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-
-                    {items.length > 0 && (
-                      <div className="border-t border-amber-200">
-                        <p className="px-3 py-2 text-xs font-bold text-amber-700 uppercase tracking-wide">
-                          Line Items ({items.length})
-                        </p>
-                        <table className="w-full text-xs">
-                          <thead className="bg-amber-100/60">
-                            <tr>
-                              <th className="text-left px-3 py-1.5 font-medium text-amber-800">Item</th>
-                              <th className="text-right px-2 py-1.5 font-medium text-amber-800 w-10">Qty</th>
-                              <th className="text-right px-3 py-1.5 font-medium text-amber-800 w-20">Total</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {items.map((item, i) => (
-                              <tr key={i} className="border-t border-amber-100">
-                                <td className="px-3 py-1.5">{item.name || "—"}</td>
-                                <td className="px-2 py-1.5 text-right text-muted-foreground">{item.quantity ?? ""}</td>
-                                <td className="px-3 py-1.5 text-right font-mono font-medium">
-                                  {item.total_price != null ? `$${Number(item.total_price).toFixed(2)}` : "—"}
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {notes && (
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Notes</p>
-                  <p className="text-xs text-foreground">{notes}</p>
-                </div>
-              )}
-            </>
-          ) : (
-            /* ── Edit Mode ── */
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label className="text-xs">Document Date</Label>
-                  <Input type="date" className="mt-1 h-8 text-sm" value={docDate} onChange={e => setDocDate(e.target.value)} />
-                </div>
-                <div>
-                  <Label className="text-xs">Category</Label>
-                  <Select value={categoryId} onValueChange={setCategoryId}>
-                    <SelectTrigger className="mt-1 h-8 text-sm"><SelectValue placeholder="None" /></SelectTrigger>
-                    <SelectContent>
-                      {categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div>
-                <Label className="text-xs">Tags (comma-separated)</Label>
-                <Input className="mt-1 h-8 text-sm" value={tags} onChange={e => setTags(e.target.value)} />
-              </div>
-              <div>
-                <Label className="text-xs">AI Summary</Label>
-                <textarea
-                  className="mt-1 w-full text-sm border rounded-md px-3 py-2 bg-background resize-none focus-visible:ring-1 focus-visible:ring-ring outline-none"
-                  rows={3} value={summary} onChange={e => setSummary(e.target.value)}
-                />
-              </div>
-              <div>
-                <Label className="text-xs">Notes</Label>
-                <Input className="mt-1 h-8 text-sm" value={notes} onChange={e => setNotes(e.target.value)} />
-              </div>
-
-              {isReceipt && (
-                <div className="border rounded-xl p-4 space-y-3 bg-amber-50/50 border-amber-200">
-                  <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide">Receipt Data</p>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div><Label className="text-xs">Store Brand</Label><Input className="mt-1 h-8 text-sm" value={storeBrand} onChange={e => setStoreBrand(e.target.value)} /></div>
-                    <div><Label className="text-xs">Location</Label><Input className="mt-1 h-8 text-sm" value={storeLocation} onChange={e => setStoreLocation(e.target.value)} /></div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div><Label className="text-xs">Transaction Date</Label><Input className="mt-1 h-8 text-sm" value={txDate} onChange={e => setTxDate(e.target.value)} /></div>
-                    <div><Label className="text-xs">Time (HH:MM)</Label><Input className="mt-1 h-8 text-sm" value={txTime} onChange={e => setTxTime(e.target.value)} /></div>
-                  </div>
-                  <div className="grid grid-cols-3 gap-3">
-                    <div>
-                      <Label className="text-xs">Type</Label>
-                      <Select value={txType} onValueChange={setTxType}>
-                        <SelectTrigger className="mt-1 h-8 text-sm"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="purchase">Purchase</SelectItem>
-                          <SelectItem value="return">Return</SelectItem>
-                          <SelectItem value="exchange">Exchange</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label className="text-xs">Tender</Label>
-                      <Select value={tenderType} onValueChange={setTenderType}>
-                        <SelectTrigger className="mt-1 h-8 text-sm"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          {["cash","mastercard","visa","amex","eftpos","gift_voucher","exchange_voucher","other"].map(t => (
-                            <SelectItem key={t} value={t}>{t}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div><Label className="text-xs">Amount ($)</Label><Input className="mt-1 h-8 text-sm" type="number" step="0.01" value={amount} onChange={e => setAmount(e.target.value)} /></div>
-                  </div>
-                  <div><Label className="text-xs">Card Last 4</Label><Input className="mt-1 h-8 text-sm w-28" value={lastFour} onChange={e => setLastFour(e.target.value)} maxLength={4} /></div>
-
+          {/* Scrollable info / edit area */}
+          <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
+            {mode === "review" ? (
+              <>
+                {summary && (
                   <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <Label className="text-xs">Line Items</Label>
-                      <button onClick={addItem} className="text-xs text-primary hover:underline">+ Add row</button>
-                    </div>
-                    {items.length > 0 && (
-                      <div className="rounded-lg border overflow-hidden text-xs">
-                        <table className="w-full">
-                          <thead className="bg-muted/40">
-                            <tr>
-                              <th className="text-left px-3 py-2 font-medium">Item</th>
-                              <th className="text-right px-2 py-2 font-medium w-12">Qty</th>
-                              <th className="text-right px-2 py-2 font-medium w-16">Unit $</th>
-                              <th className="text-right px-2 py-2 font-medium w-16">Total $</th>
-                              <th className="w-6" />
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2">AI Summary</p>
+                    <p className="text-xs leading-relaxed text-foreground bg-muted/40 rounded-lg px-3 py-2.5">{summary}</p>
+                  </div>
+                )}
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2">Document Details</p>
+                  <table className="w-full">
+                    <tbody>
+                      <InfoRow label="Document Date" value={docDate} />
+                      <InfoRow label="Category" value={categoryObj?.name} />
+                      {(doc.tags || []).length > 0 && (
+                        <tr className="border-b border-border/30">
+                          <td className="py-2 pr-4 text-xs text-muted-foreground font-medium whitespace-nowrap w-32">Tags</td>
+                          <td className="py-2">
+                            <div className="flex flex-wrap gap-1">
+                              {(doc.tags || []).map(t => (
+                                <span key={t} className="text-xs bg-secondary px-2 py-0.5 rounded-full">{t}</span>
+                              ))}
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                      <InfoRow label="Original File" value={doc.original_filename} mono />
+                    </tbody>
+                  </table>
+                </div>
+
+                {isReceipt && (
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-amber-600 mb-2">Receipt Data</p>
+                    <div className="border border-amber-200 rounded-xl overflow-hidden bg-amber-50/40">
+                      <table className="w-full px-3">
+                        <tbody className="divide-y divide-amber-100">
+                          {[
+                            ["Store", storeBrand],
+                            ["Location", storeLocation],
+                            ["Date", txDate],
+                            ["Time", txTime],
+                            ["Type", txType],
+                            ["Tender", tenderType + (lastFour ? ` ••${lastFour}` : "")],
+                            ["Amount", amount ? `$${parseFloat(amount).toFixed(2)}` : null],
+                          ].filter(([, v]) => v).map(([label, value]) => (
+                            <tr key={label}>
+                              <td className="px-3 py-2 text-xs text-amber-700 font-medium w-24">{label}</td>
+                              <td className="px-3 py-2 text-sm font-semibold text-foreground">{value}</td>
                             </tr>
-                          </thead>
-                          <tbody>
-                            {items.map((item, i) => (
-                              <tr key={i} className="border-t group">
-                                <td className="px-3 py-1"><Input className="h-6 text-xs border-0 p-0 bg-transparent" value={item.name || ""} onChange={e => updateItem(i, "name", e.target.value)} /></td>
-                                <td className="px-2 py-1"><Input className="h-6 text-xs text-right border-0 p-0 bg-transparent" type="number" value={item.quantity ?? ""} onChange={e => updateItem(i, "quantity", parseFloat(e.target.value))} /></td>
-                                <td className="px-2 py-1"><Input className="h-6 text-xs text-right border-0 p-0 bg-transparent" type="number" step="0.01" value={item.unit_price ?? ""} onChange={e => updateItem(i, "unit_price", parseFloat(e.target.value))} /></td>
-                                <td className="px-2 py-1"><Input className="h-6 text-xs text-right border-0 p-0 bg-transparent" type="number" step="0.01" value={item.total_price ?? ""} onChange={e => updateItem(i, "total_price", parseFloat(e.target.value))} /></td>
-                                <td className="px-1"><button onClick={() => removeItem(i)} className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive"><X className="h-3 w-3" /></button></td>
+                          ))}
+                        </tbody>
+                      </table>
+                      {items.length > 0 && (
+                        <div className="border-t border-amber-200">
+                          <p className="px-3 py-2 text-xs font-bold text-amber-700 uppercase tracking-wide">
+                            Line Items ({items.length})
+                          </p>
+                          <table className="w-full text-xs">
+                            <thead className="bg-amber-100/60">
+                              <tr>
+                                <th className="text-left px-3 py-1.5 font-medium text-amber-800">Item</th>
+                                <th className="text-right px-2 py-1.5 font-medium text-amber-800 w-10">Qty</th>
+                                <th className="text-right px-3 py-1.5 font-medium text-amber-800 w-20">Total</th>
                               </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
+                            </thead>
+                            <tbody>
+                              {items.map((item, i) => (
+                                <tr key={i} className="border-t border-amber-100">
+                                  <td className="px-3 py-1.5">{item.name || "—"}</td>
+                                  <td className="px-2 py-1.5 text-right text-muted-foreground">{item.quantity ?? ""}</td>
+                                  <td className="px-3 py-1.5 text-right font-mono font-medium">
+                                    {item.total_price != null ? `$${Number(item.total_price).toFixed(2)}` : "—"}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {notes && (
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Notes</p>
+                    <p className="text-xs text-foreground">{notes}</p>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs">Document Date</Label>
+                    <Input type="date" className="mt-1 h-8 text-sm" value={docDate} onChange={e => setDocDate(e.target.value)} />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Category</Label>
+                    <Select value={categoryId} onValueChange={setCategoryId}>
+                      <SelectTrigger className="mt-1 h-8 text-sm"><SelectValue placeholder="None" /></SelectTrigger>
+                      <SelectContent>
+                        {categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
-              )}
-            </div>
-          )}
-        </div>
+                <div>
+                  <Label className="text-xs">Tags (comma-separated)</Label>
+                  <Input className="mt-1 h-8 text-sm" value={tags} onChange={e => setTags(e.target.value)} />
+                </div>
+                <div>
+                  <Label className="text-xs">AI Summary</Label>
+                  <textarea
+                    className="mt-1 w-full text-sm border rounded-md px-3 py-2 bg-background resize-none focus-visible:ring-1 focus-visible:ring-ring outline-none"
+                    rows={3} value={summary} onChange={e => setSummary(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">Notes</Label>
+                  <Input className="mt-1 h-8 text-sm" value={notes} onChange={e => setNotes(e.target.value)} />
+                </div>
 
+                {isReceipt && (
+                  <div className="border rounded-xl p-4 space-y-3 bg-amber-50/50 border-amber-200">
+                    <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide">Receipt Data</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div><Label className="text-xs">Store Brand</Label><Input className="mt-1 h-8 text-sm" value={storeBrand} onChange={e => setStoreBrand(e.target.value)} /></div>
+                      <div><Label className="text-xs">Location</Label><Input className="mt-1 h-8 text-sm" value={storeLocation} onChange={e => setStoreLocation(e.target.value)} /></div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div><Label className="text-xs">Transaction Date</Label><Input className="mt-1 h-8 text-sm" value={txDate} onChange={e => setTxDate(e.target.value)} /></div>
+                      <div><Label className="text-xs">Time (HH:MM)</Label><Input className="mt-1 h-8 text-sm" value={txTime} onChange={e => setTxTime(e.target.value)} /></div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-3">
+                      <div>
+                        <Label className="text-xs">Type</Label>
+                        <Select value={txType} onValueChange={setTxType}>
+                          <SelectTrigger className="mt-1 h-8 text-sm"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="purchase">Purchase</SelectItem>
+                            <SelectItem value="return">Return</SelectItem>
+                            <SelectItem value="exchange">Exchange</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label className="text-xs">Tender</Label>
+                        <Select value={tenderType} onValueChange={setTenderType}>
+                          <SelectTrigger className="mt-1 h-8 text-sm"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {["cash","mastercard","visa","amex","eftpos","gift_voucher","exchange_voucher","other"].map(t => (
+                              <SelectItem key={t} value={t}>{t}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div><Label className="text-xs">Amount ($)</Label><Input className="mt-1 h-8 text-sm" type="number" step="0.01" value={amount} onChange={e => setAmount(e.target.value)} /></div>
+                    </div>
+                    <div><Label className="text-xs">Card Last 4</Label><Input className="mt-1 h-8 text-sm w-28" value={lastFour} onChange={e => setLastFour(e.target.value)} maxLength={4} /></div>
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <Label className="text-xs">Line Items</Label>
+                        <button onClick={addItem} className="text-xs text-primary hover:underline">+ Add row</button>
+                      </div>
+                      {items.length > 0 && (
+                        <div className="rounded-lg border overflow-hidden text-xs">
+                          <table className="w-full">
+                            <thead className="bg-muted/40">
+                              <tr>
+                                <th className="text-left px-3 py-2 font-medium">Item</th>
+                                <th className="text-right px-2 py-2 font-medium w-12">Qty</th>
+                                <th className="text-right px-2 py-2 font-medium w-16">Unit $</th>
+                                <th className="text-right px-2 py-2 font-medium w-16">Total $</th>
+                                <th className="w-6" />
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {items.map((item, i) => (
+                                <tr key={i} className="border-t group">
+                                  <td className="px-3 py-1"><Input className="h-6 text-xs border-0 p-0 bg-transparent" value={item.name || ""} onChange={e => updateItem(i, "name", e.target.value)} /></td>
+                                  <td className="px-2 py-1"><Input className="h-6 text-xs text-right border-0 p-0 bg-transparent" type="number" value={item.quantity ?? ""} onChange={e => updateItem(i, "quantity", parseFloat(e.target.value))} /></td>
+                                  <td className="px-2 py-1"><Input className="h-6 text-xs text-right border-0 p-0 bg-transparent" type="number" step="0.01" value={item.unit_price ?? ""} onChange={e => updateItem(i, "unit_price", parseFloat(e.target.value))} /></td>
+                                  <td className="px-2 py-1"><Input className="h-6 text-xs text-right border-0 p-0 bg-transparent" type="number" step="0.01" value={item.total_price ?? ""} onChange={e => updateItem(i, "total_price", parseFloat(e.target.value))} /></td>
+                                  <td className="px-1"><button onClick={() => removeItem(i)} className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive"><X className="h-3 w-3" /></button></td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
-      </div>{/* end flex row */}
 
       {/* ── Full-width Action Bar ── */}
       <div className="shrink-0 border-t bg-muted/20 px-4 py-3">
         {mode === "review" ? (
           <div className="flex items-center gap-2">
-            <Button
-              onClick={handleAccept}
-              disabled={saving || rejecting || reprocessing}
-              size="lg"
-              className="gap-2 flex-1"
-            >
+            <Button onClick={handleAccept} disabled={saving || rejecting || reprocessing} size="lg" className="gap-2 flex-1">
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileCheck className="h-4 w-4" />}
               {saving ? "Accepting…" : "Accept AI Processing"}
             </Button>
-            <Button
-              onClick={() => setMode("edit")}
-              variant="outline"
-              size="lg"
-              className="gap-2"
-            >
+            <Button onClick={() => setMode("edit")} variant="outline" size="lg" className="gap-2">
               <Pencil className="h-4 w-4" />
               Edit &amp; Learn
             </Button>
-            <Button
-              onClick={handleReprocess}
-              disabled={saving || rejecting || reprocessing}
-              variant="outline"
-              size="lg"
-              className="gap-2 text-amber-700 border-amber-300 hover:bg-amber-50"
-            >
+            <Button onClick={handleReprocess} disabled={saving || rejecting || reprocessing} variant="outline" size="lg"
+              className="gap-2 text-amber-700 border-amber-300 hover:bg-amber-50">
               {reprocessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
               Strip all Processing &amp; Start Again
             </Button>
-            <Button
-              onClick={handleReject}
-              disabled={saving || rejecting || reprocessing}
-              variant="ghost"
-              size="lg"
-              className="gap-2 text-destructive hover:bg-destructive/10 px-3"
-            >
+            <Button onClick={handleReject} disabled={saving || rejecting || reprocessing} variant="ghost" size="lg"
+              className="gap-2 text-destructive hover:bg-destructive/10 px-3">
               {rejecting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
             </Button>
           </div>
@@ -528,16 +503,9 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
               {saving ? "Saving…" : "Save & Accept"}
             </Button>
-            <Button onClick={() => setMode("review")} variant="outline" size="lg">
-              Cancel
-            </Button>
-            <Button
-              onClick={handleReject}
-              disabled={saving || rejecting}
-              variant="ghost"
-              size="lg"
-              className="gap-2 text-destructive hover:bg-destructive/10 px-3"
-            >
+            <Button onClick={() => setMode("review")} variant="outline" size="lg">Cancel</Button>
+            <Button onClick={handleReject} disabled={saving || rejecting} variant="ghost" size="lg"
+              className="gap-2 text-destructive hover:bg-destructive/10 px-3">
               {rejecting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
             </Button>
           </div>
