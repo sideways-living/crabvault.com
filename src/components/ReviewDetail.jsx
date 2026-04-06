@@ -264,6 +264,7 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
                   value={folderId}
                   onValueChange={setFolderId}
                   folders={folders}
+                  onFolderCreated={() => {}}
                 />
               )}
             </div>
