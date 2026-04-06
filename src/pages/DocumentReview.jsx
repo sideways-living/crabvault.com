@@ -43,6 +43,11 @@ export default function DocumentReview() {
     setSelected(remaining[0] || null);
   };
 
+  const handleFolderCreated = async () => {
+    const flds = await base44.entities.Folder.list();
+    setFolders(flds);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -131,14 +136,15 @@ export default function DocumentReview() {
         {/* Detail panel */}
         <div className="flex-1 overflow-y-auto">
           {selected && (
-            <ReviewDetail
-              key={selected.id}
-              doc={selected}
-              folders={folders}
-              categories={categories}
-              duplicates={getDuplicates(selected, queue)}
-              onConfirmed={handleConfirmed}
-            />
+           <ReviewDetail
+             key={selected.id}
+             doc={selected}
+             folders={folders}
+             categories={categories}
+             duplicates={getDuplicates(selected, queue)}
+             onConfirmed={handleConfirmed}
+             onFolderCreated={handleFolderCreated}
+           />
           )}
         </div>
       </div>

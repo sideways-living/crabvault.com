@@ -32,7 +32,7 @@ export default function HierarchicalFolderPicker({ value, onValueChange, folders
       setNewFolderName("");
       setNewFolderParentId(null);
       toast.success(`Folder "${newFolderName}" created`);
-      if (onFolderCreated) onFolderCreated();
+      if (onFolderCreated) await onFolderCreated();
     } catch (err) {
       toast.error(err.message);
     } finally {

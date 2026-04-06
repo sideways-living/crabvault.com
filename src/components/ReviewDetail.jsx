@@ -57,7 +57,7 @@ function InfoRow({ label, value, mono }) {
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
-export default function ReviewDetail({ doc, folders, categories, duplicates = [], onConfirmed }) {
+export default function ReviewDetail({ doc, folders, categories, duplicates = [], onConfirmed, onFolderCreated }) {
   const ai = doc.ai_data || {};
   const isReceipt = !!ai.is_receipt;
   const [mode, setMode] = useState("review");
@@ -269,7 +269,7 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
                   value={folderId}
                   onValueChange={setFolderId}
                   folders={folders}
-                  onFolderCreated={() => {}}
+                  onFolderCreated={onFolderCreated}
                   onDone={() => setShowFolderPicker(false)}
                 />
               ) : (
