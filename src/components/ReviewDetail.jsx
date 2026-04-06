@@ -102,16 +102,13 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
   const folderObj = folders.find(f => f.id === folderId);
   const folderDisplay = (() => {
     if (!folderObj) return "No folder assigned";
-    let path = folderObj.path || folderObj.name;
+    const parts = [];
     let current = folderObj;
-    while (current.parent_folder_id) {
-      current = folders.find(f => f.id === current.parent_folder_id);
-      if (current) {
-        const parentPath = current.path || current.name;
-        path = parentPath.endsWith('/') ? `${parentPath}${path}` : `${parentPath}/${path}`;
-      }
+    while (current) {
+      parts.unshift(current.name);
+      current = current.parent_folder_id ? folders.find(f => f.id === current.parent_folder_id) : null;
     }
-    return path;
+    return parts.join(' / ');
   })();
   const categoryObj = categories.find(c => c.id === categoryId);
 
