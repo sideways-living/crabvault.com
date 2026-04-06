@@ -265,9 +265,9 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
                 />
               ) : (
                 <button
-                  onClick={() => mode === "review" && setShowFolderPicker(true)}
+                  onClick={() => setShowFolderPicker(true)}
                   className="flex items-center gap-1.5 text-sm text-foreground hover:text-primary transition-colors"
-                  disabled={mode !== "review"}
+                  disabled={mode !== "edit"}
                 >
                   <FolderOpen className="h-4 w-4 text-primary shrink-0" />
                   <span className="font-medium">{folderDisplay}</span>
