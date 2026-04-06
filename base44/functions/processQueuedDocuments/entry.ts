@@ -82,21 +82,25 @@ Deno.serve(async (req) => {
     // Step 1: OCR — extract text from PDF if not already searchable
     let extractedText = doc.extracted_text || '';
     if (doc.file_type === 'pdf' && !doc.is_searchable_pdf && doc.file_url) {
-      const ocrResult = await db.integrations.Core.InvokeLLM({
-        prompt: 'Extract ALL text content from this PDF document. Return the full verbatim text, preserving structure where possible. Do not summarise — return the raw extracted text only.',
-        file_urls: [doc.file_url],
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            extracted_text: { type: 'string' },
+      try {
+        const ocrResult = await db.integrations.Core.InvokeLLM({
+          prompt: 'Extract ALL text content from this PDF document. Return the full verbatim text, preserving structure where possible. Do not summarise — return the raw extracted text only.',
+          file_urls: [doc.file_url],
+          response_json_schema: {
+            type: 'object',
+            properties: {
+              extracted_text: { type: 'string' },
+            },
           },
-        },
-      });
-      extractedText = ocrResult.extracted_text || '';
-      await db.entities.Document.update(doc.id, {
-        extracted_text: extractedText,
-        is_searchable_pdf: true,
-      });
+        });
+        extractedText = ocrResult.extracted_text || '';
+        await db.entities.Document.update(doc.id, {
+          extracted_text: extractedText,
+          is_searchable_pdf: true,
+        });
+      } catch (err) {
+        console.warn(`OCR failed for ${doc.id}: ${err.message}`);
+      }
     }
 
     // Step 2: Analyse, categorise, assign vault path
@@ -171,52 +175,76 @@ ${extractedText ? `Content preview:\n${extractedText.substring(0, 3000)}` : ''}`
     const supportedImageFormats = ['png', 'jpeg', 'jpg', 'gif', 'webp'];
     const fileExt = doc.file_type?.toLowerCase();
     const isUnsupportedImage = doc.file_type && !['pdf', 'docx', 'xlsx', 'pptx', 'txt'].includes(fileExt) && !supportedImageFormats.includes(fileExt);
-    
-    let result;
-    try {
-      result = await db.integrations.Core.InvokeLLM({
-        prompt,
-        file_urls: doc.file_url && !isUnsupportedImage ? [doc.file_url] : undefined,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            is_receipt: { type: 'boolean' },
-            vendor_name: { type: 'string' },
-            store_brand: { type: 'string' },
-            store_location: { type: 'string' },
-            transaction_date: { type: 'string' },
-            transaction_type: { type: 'string' },
-            tender_type: { type: 'string' },
-            amount: { type: 'number' },
-            last_four_digits: { type: 'string' },
-            transaction_time: { type: 'string' },
-            subtotal: { type: 'number' },
-            tax_amount: { type: 'number' },
-            receipt_number: { type: 'string' },
-            items: {
-              type: 'array',
+
+    let result = null;
+    const maxRetries = 2;
+    let lastError = null;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        result = await db.integrations.Core.InvokeLLM({
+          prompt,
+          file_urls: doc.file_url && !isUnsupportedImage ? [doc.file_url] : undefined,
+          response_json_schema: {
+            type: 'object',
+            properties: {
+              is_receipt: { type: 'boolean' },
+              vendor_name: { type: 'string' },
+              store_brand: { type: 'string' },
+              store_location: { type: 'string' },
+              transaction_date: { type: 'string' },
+              transaction_type: { type: 'string' },
+              tender_type: { type: 'string' },
+              amount: { type: 'number' },
+              last_four_digits: { type: 'string' },
+              transaction_time: { type: 'string' },
+              subtotal: { type: 'number' },
+              tax_amount: { type: 'number' },
+              receipt_number: { type: 'string' },
               items: {
-                type: 'object',
-                properties: {
-                  name: { type: 'string' },
-                  quantity: { type: 'number' },
-                  unit_price: { type: 'number' },
-                  total_price: { type: 'number' },
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    name: { type: 'string' },
+                    quantity: { type: 'number' },
+                    unit_price: { type: 'number' },
+                    total_price: { type: 'number' },
+                  },
                 },
               },
+              suggested_title: { type: 'string' },
+              summary: { type: 'string' },
+              category_id: { type: 'string' },
+              folder_id: { type: 'string' },
+              tags: { type: 'array', items: { type: 'string' } },
+              document_date: { type: 'string' },
             },
-            suggested_title: { type: 'string' },
-            summary: { type: 'string' },
-            category_id: { type: 'string' },
-            folder_id: { type: 'string' },
-            tags: { type: 'array', items: { type: 'string' } },
-            document_date: { type: 'string' },
           },
-        },
+        });
+        console.log(`AI analysis succeeded for ${doc.id} on attempt ${attempt}`);
+        break; // Success
+      } catch (err) {
+        lastError = err.message;
+        console.warn(`AI analysis attempt ${attempt}/${maxRetries} failed for ${doc.id}: ${err.message}`);
+        if (attempt < maxRetries) {
+          await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2s before retry
+        }
+      }
+    }
+
+    if (!result) {
+      console.error(`AI analysis failed for ${doc.id} after ${maxRetries} attempts: ${lastError}`);
+      await db.entities.Document.update(doc.id, {
+        processing_status: 'failed',
+        notes: `AI analysis failed after ${maxRetries} attempts: ${lastError}`
       });
-    } catch (err) {
-      console.error(`LLM failed for ${doc.id}: ${err.message}`);
-      await db.entities.Document.update(doc.id, { processing_status: 'failed' });
+      await db.entities.ProcessingLog.create({
+        document_id: doc.id,
+        task: 'AI Analysis',
+        status: 'failed',
+        details: `LLM invocation failed: ${lastError}`
+      });
       processedCount++;
       continue;
     }
@@ -254,7 +282,7 @@ ${extractedText ? `Content preview:\n${extractedText.substring(0, 3000)}` : ''}`
     let categoryTag = null;
     if (targetFolderId) {
       let folder = folders.find(f => f.id === targetFolderId);
-      
+
       // For root-level Receipts/Business Cards
       if (folder && !folder.parent_folder_id) {
         categoryTag = folder.name;
