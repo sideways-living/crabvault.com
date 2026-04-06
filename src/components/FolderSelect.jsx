@@ -41,7 +41,18 @@ export default function FolderSelect({
     // deduplicate by id
     const seen = new Set();
     const unique = combined.filter(f => { if (seen.has(f.id)) return false; seen.add(f.id); return true; });
-    return unique.sort((a, b) => (a.path || a.name).localeCompare(b.path || b.name));
+    return unique.sort((a, b) => {
+      const segsA = (a.path || ('/' + a.name)).split('/').filter(Boolean);
+      const segsB = (b.path || ('/' + b.name)).split('/').filter(Boolean);
+      const len = Math.max(segsA.length, segsB.length);
+      for (let i = 0; i < len; i++) {
+        if (segsA[i] === undefined) return -1;
+        if (segsB[i] === undefined) return 1;
+        const cmp = segsA[i].localeCompare(segsB[i], undefined, { sensitivity: 'base' });
+        if (cmp !== 0) return cmp;
+      }
+      return 0;
+    });
   }, [initialFolders, extraFolders]);
 
   const handleChange = (val) => {
