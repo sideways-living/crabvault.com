@@ -30,10 +30,10 @@ Deno.serve(async (req) => {
     console.log(`Reset ${reallyStuck.length} stuck document(s) back to pending`);
   }
 
-  // Fetch only next 2 pending documents to avoid timeout
+  // Fetch only next 5 pending documents to avoid timeout
   const pending = await db.entities.Document.filter({
     processing_status: 'pending',
-  }, 'created_date', 2);
+  }, 'created_date', 5);
 
   if (pending.length === 0) {
     return Response.json({ message: 'No pending documents', processed: 0 });
