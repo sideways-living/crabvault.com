@@ -9,6 +9,7 @@ import {
   GitMerge, AlertTriangle, FolderOpen,
   X, Pencil, FileCheck, RefreshCw
 } from "lucide-react";
+import FolderSelect from "./FolderSelect";
 import { toast } from "sonner";
 
 // ─── Document Preview ─────────────────────────────────────────────────────────
@@ -252,12 +253,13 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
                   <span className="font-medium">{folderDisplay}</span>
                 </div>
               ) : (
-                <Select value={folderId} onValueChange={setFolderId}>
-                  <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="No folder" /></SelectTrigger>
-                  <SelectContent>
-                    {folders.map(f => <SelectItem key={f.id} value={f.id}>{f.path || f.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                <FolderSelect
+                  value={folderId}
+                  onValueChange={setFolderId}
+                  folders={folders}
+                  placeholder="No folder"
+                  className="h-8 text-sm"
+                />
               )}
             </div>
             {vaultPath && (

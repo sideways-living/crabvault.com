@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Save } from "lucide-react";
+import FolderSelect from "./FolderSelect";
 import { toast } from "sonner";
 
 const NONE = "__none__";
@@ -42,14 +43,16 @@ export default function BatchEditDialog({ open, onOpenChange, selectedIds, folde
         <div className="space-y-4 mt-2">
           <div>
             <Label className="text-xs">Folder</Label>
-            <Select value={folderId} onValueChange={setFolderId}>
-              <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value={NONE}>— no change —</SelectItem>
-                <SelectItem value={null}>— remove folder —</SelectItem>
-                {folders.map(f => <SelectItem key={f.id} value={f.id}>{f.path || f.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <FolderSelect
+              value={folderId}
+              onValueChange={setFolderId}
+              folders={folders}
+              className="mt-1"
+              extraItems={[
+                { value: "__none__", label: "— no change —" },
+                { value: "", label: "— remove folder —" },
+              ]}
+            />
           </div>
 
           <div>

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Upload, FileText, X, Loader2, Brain, Lock, CheckCircle2, ChevronRight } from "lucide-react";
+import FolderSelect from "./FolderSelect";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
 
@@ -180,16 +181,14 @@ export default function UploadDialog({ open, onOpenChange, folders, categories, 
 
           <div>
             <Label className="text-xs">Destination Folder (optional)</Label>
-            <Select value={folderId} onValueChange={setFolderId} disabled={uploading}>
-              <SelectTrigger className="mt-1.5">
-                <SelectValue placeholder="Select a folder..." />
-              </SelectTrigger>
-              <SelectContent>
-                {folders?.map(f => (
-                  <SelectItem key={f.id} value={f.id}>{f.path || f.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <FolderSelect
+              value={folderId}
+              onValueChange={setFolderId}
+              folders={folders || []}
+              placeholder="Select a folder…"
+              className="mt-1.5"
+              disabled={uploading}
+            />
           </div>
 
           <Button onClick={handleUpload} disabled={files.length === 0 || uploading} className="w-full">
