@@ -197,34 +197,11 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
     setItems(prev => prev.filter((_, idx) => idx !== i));
 
   return (
-    <div className="flex h-full bg-card border rounded-xl overflow-hidden">
+    <div className="flex flex-col h-full bg-card border rounded-xl overflow-hidden">
+      <div className="flex flex-1 min-h-0">
 
       {/* ── LEFT: Document Preview ── */}
       <div className="flex flex-col border-r bg-zinc-50" style={{ width: "55%", minWidth: 0 }}>
-        {/* Preview area */}
-        <div style={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
-          <DocPreview doc={doc} />
-        </div>
-        {/* Footer bar */}
-        <div className="shrink-0 border-t px-4 py-2 bg-white flex items-center gap-2 text-xs text-muted-foreground">
-          <FileText className="h-3.5 w-3.5 shrink-0" />
-          <span className="truncate font-mono">{doc.original_filename || doc.title}</span>
-          {doc.file_type && (
-            <span className="ml-auto uppercase font-semibold bg-muted px-1.5 py-0.5 rounded text-[10px] shrink-0">
-              {doc.file_type}
-            </span>
-          )}
-          {doc.file_url && (
-            <a href={doc.file_url} target="_blank" rel="noopener noreferrer"
-              className="shrink-0 hover:text-primary transition-colors">
-              <ExternalLink className="h-3.5 w-3.5" />
-            </a>
-          )}
-        </div>
-      </div>
-
-      {/* ── RIGHT: Info + Actions ── */}
-      <div className="flex flex-col" style={{ width: "45%", minWidth: 0 }}>
 
         {/* Duplicate warning */}
         {duplicates.length > 0 && (
@@ -500,69 +477,71 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
           )}
         </div>
 
-        {/* ── Action Bar ── */}
-        <div className="shrink-0 border-t bg-muted/20 px-4 py-3">
-          {mode === "review" ? (
-            <div className="flex items-center gap-2">
-              <Button
-                onClick={handleAccept}
-                disabled={saving || rejecting || reprocessing}
-                size="lg"
-                className="gap-2 flex-1"
-              >
-                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileCheck className="h-4 w-4" />}
-                {saving ? "Accepting…" : "Accept AI Processing"}
-              </Button>
-              <Button
-                onClick={() => setMode("edit")}
-                variant="outline"
-                size="lg"
-                className="gap-2"
-              >
-                <Pencil className="h-4 w-4" />
-                Edit &amp; Learn
-              </Button>
-              <Button
-                onClick={handleReprocess}
-                disabled={saving || rejecting || reprocessing}
-                variant="outline"
-                size="lg"
-                title="Reprocess from scratch"
-                className="gap-2 text-amber-700 border-amber-300 hover:bg-amber-50 px-3"
-              >
-                {reprocessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-              </Button>
-              <Button
-                onClick={handleReject}
-                disabled={saving || rejecting || reprocessing}
-                variant="ghost"
-                size="lg"
-                className="gap-2 text-destructive hover:bg-destructive/10 px-3"
-              >
-                {rejecting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-              </Button>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2">
-              <Button onClick={handleAccept} disabled={saving} size="lg" className="gap-2 flex-1">
-                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                {saving ? "Saving…" : "Save & Accept"}
-              </Button>
-              <Button onClick={() => setMode("review")} variant="outline" size="lg">
-                Cancel
-              </Button>
-              <Button
-                onClick={handleReject}
-                disabled={saving || rejecting}
-                variant="ghost"
-                size="lg"
-                className="gap-2 text-destructive hover:bg-destructive/10 px-3"
-              >
-                {rejecting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-              </Button>
-            </div>
-          )}
-        </div>
+      </div>
+      </div>{/* end flex row */}
+
+      {/* ── Full-width Action Bar ── */}
+      <div className="shrink-0 border-t bg-muted/20 px-4 py-3">
+        {mode === "review" ? (
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={handleAccept}
+              disabled={saving || rejecting || reprocessing}
+              size="lg"
+              className="gap-2 flex-1"
+            >
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileCheck className="h-4 w-4" />}
+              {saving ? "Accepting…" : "Accept AI Processing"}
+            </Button>
+            <Button
+              onClick={() => setMode("edit")}
+              variant="outline"
+              size="lg"
+              className="gap-2"
+            >
+              <Pencil className="h-4 w-4" />
+              Edit &amp; Learn
+            </Button>
+            <Button
+              onClick={handleReprocess}
+              disabled={saving || rejecting || reprocessing}
+              variant="outline"
+              size="lg"
+              className="gap-2 text-amber-700 border-amber-300 hover:bg-amber-50"
+            >
+              {reprocessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+              Strip all Processing &amp; Start Again
+            </Button>
+            <Button
+              onClick={handleReject}
+              disabled={saving || rejecting || reprocessing}
+              variant="ghost"
+              size="lg"
+              className="gap-2 text-destructive hover:bg-destructive/10 px-3"
+            >
+              {rejecting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+            </Button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            <Button onClick={handleAccept} disabled={saving} size="lg" className="gap-2 flex-1">
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+              {saving ? "Saving…" : "Save & Accept"}
+            </Button>
+            <Button onClick={() => setMode("review")} variant="outline" size="lg">
+              Cancel
+            </Button>
+            <Button
+              onClick={handleReject}
+              disabled={saving || rejecting}
+              variant="ghost"
+              size="lg"
+              className="gap-2 text-destructive hover:bg-destructive/10 px-3"
+            >
+              {rejecting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );
