@@ -176,8 +176,17 @@ export default function HierarchicalFolderPicker({ value, onValueChange, folders
         </button>
       )}
 
-      {onDone && (
-        <Button onClick={onDone} className="w-full mt-2">Done</Button>
+      {onDone && value && (
+        <Button
+          onClick={() => {
+            const folder = folders.find(f => f.id === value);
+            onDone(folder?.path || "/");
+          }}
+          disabled={!value}
+          className="w-full mt-2"
+        >
+          Select Folder
+        </Button>
       )}
     </div>
   );

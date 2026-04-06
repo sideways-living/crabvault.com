@@ -261,7 +261,7 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
                   onValueChange={setFolderId}
                   folders={folders}
                   onFolderCreated={() => {}}
-                  onDone={() => setShowFolderPicker(false)}
+                  onDone={(path) => setShowFolderPicker(false)}
                 />
               ) : (
                 <button
