@@ -31,20 +31,22 @@ function fmtDate(d) {
 function mergeReceiptData(doc, txn) {
   const ai = doc.ai_data || {};
   const t = txn || {};
+  const hasAiData = !!doc.ai_data;
   return {
     id: doc.id,
     document_id: doc.id,
     doc,
+    hasAiData,
     store_brand: t.store_brand || ai.store_brand || ai.vendor_name || "",
     store_location: t.store_location || ai.store_location || "",
     transaction_date: t.transaction_date || ai.transaction_date || doc.document_date || "",
-    transaction_time: t.transaction_time || ai.transaction_time || "",
-    transaction_type: t.transaction_type || ai.transaction_type || "",
-    tender_type: t.tender_type || ai.tender_type || "",
-    amount: t.amount ?? ai.amount ?? null,
+    transaction_time: t.transaction_time || (ai.transaction_time !== 'null' ? ai.transaction_time : '') || "",
+    transaction_type: t.transaction_type || (ai.is_receipt === false ? null : ai.transaction_type) || "",
+    tender_type: t.tender_type || (ai.tender_type !== 'other' || t.tender_type ? ai.tender_type : '') || "",
+    amount: t.amount ?? (ai.amount !== 0 ? ai.amount : null) ?? null,
     subtotal: t.subtotal ?? ai.subtotal ?? null,
     tax_amount: t.tax_amount ?? ai.tax_amount ?? null,
-    last_four_digits: t.last_four_digits || ai.last_four_digits || "",
+    last_four_digits: t.last_four_digits || (ai.last_four_digits !== 'null' ? ai.last_four_digits : '') || "",
     receipt_number: t.receipt_number || ai.receipt_number || "",
     items: t.items || ai.items || [],
   };
@@ -157,7 +159,13 @@ export default function ReceiptsTable() {
                         <div>{fmtDate(r.transaction_date)}</div>
                         {r.transaction_time && <div className="text-muted-foreground">{r.transaction_time}</div>}
                       </td>
-                      <td className="px-3 py-2.5 font-medium">{r.store_brand || "—"}</td>
+                      <td className="px-3 py-2.5 font-medium">
+                        {r.store_brand || (
+                          r.hasAiData ? "—" : (
+                            <span className="text-muted-foreground italic text-xs">{r.doc.title}</span>
+                          )
+                        )}
+                      </td>
                       <td className="px-3 py-2.5 text-muted-foreground text-xs">{r.store_location || "—"}</td>
                       <td className="px-3 py-2.5">
                         {r.transaction_type ? (
@@ -172,7 +180,11 @@ export default function ReceiptsTable() {
                       </td>
                       <td className="px-3 py-2.5 text-right font-mono text-xs">{fmt(r.subtotal)}</td>
                       <td className="px-3 py-2.5 text-right font-mono text-xs">{fmt(r.tax_amount)}</td>
-                      <td className="px-3 py-2.5 text-right font-mono font-semibold">{fmt(r.amount)}</td>
+                      <td className="px-3 py-2.5 text-right font-mono font-semibold">
+                        {r.amount != null ? fmt(r.amount) : (
+                          !r.hasAiData ? <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-sans">Needs processing</span> : "—"
+                        )}
+                      </td>
                       <td className="px-3 py-2.5 text-xs text-muted-foreground font-mono">{r.receipt_number || "—"}</td>
                       <td className="px-3 py-2.5 text-center">
                         <Link to={`/documents/${r.doc.id}`} onClick={e => e.stopPropagation()} className="text-primary hover:text-primary/80">
