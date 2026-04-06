@@ -1,0 +1,40 @@
+{
+  "name": "WatcherStatus",
+  "type": "object",
+  "properties": {
+    "watcher_type": {
+      "type": "string",
+      "title": "Watcher Type",
+      "enum": [
+        "ingest",
+        "sync"
+      ],
+      "description": "Type of watcher: ingest (watch.js) or sync (sync-to-vault.js)"
+    },
+    "last_heartbeat": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Last Heartbeat"
+    },
+    "status": {
+      "type": "string",
+      "title": "Status",
+      "enum": [
+        "running",
+        "offline"
+      ],
+      "default": "offline"
+    },
+    "version": {
+      "type": "string",
+      "title": "Watcher Version"
+    },
+    "details": {
+      "type": "object",
+      "title": "Status Details"
+    }
+  },
+  "required": [
+    "watcher_type"
+  ]
+}
