@@ -26,7 +26,6 @@ const mainNavItems = [
 const documentStages = [
   { label: "Pending", status: "pending" },
   { label: "Processing", status: "processing" },
-  { label: "Review Queue", status: "review", badge: true },
   { label: "Completed", status: "completed" },
 ];
 
@@ -120,6 +119,21 @@ export default function Layout() {
               Documents
             </div>
             <div className="space-y-1 ml-3 pl-3">
+              <Link
+                key="review"
+                to="/review"
+                onClick={() => setSidebarOpen(false)}
+                className={cn(
+                  "flex items-center gap-3 px-3 py-2 rounded-lg text-xs transition-all duration-200",
+                  location.pathname === "/review"
+                    ? "bg-sidebar-accent text-sidebar-primary"
+                    : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/30"
+                )}
+              >
+                <ClipboardCheck className="h-3 w-3 shrink-0" />
+                <span className="flex-1">Review Queue</span>
+                {docCounts.review > 0 && <DocumentBadge count={docCounts.review} />}
+              </Link>
               {documentStages.map((stage) => {
                 const params = new URLSearchParams(location.search);
                 const activeSection = params.get("section") || "completed";
