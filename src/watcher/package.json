@@ -4,6 +4,9 @@
   "description": "Local folder watcher that auto-uploads files to DocVault",
   "main": "watch.js",
   "scripts": {
-    "start": "node watch.js"
+    "start": "node watch.js",
+    "sync": "node sync-to-vault.js",
+    "start:all": "node watch.js & node sync-to-vault.js"
   }
+}
 }
