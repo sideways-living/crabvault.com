@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
 
-export default function HierarchicalFolderPicker({ value, onValueChange, folders, onFolderCreated }) {
+export default function HierarchicalFolderPicker({ value, onValueChange, folders, onFolderCreated, onDone }) {
   const [expanded, setExpanded] = useState(new Set());
   const [newFolderParentId, setNewFolderParentId] = useState(null);
   const [newFolderName, setNewFolderName] = useState("");
@@ -174,6 +174,10 @@ export default function HierarchicalFolderPicker({ value, onValueChange, folders
         >
           No folder
         </button>
+      )}
+
+      {onDone && (
+        <Button onClick={onDone} className="w-full mt-2">Done</Button>
       )}
     </div>
   );
