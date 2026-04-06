@@ -179,15 +179,8 @@ export default function HierarchicalFolderPicker({ value, onValueChange, folders
       {onDone && value && (
         <Button
           onClick={() => {
-            // Build full path by walking up parent chain
-            const buildPath = (folderId) => {
-              const folder = folders.find(f => f.id === folderId);
-              if (!folder) return "/";
-              if (!folder.parent_folder_id) return `/${folder.name}`;
-              const parentPath = buildPath(folder.parent_folder_id);
-              return `${parentPath}/${folder.name}`;
-            };
-            onDone(buildPath(value));
+            const folder = folders.find(f => f.id === value);
+            onDone(folder?.path || "/");
           }}
           disabled={!value}
           className="w-full mt-2"
