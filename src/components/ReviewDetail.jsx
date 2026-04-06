@@ -254,18 +254,23 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
             </div>
             <div>
               <p className="text-[10px] font-bold uppercase tracking-widest text-primary mb-1">Destination Folder</p>
-              {mode === "review" ? (
-                <div className="flex items-center gap-1.5 text-sm text-foreground">
-                  <FolderOpen className="h-4 w-4 text-primary shrink-0" />
-                  <span className="font-medium">{folderDisplay}</span>
-                </div>
-              ) : (
+              {showFolderPicker ? (
                 <HierarchicalFolderPicker
                   value={folderId}
                   onValueChange={setFolderId}
                   folders={folders}
                   onFolderCreated={() => {}}
+                  onDone={() => setShowFolderPicker(false)}
                 />
+              ) : (
+                <button
+                  onClick={() => mode === "review" && setShowFolderPicker(true)}
+                  className="flex items-center gap-1.5 text-sm text-foreground hover:text-primary transition-colors"
+                  disabled={mode !== "review"}
+                >
+                  <FolderOpen className="h-4 w-4 text-primary shrink-0" />
+                  <span className="font-medium">{folderDisplay}</span>
+                </button>
               )}
             </div>
             {vaultPath && (
