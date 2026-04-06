@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import HierarchicalFolderPicker from "./HierarchicalFolderPicker";
 import {
   Loader2, Save, Trash2, FileText, ExternalLink,
   GitMerge, AlertTriangle, FolderOpen,
@@ -259,12 +260,10 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
                   <span className="font-medium">{folderDisplay}</span>
                 </div>
               ) : (
-                <FolderSelect
+                <HierarchicalFolderPicker
                   value={folderId}
                   onValueChange={setFolderId}
                   folders={folders}
-                  placeholder="No folder"
-                  className="h-8 text-sm"
                 />
               )}
             </div>
