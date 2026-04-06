@@ -91,37 +91,20 @@ export default function AnnotationCanvas({ imageUrl, regions, onRegionsChange, f
       <div
         ref={containerRef}
         className="relative select-none rounded-xl overflow-hidden border-2 border-dashed border-border cursor-crosshair"
-        style={{ userSelect: "none" }}
+        style={{ userSelect: "none", minHeight: imageUrl?.toLowerCase().endsWith('.pdf') || imageUrl?.includes('application/pdf') ? 600 : undefined }}
         onMouseDown={onMouseDown}
         onMouseMove={onMouseMove}
         onMouseUp={onMouseUp}
         onMouseLeave={onMouseUp}
       >
-        <img src={imageUrl} alt="Receipt" className="w-full block pointer-events-none" draggable={false} />
-
-        {regions.map((r, i) => (
-          <div
-            key={i}
-            className="absolute flex items-start"
-            style={{
-              left: `${r.x}%`, top: `${r.y}%`,
-              width: `${r.width}%`, height: `${r.height}%`,
-              border: `2px solid ${getColor(r.field)}`,
-              backgroundColor: `${getColor(r.field)}22`,
-            }}
-          >
-            <span className="text-[10px] font-bold px-1 text-white leading-tight" style={{ backgroundColor: getColor(r.field) }}>
-              {fields.find(f => f.key === r.field)?.label}
-            </span>
-            <button
-              onMouseDown={e => e.stopPropagation()}
-              onClick={e => { e.stopPropagation(); removeRegion(i); }}
-              className="ml-auto p-0.5 rounded text-white"
-              style={{ backgroundColor: getColor(r.field) }}
-            >
-              <X className="h-2.5 w-2.5" />
-            </button>
-          </div>
+        {(imageUrl?.toLowerCase().endsWith('.pdf') || imageUrl?.includes('application/pdf') || imageUrl?.includes('.pdf')) ? (
+          <>
+            <iframe src={imageUrl} title="Receipt PDF" className="w-full pointer-events-none" style={{ height: 600, display: 'block', border: 0 }} />
+            <div className="absolute inset-0 cursor-crosshair" style={{ zIndex: 10 }} />
+          </>
+        ) : (
+          <img src={imageUrl} alt="Receipt" className="w-full block pointer-events-none" draggable={false} />
+        )}
         ))}
 
         {drawBox && (

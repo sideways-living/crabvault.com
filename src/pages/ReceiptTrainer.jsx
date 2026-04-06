@@ -34,18 +34,12 @@ function SampleEditor({ sample, index, onChange, onRemove }) {
         </button>
       </div>
       {sample.image_url ? (
-        sample.image_url.toLowerCase().includes('.pdf') || sample.image_url.includes('pdf') ? (
-          <div className="w-full rounded-xl overflow-hidden border bg-zinc-50" style={{ height: 500 }}>
-            <iframe src={sample.image_url} title="Receipt PDF" className="w-full h-full border-0" />
-          </div>
-        ) : (
-          <AnnotationCanvas
-            imageUrl={sample.image_url}
-            regions={sample.field_regions || []}
-            onRegionsChange={regions => onChange({ ...sample, field_regions: regions })}
-            fields={FIELDS}
-          />
-        )
+        <AnnotationCanvas
+          imageUrl={sample.image_url}
+          regions={sample.field_regions || []}
+          onRegionsChange={regions => onChange({ ...sample, field_regions: regions })}
+          fields={FIELDS}
+        />
       ) : (
         <UploadImageSlot onUploaded={url => onChange({ ...sample, image_url: url })} />
       )}
