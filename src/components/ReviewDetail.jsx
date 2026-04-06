@@ -261,19 +261,25 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
                   onValueChange={setFolderId}
                   folders={folders}
                   onFolderCreated={() => {}}
-                  onDone={(path) => setShowFolderPicker(false)}
+                  onDone={(path) => {
+                    const matchedFolder = folders.find(f => f.path === path);
+                    if (matchedFolder) {
+                      setFolderId(matchedFolder.id);
+                    }
+                    setShowFolderPicker(false);
+                  }}
                 />
               ) : (
-                <button
-                  onClick={() => setShowFolderPicker(true)}
-                  className="flex items-center gap-1.5 text-sm text-foreground hover:text-primary transition-colors"
-                  disabled={mode !== "edit"}
-                >
-                  <FolderOpen className="h-4 w-4 text-primary shrink-0" />
-                  <span className="font-medium">{folderDisplay}</span>
-                </button>
+               <button
+                 onClick={() => setShowFolderPicker(true)}
+                 className="flex items-center gap-1.5 text-sm text-foreground hover:text-primary transition-colors"
+                 disabled={mode !== "edit"}
+               >
+                 <FolderOpen className="h-4 w-4 text-primary shrink-0" />
+                 <span className="font-medium">{folderDisplay}</span>
+               </button>
               )}
-            </div>
+              </div>
             {vaultPath && (
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Vault Path</p>
