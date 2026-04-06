@@ -16,7 +16,23 @@ Deno.serve(async (req) => {
   const db = base44.asServiceRole;
 
   const allDocs = await db.entities.Document.list();
-  const pending = allDocs.filter(d => d.processing_status === 'pending');
+
+  // Reset any docs stuck in 'processing' for more than 10 minutes back to 'pending'
+  const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+  const stuckDocs = allDocs.filter(d =>
+    d.processing_status === 'processing' &&
+    new Date(d.updated_date) < tenMinutesAgo
+  );
+  if (stuckDocs.length > 0) {
+    await Promise.all(stuckDocs.map(d =>
+      db.entities.Document.update(d.id, { processing_status: 'pending' })
+    ));
+    console.log(`Reset ${stuckDocs.length} stuck document(s) back to pending`);
+  }
+
+  const pending = allDocs
+    .filter(d => d.processing_status === 'pending')
+    .concat(stuckDocs.map(d => ({ ...d, processing_status: 'pending' })));
 
   if (pending.length === 0) {
     return Response.json({ message: 'No pending documents', processed: 0 });
