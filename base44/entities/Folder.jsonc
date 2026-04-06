@@ -29,10 +29,6 @@
     "vault_path": {
       "type": "string",
       "title": "Cryptomator Vault Path"
-    },
-    "drive_folder_id": {
-      "type": "string",
-      "title": "Google Drive Folder ID"
     }
   },
   "required": [
