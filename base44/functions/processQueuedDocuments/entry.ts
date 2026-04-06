@@ -30,13 +30,39 @@ Deno.serve(async (req) => {
     console.log(`Reset ${reallyStuck.length} stuck document(s) back to pending`);
   }
 
-  // Fetch only next 5 pending documents to avoid timeout
+  // Fetch pending documents
   const pending = await db.entities.Document.filter({
     processing_status: 'pending',
   }, 'created_date', 5);
 
-  if (pending.length === 0) {
-    return Response.json({ message: 'No pending documents', processed: 0 });
+  // Fetch needs_review documents and reset them to pending (clear AI data)
+  const inReview = await db.entities.Document.filter({
+    processing_status: 'needs_review',
+  }, 'created_date', 5);
+
+  if (inReview.length > 0) {
+    await Promise.all(inReview.map(doc =>
+      db.entities.Document.update(doc.id, {
+        processing_status: 'pending',
+        ai_data: null,
+        summary: null,
+        tags: [],
+        category_id: null,
+        folder_id: null,
+        vault_path: null,
+        document_date: null,
+        extracted_text: null,
+        is_searchable_pdf: false,
+      })
+    ));
+    console.log(`Reset ${inReview.length} document(s) from review queue back to pending`);
+  }
+
+  // Combine pending and recently reset documents
+  const allDocs = [...pending, ...inReview];
+
+  if (allDocs.length === 0) {
+    return Response.json({ message: 'No documents to process', processed: 0 });
   }
 
   const categories = await db.entities.Category.list();
@@ -76,7 +102,7 @@ Deno.serve(async (req) => {
 
   let processedCount = 0;
 
-  for (const doc of pending) {
+  for (const doc of allDocs) {
     await db.entities.Document.update(doc.id, { processing_status: 'processing' });
 
     // Step 1: OCR — extract text from PDF if not already searchable
