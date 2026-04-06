@@ -14,6 +14,7 @@ import SearchPage from './pages/SearchPage';
 import SettingsPage from './pages/SettingsPage';
 import ReceiptTrainer from './pages/ReceiptTrainer';
 import DocumentReview from './pages/DocumentReview';
+import DuplicateFinderPage from './pages/DuplicateFinderPage';
 import DeletedDocuments from './pages/DeletedDocuments';
 
 const AuthenticatedApp = () => {
@@ -54,6 +55,7 @@ const AuthenticatedApp = () => {
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/receipt-trainer" element={<ReceiptTrainer />} />
         <Route path="/review" element={<DocumentReview />} />
+        <Route path="/duplicate-finder" element={<DuplicateFinderPage />} />
         <Route path="/deleted" element={<DeletedDocuments />} />
         <Route path="*" element={<PageNotFound />} />
       </Route>

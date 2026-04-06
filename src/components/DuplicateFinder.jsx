@@ -1,14 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Copy, Trash2, Loader2, ExternalLink, AlertTriangle, GitMerge, CheckCircle2, FileText, Plus, FolderPlus } from "lucide-react";
-import { Link } from "react-router-dom";
+import {
+  Copy, Trash2, Loader2, ExternalLink, AlertTriangle,
+  CheckCircle2, FileText, RefreshCw, Shield
+} from "lucide-react";
 import moment from "moment";
 import { toast } from "sonner";
 
+// ─── Duplicate grouping ───────────────────────────────────────────────────────
 function groupDuplicates(docs) {
   const groups = [];
   const used = new Set();
@@ -34,47 +35,38 @@ function groupDuplicates(docs) {
   return groups;
 }
 
-function reasonLabel(doc, group) {
-  const reasons = [];
+function reasonTags(doc, group) {
+  const tags = [];
   const others = group.filter(d => d.id !== doc.id);
-  if (others.some(o => o.original_filename?.toLowerCase() === doc.original_filename?.toLowerCase())) reasons.push('same filename');
-  if (others.some(o => o.file_size && o.file_size === doc.file_size)) reasons.push('same size');
-  if (others.some(o => moment(o.created_date).isSame(moment(doc.created_date), 'day'))) reasons.push('same date');
-  return reasons.join(', ');
+  if (others.some(o => o.original_filename?.toLowerCase() === doc.original_filename?.toLowerCase())) tags.push('same filename');
+  if (others.some(o => o.file_size && o.file_size === doc.file_size)) tags.push('same size');
+  if (others.some(o => moment(o.created_date).isSame(moment(doc.created_date), 'day'))) tags.push('same date');
+  return tags;
 }
 
+// ─── File Preview ─────────────────────────────────────────────────────────────
 function FilePreview({ doc }) {
-  const isPdf = doc.file_type === 'pdf';
-  const isImage = ['jpg', 'jpeg', 'png'].includes(doc.file_type);
+  const type = (doc.file_type || '').toLowerCase();
+  const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(type);
 
   if (!doc.file_url) {
     return (
-      <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-muted-foreground bg-muted/30 rounded-lg">
-        <FileText className="h-10 w-10" />
+      <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-muted-foreground bg-muted/20">
+        <FileText className="h-12 w-12 opacity-30" />
         <span className="text-xs">No preview</span>
       </div>
     );
   }
-
   if (isImage) {
-    return <img src={doc.file_url} alt={doc.title} className="w-full h-full object-contain rounded-lg bg-muted/20" />;
+    return <img src={doc.file_url} alt={doc.title} className="w-full h-full object-contain bg-zinc-50" />;
   }
-
-  if (isPdf) {
-    return (
-      <iframe
-        src={doc.file_url}
-        title={doc.title}
-        className="w-full h-full rounded-lg border"
-        style={{ minHeight: 300 }}
-      />
-    );
+  if (type === 'pdf') {
+    return <iframe src={doc.file_url} title={doc.title} className="w-full h-full border-0" style={{ display: 'block' }} />;
   }
-
   return (
-    <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-muted-foreground bg-muted/30 rounded-lg">
-      <FileText className="h-10 w-10" />
-      <span className="text-xs uppercase font-medium">{doc.file_type || 'file'}</span>
+    <div className="w-full h-full flex flex-col items-center justify-center gap-3 text-muted-foreground bg-muted/20">
+      <FileText className="h-12 w-12 opacity-30" />
+      <span className="text-xs uppercase font-medium">{type || 'file'}</span>
       <a href={doc.file_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline flex items-center gap-1">
         <ExternalLink className="h-3 w-3" /> Open file
       </a>
@@ -82,403 +74,206 @@ function FilePreview({ doc }) {
   );
 }
 
-function ResolveDialog({ group, folders: initialFolders, onResolved, onClose }) {
+// ─── Comparison Panel ─────────────────────────────────────────────────────────
+function ComparisonPanel({ group, onResolved }) {
   const [keepId, setKeepId] = useState(group[0].id);
-  const [titleSource, setTitleSource] = useState(group[0].id);
-  const [customTitle, setCustomTitle] = useState('');
-  const [useCustomTitle, setUseCustomTitle] = useState(false);
-  const docsWithFolders = group.filter(d => d.folder_id);
-  const [folderSource, setFolderSource] = useState(docsWithFolders[0]?.id || group[0].id);
-  const [useCustomFolder, setUseCustomFolder] = useState(docsWithFolders.length === 0);
-  const [customFolderId, setCustomFolderId] = useState('');
-  const [folders, setFolders] = useState(initialFolders);
-  const [newFolderName, setNewFolderName] = useState('');
-  const [newFolderParent, setNewFolderParent] = useState('');
-  const [creatingFolder, setCreatingFolder] = useState(false);
-  const [showNewFolder, setShowNewFolder] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [previewDoc, setPreviewDoc] = useState(group[0]);
-  const [suggestedTitle, setSuggestedTitle] = useState(null);
-  const [suggestingTitle, setSuggestingTitle] = useState(false);
 
-  const folderName = (folderId) => {
-    if (!folderId) return '(no folder)';
-    const f = folders.find(f => f.id === folderId);
-    return f ? (f.path || f.name) : '(unknown folder)';
-  };
-
-  const finalTitle = useCustomTitle
-    ? customTitle
-    : suggestedTitle && titleSource === '__suggested__'
-      ? suggestedTitle
-      : (group.find(d => d.id === titleSource)?.title || '');
-  const finalFolderId = useCustomFolder ? customFolderId : (group.find(d => d.id === folderSource)?.folder_id || undefined);
-  const finalFolderName = folderName(finalFolderId);
-
-  const handleSuggestTitle = async () => {
-    setSuggestingTitle(true);
-    const doc = previewDoc;
-    const result = await base44.integrations.Core.InvokeLLM({
-      prompt: `Scan this document and extract:
-1. Is it a receipt/invoice/payment? (true/false)
-2. The exact transaction/document date (format as YYYYMMDD)
-3. The vendor/shop/company name (clean name only, e.g. "Woolworths", "Shell", "Amazon")
-
-If it IS a receipt, return suggested_title as: "YYYYMMDD - VendorName - Receipt"
-If NOT a receipt, return a clean descriptive title.
-
-Document title: ${doc.title}\nFilename: ${doc.original_filename || ''}`,
-      file_urls: doc.file_url ? [doc.file_url] : undefined,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          is_receipt: { type: 'boolean' },
-          date_yyyymmdd: { type: 'string' },
-          vendor_name: { type: 'string' },
-          suggested_title: { type: 'string' },
-        },
-      },
-    });
-    if (result.suggested_title) {
-      setSuggestedTitle(result.suggested_title);
-      setTitleSource('__suggested__');
-      setUseCustomTitle(false);
-    }
-    setSuggestingTitle(false);
-  };
-
-  const handleCreateFolder = async () => {
-    if (!newFolderName.trim()) return;
-    setCreatingFolder(true);
-    const parentFolder = folders.find(f => f.id === newFolderParent);
-    const path = parentFolder ? `${parentFolder.path || '/' + parentFolder.name}/${newFolderName.trim()}` : `/${newFolderName.trim()}`;
-    const created = await base44.entities.Folder.create({
-      name: newFolderName.trim(),
-      parent_folder_id: newFolderParent || undefined,
-      path,
-    });
-    const updatedFolders = await base44.entities.Folder.list();
-    setFolders(updatedFolders);
-    setCustomFolderId(created.id);
-    setUseCustomFolder(true);
-    setShowNewFolder(false);
-    setNewFolderName('');
-    setNewFolderParent('');
-    setCreatingFolder(false);
-    toast.success(`Folder "${newFolderName.trim()}" created`);
-  };
-
-  const handleMerge = async () => {
+  const handleKeepOne = async () => {
     setSaving(true);
-    const keepDoc = group.find(d => d.id === keepId);
-    const ext = keepDoc?.original_filename?.split('.').pop() || keepDoc?.file_type || '';
-    const newFilename = ext ? `${finalTitle}.${ext}` : finalTitle;
-    await base44.entities.Document.update(keepId, {
-      title: finalTitle,
-      original_filename: newFilename,
-      folder_id: finalFolderId || undefined,
-    });
     const toDelete = group.filter(d => d.id !== keepId);
     await Promise.all(toDelete.map(d => base44.entities.Document.delete(d.id)));
-
-    // Log this decision so the AI can learn from it
-    const isReceipt = /receipt/i.test(finalTitle);
-    const vendorMatch = finalTitle.match(/^\d{8}\s*-\s*(.+?)\s*-\s*Receipt/i);
-    const dateMatch = finalTitle.match(/^(\d{8})/);
     await base44.entities.LearningLog.create({
       action_type: 'duplicate_resolved',
-      original_title: keepDoc?.title || '',
-      new_title: finalTitle,
-      original_filename: keepDoc?.original_filename || '',
-      new_filename: newFilename,
-      original_folder_id: keepDoc?.folder_id || '',
-      new_folder_id: finalFolderId || '',
-      file_type: keepDoc?.file_type || '',
-      is_receipt: isReceipt,
-      vendor_name: vendorMatch ? vendorMatch[1].trim() : '',
-      document_date: dateMatch ? dateMatch[1] : '',
+      original_title: group.find(d => d.id === keepId)?.title || '',
+      new_title: group.find(d => d.id === keepId)?.title || '',
       duplicates_deleted: toDelete.length,
-      notes: `Resolved ${group.length} duplicates, kept 1`,
+      notes: `Resolved ${group.length} duplicates via side-by-side comparison`,
     });
-
     setSaving(false);
-    toast.success(`Merged: kept "${finalTitle}", deleted ${toDelete.length} duplicate${toDelete.length !== 1 ? 's' : ''}`);
+    toast.success(`Kept 1, deleted ${toDelete.length} duplicate${toDelete.length !== 1 ? 's' : ''}`);
     onResolved(group);
   };
 
   const handleDeleteAll = async () => {
-    if (!confirm(`Delete all ${group.length} duplicates? This cannot be undone.`)) return;
+    if (!confirm(`Delete all ${group.length} files in this group?`)) return;
     setSaving(true);
     await Promise.all(group.map(d => base44.entities.Document.delete(d.id)));
     setSaving(false);
-    toast.success(`Deleted ${group.length} documents`);
+    toast.success(`Deleted all ${group.length} files`);
     onResolved(group);
   };
 
   return (
-    <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl w-full">
-        <DialogHeader>
-          <DialogTitle>Resolve Duplicates — {group.length} files</DialogTitle>
-        </DialogHeader>
-
-        <div className="flex gap-5" style={{ minHeight: 420 }}>
-          {/* Left: Preview */}
-          <div className="w-64 shrink-0 flex flex-col gap-2">
-            <div className="flex-1 border rounded-lg overflow-hidden" style={{ minHeight: 280 }}>
-              <FilePreview doc={previewDoc} />
-            </div>
-            <div className="flex gap-1 flex-wrap">
-              {group.map(doc => (
-                <button
-                  key={doc.id}
-                  onClick={() => setPreviewDoc(doc)}
-                  className={`text-[10px] px-2 py-1 rounded border transition-colors truncate max-w-[90px] ${previewDoc.id === doc.id ? 'border-primary bg-primary/10 text-primary' : 'border-border hover:bg-muted'}`}
-                  title={doc.title}
-                >
-                  {doc.title?.substring(0, 14) || 'File'}
-                </button>
-              ))}
-            </div>
-            <a href={previewDoc.file_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline flex items-center gap-1 justify-center">
-              <ExternalLink className="h-3 w-3" /> Open in new tab
-            </a>
-          </div>
-
-          {/* Right: Options */}
-          <div className="flex-1 overflow-y-auto space-y-5 text-sm pr-1">
-            {/* Step 1: Keep which file */}
-            <div>
-              <p className="font-medium mb-2">1. Which file to keep?</p>
-              <div className="space-y-2">
-                {group.map(doc => (
-                  <label key={doc.id} className={`flex items-start gap-3 border rounded-lg px-3 py-2.5 cursor-pointer transition-colors ${keepId === doc.id ? 'border-primary bg-primary/5' : 'hover:bg-muted/40'}`}>
-                    <input type="radio" name="keep" value={doc.id} checked={keepId === doc.id} onChange={() => setKeepId(doc.id)} className="mt-0.5" />
-                    <div className="min-w-0">
-                      <p className="font-medium truncate">{doc.title}</p>
-                      <p className="text-xs text-muted-foreground">{doc.original_filename}{doc.file_size ? ` • ${(doc.file_size / 1024).toFixed(0)} KB` : ''} • {moment(doc.created_date).format('D MMM YYYY')}</p>
-                    </div>
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            {/* Step 2: Title */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <p className="font-medium">2. Which title?</p>
-                <Button size="sm" variant="outline" className="h-6 text-xs gap-1" onClick={handleSuggestTitle} disabled={suggestingTitle}>
-                  {suggestingTitle ? <Loader2 className="h-3 w-3 animate-spin" /> : <FileText className="h-3 w-3" />}
-                  {suggestingTitle ? 'Scanning...' : 'Suggest with AI'}
-                </Button>
-              </div>
-              <div className="space-y-1.5">
-                {suggestedTitle && (
-                  <label className={`flex items-center gap-3 border rounded-lg px-3 py-2 cursor-pointer transition-colors ${!useCustomTitle && titleSource === '__suggested__' ? 'border-primary bg-primary/5' : 'hover:bg-muted/40'}`}>
-                    <input type="radio" name="title" checked={!useCustomTitle && titleSource === '__suggested__'} onChange={() => { setTitleSource('__suggested__'); setUseCustomTitle(false); }} />
-                    <span className="truncate">{suggestedTitle}</span>
-                    <Badge variant="secondary" className="text-[10px] px-1.5 shrink-0">AI</Badge>
-                  </label>
-                )}
-                {group.map(doc => (
-                  <label key={doc.id} className={`flex items-center gap-3 border rounded-lg px-3 py-2 cursor-pointer transition-colors ${!useCustomTitle && titleSource === doc.id ? 'border-primary bg-primary/5' : 'hover:bg-muted/40'}`}>
-                    <input type="radio" name="title" value={doc.id} checked={!useCustomTitle && titleSource === doc.id} onChange={() => { setTitleSource(doc.id); setUseCustomTitle(false); }} />
-                    <span className="truncate">{doc.title}</span>
-                  </label>
-                ))}
-                <label className={`flex items-center gap-3 border rounded-lg px-3 py-2 cursor-pointer transition-colors ${useCustomTitle ? 'border-primary bg-primary/5' : 'hover:bg-muted/40'}`}>
-                  <input type="radio" name="title" checked={useCustomTitle} onChange={() => setUseCustomTitle(true)} />
-                  <span className="text-muted-foreground shrink-0">Custom:</span>
-                  <Input
-                    value={customTitle}
-                    onChange={e => { setCustomTitle(e.target.value); setUseCustomTitle(true); }}
-                    onClick={() => setUseCustomTitle(true)}
-                    placeholder="Enter custom title…"
-                    className="h-7 text-xs flex-1"
-                  />
-                </label>
-              </div>
-            </div>
-
-            {/* Step 3: Folder */}
-            <div>
-              <p className="font-medium mb-2">3. Which folder?</p>
-              <div className="space-y-1.5">
-                {/* Only show options for docs that actually have a folder */}
-                {group.filter(doc => doc.folder_id).map(doc => (
-                  <label key={doc.id} className={`flex items-center gap-3 border rounded-lg px-3 py-2 cursor-pointer transition-colors ${!useCustomFolder && folderSource === doc.id ? 'border-primary bg-primary/5' : 'hover:bg-muted/40'}`}>
-                    <input type="radio" name="folder" value={doc.id} checked={!useCustomFolder && folderSource === doc.id} onChange={() => { setFolderSource(doc.id); setUseCustomFolder(false); }} />
-                    <span className="text-muted-foreground">{folderName(doc.folder_id)}</span>
-                  </label>
-                ))}
-                {/* Custom existing folder */}
-                <label className={`flex items-center gap-3 border rounded-lg px-3 py-2 cursor-pointer transition-colors ${useCustomFolder && !showNewFolder ? 'border-primary bg-primary/5' : 'hover:bg-muted/40'}`}>
-                  <input type="radio" name="folder" checked={useCustomFolder && !showNewFolder} onChange={() => { setUseCustomFolder(true); setShowNewFolder(false); }} />
-                  <span className="text-muted-foreground shrink-0">Choose:</span>
-                  <select
-                    value={customFolderId}
-                    onChange={e => { setCustomFolderId(e.target.value); setUseCustomFolder(true); setShowNewFolder(false); }}
-                    onClick={() => { setUseCustomFolder(true); setShowNewFolder(false); }}
-                    className="flex-1 h-7 text-xs border rounded px-2 bg-background"
-                  >
-                    <option value="">— no folder —</option>
-                    {folders.map(f => (
-                      <option key={f.id} value={f.id}>{f.path || f.name}</option>
-                    ))}
-                  </select>
-                </label>
-                {/* Create new folder */}
-                <button
-                  type="button"
-                  onClick={() => { setShowNewFolder(true); setUseCustomFolder(true); }}
-                  className={`w-full flex items-center gap-2 border rounded-lg px-3 py-2 text-xs text-primary hover:bg-primary/5 transition-colors ${showNewFolder ? 'border-primary bg-primary/5' : 'border-dashed'}`}
-                >
-                  <FolderPlus className="h-3.5 w-3.5" /> Create new folder…
-                </button>
-                {showNewFolder && (
-                  <div className="border rounded-lg px-3 py-3 space-y-2 bg-muted/20">
-                    <Input
-                      placeholder="Folder name"
-                      value={newFolderName}
-                      onChange={e => setNewFolderName(e.target.value)}
-                      className="h-7 text-xs"
-                    />
-                    <select
-                      value={newFolderParent}
-                      onChange={e => setNewFolderParent(e.target.value)}
-                      className="w-full h-7 text-xs border rounded px-2 bg-background"
-                    >
-                      <option value="">— no parent (root) —</option>
-                      {folders.map(f => (
-                        <option key={f.id} value={f.id}>{f.path || f.name}</option>
-                      ))}
-                    </select>
-                    <div className="flex gap-2">
-                      <Button size="sm" onClick={handleCreateFolder} disabled={creatingFolder || !newFolderName.trim()} className="h-7 text-xs gap-1">
-                        {creatingFolder ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
-                        Create
-                      </Button>
-                      <Button size="sm" variant="ghost" onClick={() => setShowNewFolder(false)} className="h-7 text-xs">Cancel</Button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Summary */}
-            <div className="bg-muted/40 rounded-lg px-4 py-3 text-xs space-y-1 text-muted-foreground">
-              <p><span className="font-medium text-foreground">Title:</span> {finalTitle || '(none)'}</p>
-              <p><span className="font-medium text-foreground">Folder:</span> {finalFolderName}</p>
-              <p><span className="font-medium text-foreground">Delete:</span> {group.length - 1} other file{group.length - 1 !== 1 ? 's' : ''}</p>
-            </div>
-
-            <div className="flex gap-2 pt-1">
-              <Button onClick={handleMerge} disabled={saving} className="flex-1 gap-2">
-                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <GitMerge className="h-4 w-4" />}
-                Merge & Keep One
-              </Button>
-              <Button onClick={handleDeleteAll} disabled={saving} variant="destructive" className="gap-2">
-                <Trash2 className="h-4 w-4" /> Delete All
-              </Button>
-              <Button onClick={onClose} disabled={saving} variant="outline">Cancel</Button>
-            </div>
-          </div>
+    <div className="flex flex-col h-full">
+      {/* Header */}
+      <div className="shrink-0 px-6 py-4 border-b flex items-center justify-between">
+        <div>
+          <h2 className="font-semibold">{group.length} duplicate files</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">Select the file to keep, then resolve</p>
         </div>
-      </DialogContent>
-    </Dialog>
+        <div className="flex gap-2">
+          <Button onClick={handleKeepOne} disabled={saving} className="gap-2">
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Shield className="h-4 w-4" />}
+            Keep selected, delete rest
+          </Button>
+          <Button onClick={handleDeleteAll} disabled={saving} variant="destructive" className="gap-2">
+            <Trash2 className="h-4 w-4" /> Delete all
+          </Button>
+        </div>
+      </div>
+
+      {/* Side-by-side previews */}
+      <div className="flex-1 min-h-0 flex gap-0 divide-x overflow-x-auto">
+        {group.map(doc => {
+          const isKept = keepId === doc.id;
+          const tags = reasonTags(doc, group);
+          return (
+            <div
+              key={doc.id}
+              className="flex flex-col min-w-0 cursor-pointer transition-all"
+              style={{ flex: `1 1 ${100 / group.length}%`, minWidth: 220 }}
+              onClick={() => setKeepId(doc.id)}
+            >
+              {/* Selection header */}
+              <div className={`shrink-0 px-4 py-2.5 flex items-center gap-2 transition-colors ${isKept ? 'bg-primary text-primary-foreground' : 'bg-muted/40 hover:bg-muted/70'}`}>
+                <div className={`h-4 w-4 rounded-full border-2 shrink-0 flex items-center justify-center ${isKept ? 'border-white bg-white' : 'border-current'}`}>
+                  {isKept && <div className="h-2 w-2 rounded-full bg-primary" />}
+                </div>
+                <span className="text-xs font-medium truncate">{isKept ? '✓ Keep this' : 'Click to keep'}</span>
+              </div>
+
+              {/* Preview */}
+              <div className="flex-1 min-h-0 overflow-hidden">
+                <FilePreview doc={doc} />
+              </div>
+
+              {/* Metadata footer */}
+              <div className={`shrink-0 px-3 py-3 border-t space-y-1 text-xs ${isKept ? 'bg-primary/5' : 'bg-background'}`}>
+                <p className="font-medium truncate" title={doc.title}>{doc.title}</p>
+                <p className="text-muted-foreground truncate">{doc.original_filename || '—'}</p>
+                <div className="flex flex-wrap gap-1 items-center text-muted-foreground">
+                  {doc.file_size && <span>{(doc.file_size / 1024).toFixed(0)} KB</span>}
+                  <span>• {moment(doc.created_date).format('D MMM YY')}</span>
+                </div>
+                <div className="flex flex-wrap gap-1 pt-0.5">
+                  {tags.map(t => (
+                    <Badge key={t} variant="outline" className="text-[10px] px-1.5 py-0 text-amber-700 border-amber-300 bg-amber-50">{t}</Badge>
+                  ))}
+                </div>
+                <a
+                  href={doc.file_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={e => e.stopPropagation()}
+                  className="inline-flex items-center gap-1 text-primary hover:underline mt-1"
+                >
+                  <ExternalLink className="h-3 w-3" /> Open original
+                </a>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
+// ─── Main Component ───────────────────────────────────────────────────────────
 export default function DuplicateFinder() {
   const [groups, setGroups] = useState(null);
-  const [folders, setFolders] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [resolving, setResolving] = useState(null);
+  const [selectedGroup, setSelectedGroup] = useState(null);
 
   const handleScan = async () => {
     setLoading(true);
     setGroups(null);
-    const [docs, flds] = await Promise.all([
-      base44.entities.Document.filter({ is_deleted: false }, '-created_date', 10000),
-      base44.entities.Folder.list(),
-    ]);
-    setFolders(flds);
-    setGroups(groupDuplicates(docs));
+    setSelectedGroup(null);
+    const docs = await base44.entities.Document.filter({ is_deleted: false }, '-created_date', 10000);
+    const found = groupDuplicates(docs);
+    setGroups(found);
+    if (found.length > 0) setSelectedGroup(found[0]);
     setLoading(false);
   };
 
   const handleResolved = (resolvedGroup) => {
-    setResolving(null);
-    setGroups(prev => prev.filter(g => g !== resolvedGroup));
+    setGroups(prev => {
+      const next = prev.filter(g => g !== resolvedGroup);
+      setSelectedGroup(next.length > 0 ? next[0] : null);
+      return next;
+    });
   };
 
-  return (
-    <div className="bg-card rounded-xl border p-6 space-y-4">
-      <div className="flex items-center gap-3">
-        <Copy className="h-5 w-5 text-chart-3" />
-        <h2 className="font-semibold">Duplicate Finder</h2>
+  // Auto-scan on mount
+  useEffect(() => { handleScan(); }, []);
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 gap-3 text-muted-foreground">
+        <Loader2 className="h-7 w-7 animate-spin" />
+        <p className="text-sm">Scanning all documents for duplicates…</p>
       </div>
-      <p className="text-sm text-muted-foreground">
-        Scans all documents for potential duplicates based on filename, file size, and creation date.
-      </p>
+    );
+  }
 
-      <Button onClick={handleScan} disabled={loading} variant="outline">
-        {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Copy className="h-4 w-4 mr-2" />}
-        {loading ? 'Scanning...' : 'Scan for Duplicates'}
-      </Button>
-
-      {groups !== null && (
-        <div className="space-y-4 pt-2">
-          {groups.length === 0 ? (
-            <div className="text-sm text-emerald-600 bg-emerald-50 rounded-lg px-4 py-3 flex items-center gap-2">
-              <CheckCircle2 className="h-4 w-4" /> No duplicates found.
-            </div>
-          ) : (
-            <>
-              <div className="flex items-center gap-2 text-sm text-amber-700 bg-amber-50 rounded-lg px-4 py-2">
-                <AlertTriangle className="h-4 w-4" />
-                Found {groups.length} duplicate group{groups.length !== 1 ? 's' : ''} ({groups.reduce((a, g) => a + g.length, 0)} documents total)
-              </div>
-              {groups.map((group, gi) => (
-                <div key={gi} className="border rounded-lg overflow-hidden">
-                  <div className="flex items-center justify-between bg-muted/40 px-4 py-2">
-                    <span className="text-xs font-medium text-muted-foreground">Group {gi + 1} — {group.length} duplicates</span>
-                    <Button size="sm" variant="outline" className="h-7 text-xs gap-1.5" onClick={() => setResolving(group)}>
-                      <GitMerge className="h-3.5 w-3.5" /> Resolve
-                    </Button>
-                  </div>
-                  <div className="divide-y">
-                    {group.map((doc) => (
-                      <div key={doc.id} className="flex items-center gap-3 px-4 py-3">
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">{doc.title}</p>
-                          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                            <span className="text-xs text-muted-foreground">{doc.original_filename}</span>
-                            {doc.file_size && <span className="text-xs text-muted-foreground">• {(doc.file_size / 1024).toFixed(0)} KB</span>}
-                            <span className="text-xs text-muted-foreground">• {moment(doc.created_date).format('D MMM YYYY')}</span>
-                            <Badge variant="outline" className="text-[10px] px-1.5 py-0">{reasonLabel(doc, group)}</Badge>
-                          </div>
-                        </div>
-                        <Link to={`/documents/${doc.id}`} className="text-muted-foreground hover:text-primary transition-colors">
-                          <ExternalLink className="h-4 w-4" />
-                        </Link>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </>
+  return (
+    <div className="flex flex-col h-[calc(100vh-130px)]">
+      {/* Top bar */}
+      <div className="shrink-0 flex items-center justify-between mb-4">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Duplicate Finder</h1>
+          {groups !== null && (
+            <p className="text-sm text-muted-foreground mt-0.5">
+              {groups.length === 0
+                ? 'No duplicates found'
+                : `${groups.length} group${groups.length !== 1 ? 's' : ''} · ${groups.reduce((a, g) => a + g.length, 0)} files`}
+            </p>
           )}
+        </div>
+        <Button onClick={handleScan} variant="outline" className="gap-2">
+          <RefreshCw className="h-4 w-4" /> Re-scan
+        </Button>
+      </div>
+
+      {groups !== null && groups.length === 0 && (
+        <div className="flex flex-col items-center justify-center flex-1 gap-3 text-emerald-600 bg-emerald-50 rounded-xl border border-emerald-200">
+          <CheckCircle2 className="h-10 w-10" />
+          <p className="font-medium">No duplicates found</p>
+          <p className="text-sm text-muted-foreground">All your documents appear to be unique.</p>
         </div>
       )}
 
-      {resolving && (
-        <ResolveDialog
-          group={resolving}
-          folders={folders}
-          onResolved={handleResolved}
-          onClose={() => setResolving(null)}
-        />
+      {groups !== null && groups.length > 0 && (
+        <div className="flex flex-1 min-h-0 gap-4">
+          {/* Left: group list */}
+          <div className="w-64 shrink-0 flex flex-col gap-1 overflow-y-auto">
+            {groups.map((group, gi) => {
+              const isSelected = selectedGroup === group;
+              return (
+                <button
+                  key={gi}
+                  onClick={() => setSelectedGroup(group)}
+                  className={`text-left px-3 py-3 rounded-lg border transition-all ${isSelected ? 'border-primary bg-primary/5 shadow-sm' : 'border-transparent hover:bg-muted/60'}`}
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                    <span className="text-xs font-semibold text-amber-700">{group.length} duplicates</span>
+                  </div>
+                  <p className="text-sm font-medium truncate">{group[0].title}</p>
+                  <p className="text-xs text-muted-foreground truncate mt-0.5">{group[0].original_filename}</p>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Right: comparison panel */}
+          <div className="flex-1 min-w-0 border rounded-xl overflow-hidden bg-card">
+            {selectedGroup
+              ? <ComparisonPanel key={selectedGroup[0].id} group={selectedGroup} onResolved={handleResolved} />
+              : <div className="flex items-center justify-center h-full text-muted-foreground text-sm">Select a group to compare</div>
+            }
+          </div>
+        </div>
       )}
     </div>
   );

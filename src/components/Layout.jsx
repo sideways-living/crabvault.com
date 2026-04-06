@@ -255,11 +255,11 @@ export default function Layout() {
             </div>
             <div className="space-y-1 ml-3 pl-3">
               <Link
-                to="/documents"
+                to="/duplicate-finder"
                 onClick={() => setSidebarOpen(false)}
                 className={cn(
                   "flex items-center gap-3 px-3 py-2 rounded-lg text-xs transition-all duration-200",
-                  location.pathname === "/documents"
+                  location.pathname === "/duplicate-finder"
                     ? "bg-sidebar-accent text-sidebar-primary"
                     : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/30"
                 )}
