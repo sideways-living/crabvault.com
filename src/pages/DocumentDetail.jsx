@@ -170,7 +170,17 @@ export default function DocumentDetail() {
           {/* Row 2 Col 2: 3 core badges — file type, category, status */}
           <div style={{display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '8px'}}>
             {doc.file_type && <Badge variant="outline" className="uppercase text-[10px] font-mono">.{doc.file_type}</Badge>}
-            {category && <Badge variant="secondary">{category.name}</Badge>}
+            {editing ? (
+              <Select value={editData.category_id} onValueChange={v => setEditData({...editData, category_id: v})}>
+                <SelectTrigger className="w-32 h-7 text-xs"><SelectValue placeholder="Select category" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={null}>Uncategorised</SelectItem>
+                  {categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            ) : (
+              <Badge variant="secondary">{category?.name || 'Uncategorised'}</Badge>
+            )}
             <span className={`inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full font-medium ${status.className}`}>
               <StatusIcon className={`h-3 w-3 ${doc.processing_status === 'processing' ? 'animate-spin' : ''}`} />
               {status.label}
