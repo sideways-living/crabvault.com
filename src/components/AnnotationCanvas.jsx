@@ -88,31 +88,51 @@ export default function AnnotationCanvas({ imageUrl, regions, onRegionsChange, f
       <p className="text-xs text-muted-foreground">Select a field above, then drag to highlight that area on the receipt.</p>
 
       {/* Canvas */}
-      <div
-        ref={containerRef}
-        className="relative select-none rounded-xl overflow-hidden border-2 border-dashed border-border cursor-crosshair"
-        style={{ userSelect: "none", minHeight: imageUrl?.toLowerCase().endsWith('.pdf') || imageUrl?.includes('application/pdf') ? 600 : undefined }}
-        onMouseDown={onMouseDown}
-        onMouseMove={onMouseMove}
-        onMouseUp={onMouseUp}
-        onMouseLeave={onMouseUp}
-      >
-        {(imageUrl?.toLowerCase().endsWith('.pdf') || imageUrl?.includes('application/pdf') || imageUrl?.includes('.pdf')) ? (
-          <>
-            <iframe src={imageUrl} title="Receipt PDF" className="w-full pointer-events-none" style={{ height: 600, display: 'block', border: 0 }} />
-            <div className="absolute inset-0 cursor-crosshair" style={{ zIndex: 10 }} />
-          </>
-        ) : (
-          <img src={imageUrl} alt="Receipt" className="w-full block pointer-events-none" draggable={false} />
-        )}
-        ))}
+      <div className="rounded-xl overflow-y-auto border-2 border-dashed border-border" style={{ maxHeight: 600 }}>
+        <div
+          ref={containerRef}
+          className="relative select-none cursor-crosshair"
+          style={{ userSelect: "none" }}
+          onMouseDown={onMouseDown}
+          onMouseMove={onMouseMove}
+          onMouseUp={onMouseUp}
+          onMouseLeave={onMouseUp}
+        >
+          {(imageUrl?.toLowerCase().endsWith('.pdf') || imageUrl?.includes('application/pdf') || imageUrl?.includes('.pdf')) ? (
+            <>
+              <iframe src={imageUrl} title="Receipt PDF" className="w-full pointer-events-none" style={{ height: 600, display: 'block', border: 0 }} />
+              <div className="absolute inset-0 cursor-crosshair" style={{ zIndex: 10 }} />
+            </>
+          ) : (
+            <img src={imageUrl} alt="Receipt" className="w-full block pointer-events-none" draggable={false} />
+          )}
 
-        {drawBox && (
-          <div
-            className="absolute border-2 border-dashed pointer-events-none"
-            style={{ ...drawBox, backgroundColor: `${drawBox.borderColor}22` }}
-          />
-        )}
+          {regions.map((r, i) => (
+            <div
+              key={i}
+              className="absolute border-2 group"
+              style={{ left: `${r.x}%`, top: `${r.y}%`, width: `${r.width}%`, height: `${r.height}%`, borderColor: getColor(r.field), backgroundColor: `${getColor(r.field)}22` }}
+            >
+              <button
+                onClick={() => removeRegion(i)}
+                className="absolute -top-2 -right-2 bg-white rounded-full shadow text-xs w-4 h-4 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                style={{ color: getColor(r.field) }}
+              >
+                <X className="w-2.5 h-2.5" />
+              </button>
+              <span className="absolute bottom-0.5 left-0.5 text-[9px] font-bold px-0.5 rounded text-white" style={{ backgroundColor: getColor(r.field) }}>
+                {fields.find(f => f.key === r.field)?.label}
+              </span>
+            </div>
+          ))}
+
+          {drawBox && (
+            <div
+              className="absolute border-2 border-dashed pointer-events-none"
+              style={{ ...drawBox, backgroundColor: `${drawBox.borderColor}22` }}
+            />
+          )}
+        </div>
       </div>
 
       {/* Progress chips */}
