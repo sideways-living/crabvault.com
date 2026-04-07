@@ -14,50 +14,8 @@ export default function DocumentCard({ document, categories, selected, onToggleS
   const status = statusConfig[document.processing_status] || statusConfig.pending;
   const StatusIcon = status.icon;
   const category = categories?.find(c => c.id === document.category_id);
-  const isCompleted = document.processing_status === 'completed';
   const isReceipt = document.ai_data?.is_receipt;
-  const hasPreview = isCompleted && document.preview_url;
   const previewWidthClass = isReceipt ? 'w-1/4' : 'w-1/3';
-
-  const isPdf = document.file_url && (
-    document.file_type === 'pdf' ||
-    document.file_url.toLowerCase().includes('.pdf')
-  );
-
-  const infoContent = (
-    <div className="flex-1 min-w-0 p-4">
-      <h3 className="font-medium text-sm truncate group-hover:text-primary transition-colors">
-        {document.title}
-      </h3>
-      <p className="text-xs text-muted-foreground mt-0.5 truncate">
-        {document.original_filename || "No file"}
-      </p>
-      {document.summary && (
-        <p className="text-xs text-muted-foreground mt-2 line-clamp-2 leading-relaxed">
-          {document.summary}
-        </p>
-      )}
-      <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-        <span className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-medium ${status.className}`}>
-          <StatusIcon className={`h-3 w-3 ${document.processing_status === 'processing' ? 'animate-spin' : ''}`} />
-          {status.label}
-        </span>
-        {category && (
-          <span className="text-[10px] px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground font-medium">
-            {category.name}
-          </span>
-        )}
-        {document.tags?.slice(0, 2).map(tag => (
-          <span key={tag} className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
-            {tag}
-          </span>
-        ))}
-      </div>
-      <p className="text-[10px] text-muted-foreground/60 mt-2">
-        {moment(document.created_date).fromNow()}
-      </p>
-    </div>
-  );
 
   return (
     <div
@@ -77,41 +35,36 @@ export default function DocumentCard({ document, categories, selected, onToggleS
         )}
       </button>
 
-      {hasPreview ? (
-        <Link to={`/documents/${document.id}`} className="flex" style={{ minHeight: 140 }}>
-          <div className={`${previewWidthClass} shrink-0 bg-muted overflow-hidden flex items-start justify-center`}>
-            <img src={document.preview_url} alt={document.title} className="w-full object-contain object-top" style={{ maxHeight: 300 }} />
-          </div>
-          {infoContent}
-        </Link>
-      ) : (
-        <Link to={`/documents/${document.id}`} className="block">
-          {document.preview_url && (
-            <div className="w-full h-32 bg-muted overflow-hidden">
-              <img src={document.preview_url} alt={document.title} className="w-full h-full object-cover" />
+      <Link to={`/documents/${document.id}`} className="flex" style={{ minHeight: 140 }}>
+        {/* Left image panel — always shown */}
+        <div className={`${previewWidthClass} shrink-0 bg-muted overflow-hidden flex items-start justify-center`}>
+          {document.preview_url ? (
+            <img
+              src={document.preview_url}
+              alt={document.title}
+              className="w-full object-contain object-top"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <FileText className="h-8 w-8 text-muted-foreground/40" />
             </div>
           )}
-          <div className="flex items-start gap-3 p-4">
-            {!document.preview_url && (
-              <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
-                <FileText className="h-5 w-5 text-primary" />
-              </div>
-            )}
-            <div className="flex-1 min-w-0">
-              <h3 className="font-medium text-sm truncate group-hover:text-primary transition-colors">
-                {document.title}
-              </h3>
-              <p className="text-xs text-muted-foreground mt-0.5 truncate">
-                {document.original_filename || "No file"}
-              </p>
-            </div>
-          </div>
+        </div>
+
+        {/* Right info panel */}
+        <div className="flex-1 min-w-0 p-4">
+          <h3 className="font-medium text-sm truncate group-hover:text-primary transition-colors">
+            {document.title}
+          </h3>
+          <p className="text-xs text-muted-foreground mt-0.5 truncate">
+            {document.original_filename || "No file"}
+          </p>
           {document.summary && (
-            <p className="text-xs text-muted-foreground px-4 pb-2 line-clamp-2 leading-relaxed">
+            <p className="text-xs text-muted-foreground mt-2 line-clamp-2 leading-relaxed">
               {document.summary}
             </p>
           )}
-          <div className="flex items-center gap-2 px-4 pb-3 flex-wrap">
+          <div className="flex items-center gap-1.5 mt-2 flex-wrap">
             <span className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-medium ${status.className}`}>
               <StatusIcon className={`h-3 w-3 ${document.processing_status === 'processing' ? 'animate-spin' : ''}`} />
               {status.label}
@@ -127,11 +80,11 @@ export default function DocumentCard({ document, categories, selected, onToggleS
               </span>
             ))}
           </div>
-          <p className="text-[10px] text-muted-foreground/60 px-4 pb-3">
+          <p className="text-[10px] text-muted-foreground/60 mt-2">
             {moment(document.created_date).fromNow()}
           </p>
-        </Link>
-      )}
+        </div>
+      </Link>
     </div>
   );
 }
