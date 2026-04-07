@@ -35,10 +35,8 @@ export default function DocumentDetail() {
   const [editData, setEditData] = useState({});
   const [suggestedVaultPath, setSuggestedVaultPath] = useState("");
 
-  const loadData = async () => {
+  const loadDoc = async () => {
     const docs = await base44.entities.Document.filter({ id });
-    const flds = await base44.entities.Folder.list();
-    const cats = await base44.entities.Category.list();
     if (docs.length > 0) {
       setDoc(docs[0]);
       setEditData({
@@ -50,6 +48,12 @@ export default function DocumentDetail() {
         vault_path: docs[0].vault_path || "",
       });
     }
+  };
+
+  const loadData = async () => {
+    await loadDoc();
+    const flds = await base44.entities.Folder.list();
+    const cats = await base44.entities.Category.list();
     setFolders(flds);
     setCategories(cats);
     setLoading(false);
@@ -68,7 +72,7 @@ export default function DocumentDetail() {
     });
     toast.success("Document updated");
     setEditing(false);
-    loadData();
+    loadDoc();
   };
 
   const handleDelete = async () => {
