@@ -21,6 +21,7 @@ export default function SettingsPage() {
   const [processing, setProcessing] = useState(false);
   const [reprocessing, setReprocessing] = useState(false);
   const [queueing, setQueueing] = useState(false);
+  const [generatingPreviews, setGeneratingPreviews] = useState(false);
   const [lastProcessed, setLastProcessed] = useState(null);
   const [folders, setFolders] = useState([]);
 
@@ -140,8 +141,12 @@ export default function SettingsPage() {
     toast.success(`Category removed${msgSuffix}`);
   };
 
-  const handleAddEntity = async () => {};
-  const handleDeleteEntity = async (id) => {};
+  const handleBatchGeneratePreviews = async () => {
+    setGeneratingPreviews(true);
+    const res = await base44.functions.invoke('batchGeneratePreviews', { force: true });
+    setGeneratingPreviews(false);
+    toast.success(res.data?.message || 'Previews generated');
+  };
 
   if (loading) {
     return (
@@ -263,6 +268,10 @@ export default function SettingsPage() {
           <Button onClick={handleReprocessAll} disabled={processing || reprocessing} variant="outline" className="border-amber-300 text-amber-700 hover:bg-amber-50">
             {reprocessing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Play className="h-4 w-4 mr-2" />}
             {reprocessing ? 'Reprocessing...' : 'Reprocess ALL Documents'}
+          </Button>
+          <Button onClick={handleBatchGeneratePreviews} disabled={generatingPreviews} variant="outline" className="border-teal-300 text-teal-700 hover:bg-teal-50">
+            {generatingPreviews ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Image className="h-4 w-4 mr-2" />}
+            {generatingPreviews ? 'Generating...' : 'Regenerate All Previews'}
           </Button>
         </div>
       </div>
