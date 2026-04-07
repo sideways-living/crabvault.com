@@ -1,18 +1,17 @@
 import { useState, useRef } from "react";
 import { Link } from "react-router-dom";
-import { Folder, FolderOpen, ChevronRight, ChevronDown, FileText, GripVertical, Pencil, Trash2, Check, X } from "lucide-react";
+import { Folder, FolderOpen, ChevronRight, ChevronDown, GripVertical, Pencil, Trash2, Check, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
 
-function FolderNode({ folder, allFolders, documents, depth, onDrop, onDocDrop, draggingId, setDraggingId, draggingDocId, setDraggingDocId, onRename, onDelete }) {
+function FolderNode({ folder, allFolders, depth, onDrop, draggingId, setDraggingId, onRename, onDelete }) {
   const [expanded, setExpanded] = useState(depth < 2);
   const [dragOver, setDragOver] = useState(false);
   const [renaming, setRenaming] = useState(false);
   const [renameVal, setRenameVal] = useState(folder.name);
   const children = allFolders.filter(f => f.parent_folder_id === folder.id).sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
-  const folderDocs = documents.filter(d => d.folder_id === folder.id);
-  const hasChildren = children.length > 0 || folderDocs.length > 0;
+  const hasChildren = children.length > 0;
 
   const isDescendant = (potentialChildId, targetId) => {
     const ch = allFolders.filter(f => f.parent_folder_id === targetId);
@@ -29,9 +28,8 @@ function FolderNode({ folder, allFolders, documents, depth, onDrop, onDocDrop, d
   const handleDragOver = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    const canDropFolder = draggingId && draggingId !== folder.id && !isDescendant(folder.id, draggingId);
-    const canDropDoc = !!draggingDocId;
-    if (canDropFolder || canDropDoc) { setDragOver(true); e.dataTransfer.dropEffect = 'move'; }
+    const canDrop = draggingId && draggingId !== folder.id && !isDescendant(folder.id, draggingId);
+    if (canDrop) { setDragOver(true); e.dataTransfer.dropEffect = 'move'; }
   };
 
   const handleDragLeave = (e) => { e.stopPropagation(); setDragOver(false); };
@@ -41,12 +39,8 @@ function FolderNode({ folder, allFolders, documents, depth, onDrop, onDocDrop, d
     e.stopPropagation();
     setDragOver(false);
     const draggedFolderId = e.dataTransfer.getData('folderId');
-    const draggedDocId = e.dataTransfer.getData('docId');
     if (draggedFolderId && draggedFolderId !== folder.id && !isDescendant(folder.id, draggedFolderId)) {
       onDrop(draggedFolderId, folder.id);
-      setExpanded(true);
-    } else if (draggedDocId) {
-      onDocDrop(draggedDocId, folder.id);
       setExpanded(true);
     }
   };
@@ -90,7 +84,7 @@ function FolderNode({ folder, allFolders, documents, depth, onDrop, onDocDrop, d
         ) : (
           <span className="text-sm font-medium truncate flex-1">{folder.name}</span>
         )}
-        <span className="text-[10px] text-muted-foreground">{folderDocs.length}</span>
+        <span className="text-[10px] text-muted-foreground">{children.length > 0 ? children.length : ''}</span>
         {renaming ? (
           <>
             <button onClick={e => { e.stopPropagation(); onRename(folder, renameVal); setRenaming(false); }} className="text-emerald-600 hover:text-emerald-700 p-0.5"><Check className="h-3.5 w-3.5" /></button>
@@ -110,31 +104,13 @@ function FolderNode({ folder, allFolders, documents, depth, onDrop, onDocDrop, d
               key={child.id}
               folder={child}
               allFolders={allFolders}
-              documents={documents}
               depth={depth + 1}
               onDrop={onDrop}
-              onDocDrop={onDocDrop}
               draggingId={draggingId}
               setDraggingId={setDraggingId}
-              draggingDocId={draggingDocId}
-              setDraggingDocId={setDraggingDocId}
               onRename={onRename}
               onDelete={onDelete}
             />
-          ))}
-          {folderDocs.map(doc => (
-            <div
-              key={doc.id}
-              draggable
-              onDragStart={e => { e.stopPropagation(); setDraggingDocId(doc.id); e.dataTransfer.setData('docId', doc.id); e.dataTransfer.effectAllowed = 'move'; }}
-              onDragEnd={() => setDraggingDocId(null)}
-              className={cn('group/doc flex items-center gap-2 py-1.5 px-2 rounded-lg hover:bg-muted/50 transition-colors text-sm cursor-grab', draggingDocId === doc.id && 'opacity-40')}
-              style={{ paddingLeft: `${(depth + 1) * 20 + 8}px` }}
-            >
-              <GripVertical className="h-3 w-3 text-muted-foreground/30 group-hover/doc:text-muted-foreground shrink-0" />
-              <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-              <Link to={`/documents/${doc.id}`} className="truncate text-muted-foreground hover:text-foreground flex-1" onClick={e => e.stopPropagation()}>{doc.title}</Link>
-            </div>
           ))}
         </div>
       )}
@@ -142,9 +118,8 @@ function FolderNode({ folder, allFolders, documents, depth, onDrop, onDocDrop, d
   );
 }
 
-export default function FolderTreeView({ folders, documents, onFoldersChanged, onlyRootIds }) {
+export default function FolderTreeView({ folders, onFoldersChanged, onlyRootIds }) {
   const [draggingId, setDraggingId] = useState(null);
-  const [draggingDocId, setDraggingDocId] = useState(null);
   const [rootDragOver, setRootDragOver] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(null); // folder to delete
 
@@ -175,17 +150,11 @@ export default function FolderTreeView({ folders, documents, onFoldersChanged, o
 
   const handleDeleteRequest = (folder) => {
     const childFolders = folders.filter(f => f.parent_folder_id === folder.id);
-    const childDocs = documents.filter(d => d.folder_id === folder.id);
-    setDeleteConfirm({ folder, childFolders, childDocs });
+    setDeleteConfirm({ folder, childFolders, childDocs: [] });
   };
 
   const handleDeleteConfirm = async () => {
-    const { folder, childFolders, childDocs } = deleteConfirm;
-    // Move child docs to parent folder
-    await Promise.all(childDocs.map(d =>
-      base44.entities.Document.update(d.id, { folder_id: folder.parent_folder_id || null })
-    ));
-    // Move child folders to parent
+    const { folder, childFolders } = deleteConfirm;
     await Promise.all(childFolders.map(f =>
       base44.entities.Folder.update(f.id, { parent_folder_id: folder.parent_folder_id || null })
     ));
@@ -199,15 +168,12 @@ export default function FolderTreeView({ folders, documents, onFoldersChanged, o
     e.preventDefault();
     setRootDragOver(false);
     const draggedFolderId = e.dataTransfer.getData('folderId');
-    const draggedDocId = e.dataTransfer.getData('docId');
     if (draggedFolderId) {
       const dragged = folders.find(f => f.id === draggedFolderId);
       if (!dragged || !dragged.parent_folder_id) return;
       await base44.entities.Folder.update(draggedFolderId, { parent_folder_id: null, path: `/${dragged.name}` });
       toast.success(`Moved "${dragged.name}" to root`);
       onFoldersChanged?.();
-    } else if (draggedDocId) {
-      await handleDocDrop(draggedDocId, null);
     }
   };
 
@@ -249,14 +215,10 @@ export default function FolderTreeView({ folders, documents, onFoldersChanged, o
           key={folder.id}
           folder={folder}
           allFolders={folders}
-          documents={documents}
           depth={0}
           onDrop={handleDrop}
-          onDocDrop={handleDocDrop}
           draggingId={draggingId}
           setDraggingId={setDraggingId}
-          draggingDocId={draggingDocId}
-          setDraggingDocId={setDraggingDocId}
           onRename={handleRename}
           onDelete={handleDeleteRequest}
         />

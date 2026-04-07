@@ -8,19 +8,16 @@ import CreateFolderDialog from "../components/CreateFolderDialog";
 
 export default function Folders() {
   const [folders, setFolders] = useState([]);
-  const [documents, setDocuments] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
 
   const loadData = async () => {
-    const [flds, docs, cats] = await Promise.all([
+    const [flds, cats] = await Promise.all([
       base44.entities.Folder.list(),
-      base44.entities.Document.list("-created_date", 200),
       base44.entities.Category.list(),
     ]);
     setFolders(flds);
-    setDocuments(docs);
     setCategories(cats);
     setLoading(false);
   };
@@ -60,16 +57,16 @@ export default function Folders() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="bg-card rounded-xl border p-4">
             <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Documents</h2>
-            <FolderTreeView folders={folders} documents={documents} onFoldersChanged={loadData} onlyRootIds={new Set([...docRootIds, ...otherRootIds])} />
+            <FolderTreeView folders={folders} onFoldersChanged={loadData} onlyRootIds={new Set([...docRootIds, ...otherRootIds])} />
           </div>
           <div className="bg-card rounded-xl border p-4">
             <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Receipt Folders</h2>
-            <FolderTreeView folders={folders} documents={documents} onFoldersChanged={loadData} onlyRootIds={recRootIds} />
+            <FolderTreeView folders={folders} onFoldersChanged={loadData} onlyRootIds={recRootIds} />
           </div>
         </div>
       ) : (
         <div className="bg-card rounded-xl border p-4">
-          <FolderTreeView folders={folders} documents={documents} onFoldersChanged={loadData} />
+          <FolderTreeView folders={folders} onFoldersChanged={loadData} />
         </div>
       )}
 
