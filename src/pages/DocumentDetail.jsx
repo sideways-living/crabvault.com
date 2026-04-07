@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   ArrowLeft, FileText, Trash2, Clock, CheckCircle2,
-  AlertCircle, Loader2, Calendar, FolderOpen, ExternalLink, Pencil, Sparkles
+  AlertCircle, Loader2, Calendar, FolderOpen, ExternalLink, Pencil, Sparkles, Copy
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
@@ -314,6 +314,10 @@ export default function DocumentDetail() {
             <div className="bg-card rounded-xl border p-6 space-y-4">
               <h3 className="font-medium text-sm">Details</h3>
               <div className="space-y-3 text-sm">
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Copy className="h-4 w-4" />
+                  <span className="font-mono text-xs" title={doc.id}>{doc.id}</span>
+                </div>
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <Calendar className="h-4 w-4" />
                   <span>Uploaded {moment(doc.created_date).format("MMM D, YYYY")}</span>
