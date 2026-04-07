@@ -39,6 +39,7 @@ export default function DocumentDetail() {
   const [suggestedVaultPath, setSuggestedVaultPath] = useState("");
   const [processing, setProcessing] = useState(false);
   const [notesChanged, setNotesChanged] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   const handleProcess = async () => {
     setProcessing(true);
@@ -90,6 +91,17 @@ export default function DocumentDetail() {
 
   useEffect(() => { loadData(); }, [id]);
 
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (editing || notesChanged) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [editing, notesChanged]);
+
   const handleSave = async () => {
     await base44.entities.Document.update(doc.id, {
       title: editData.title,
@@ -108,6 +120,22 @@ export default function DocumentDetail() {
     await base44.entities.Document.update(doc.id, { notes: editData.notes || undefined });
     toast.success("Notes saved");
     setNotesChanged(false);
+  };
+
+  const handleCancelEdit = () => {
+    if (JSON.stringify(editData) !== JSON.stringify({
+      title: doc.title,
+      folder_id: doc.folder_id || "",
+      category_id: doc.category_id || "",
+      notes: doc.notes || "",
+      tags: doc.tags?.join(", ") || "",
+      vault_path: doc.vault_path || "",
+    })) {
+      if (!confirm("You have unsaved changes. Discard them?")) return;
+    }
+    setEditing(false);
+    setHasUnsavedChanges(false);
+    loadDoc();
   };
 
   const handleDelete = async () => {
@@ -202,52 +230,52 @@ export default function DocumentDetail() {
           {/* Row 2 Col 3: Action buttons — icon only, right justified */}
           <div style={{display: 'flex', gap: '4px', justifyContent: 'flex-end', alignItems: 'center'}}>
             <TooltipProvider delayDuration={300}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" onClick={handleProcess} disabled={processing}>
-                    {processing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>AI Process</TooltipContent>
-              </Tooltip>
+              {!editing ? (
+                <>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="ghost" size="icon" onClick={handleProcess} disabled={processing}>
+                        {processing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>AI Process</TooltipContent>
+                  </Tooltip>
 
-              {doc.file_url && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <a href={doc.file_url} target="_blank" rel="noopener noreferrer">
-                      <Button variant="ghost" size="icon"><ExternalLink className="h-4 w-4" /></Button>
-                    </a>
-                  </TooltipTrigger>
-                  <TooltipContent>Open file</TooltipContent>
-                </Tooltip>
+                  {doc.file_url && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <a href={doc.file_url} target="_blank" rel="noopener noreferrer">
+                          <Button variant="ghost" size="icon"><ExternalLink className="h-4 w-4" /></Button>
+                        </a>
+                      </TooltipTrigger>
+                      <TooltipContent>Open file</TooltipContent>
+                    </Tooltip>
+                  )}
+
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="ghost" size="icon" onClick={() => setEditing(true)}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Edit</TooltipContent>
+                  </Tooltip>
+
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={handleDelete}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Delete</TooltipContent>
+                  </Tooltip>
+                </>
+              ) : (
+                <>
+                  <SaveButton size="sm" onSave={handleSave}>Save</SaveButton>
+                  <Button variant="outline" size="sm" onClick={handleCancelEdit}>Cancel</Button>
+                </>
               )}
-
-              {editing && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <SaveButton size="icon" onSave={handleSave}><Pencil className="h-4 w-4" /></SaveButton>
-                  </TooltipTrigger>
-                  <TooltipContent>Save changes</TooltipContent>
-                </Tooltip>
-              )}
-
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant={editing ? 'default' : 'ghost'} size="icon" onClick={() => setEditing(e => !e)}>
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>{editing ? 'Cancel edit' : 'Edit'}</TooltipContent>
-              </Tooltip>
-
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={handleDelete}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Delete</TooltipContent>
-              </Tooltip>
             </TooltipProvider>
           </div>
 
