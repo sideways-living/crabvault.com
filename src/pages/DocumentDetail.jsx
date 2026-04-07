@@ -325,7 +325,7 @@ export default function DocumentDetail() {
 
           {/* Row 1: AI Summary */}
           <div className="bg-card rounded-xl border p-6">
-            <h3 className="font-medium text-sm mb-3">AI Summary</h3>
+            <h3 className="font-medium text-sm mb-3 -mx-6 -mt-6 px-6 py-2 bg-primary/10 rounded-t-lg">AI Summary</h3>
             {doc.summary ? (
               <p className="text-sm text-muted-foreground leading-relaxed">{doc.summary}</p>
             ) : (
@@ -336,7 +336,7 @@ export default function DocumentDetail() {
           {/* Row 2: Receipt Details */}
           {transaction && (
             <div className="bg-card rounded-xl border p-6">
-              <h3 className="font-medium text-sm mb-3">Receipt Details</h3>
+              <h3 className="font-medium text-sm mb-3 -mx-6 -mt-6 px-6 py-2 bg-emerald-50 rounded-t-lg">Receipt Details</h3>
               <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-3 text-sm">
                 {transaction.store_brand && (
@@ -385,7 +385,7 @@ export default function DocumentDetail() {
 
           {/* Row 3: Notes */}
           <div className="bg-card rounded-xl border p-6">
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center justify-between mb-3 -mx-6 -mt-6 px-6 py-2 bg-amber-50 rounded-t-lg">
               <h3 className="font-medium text-sm">Notes</h3>
               {notesChanged && (
                 <SaveButton size="sm" onSave={handleSaveNotes}>Save Notes</SaveButton>
@@ -402,7 +402,7 @@ export default function DocumentDetail() {
 
             {/* Tags */}
             <div className="bg-card rounded-xl border p-6">
-              <h3 className="font-medium text-sm mb-3">Tags</h3>
+              <h3 className="font-medium text-sm mb-3 -mx-6 -mt-6 px-6 py-2 bg-purple-50 rounded-t-lg">Tags</h3>
               {editing ? (
                 <Input value={editData.tags} onChange={e => setEditData({...editData, tags: e.target.value})} placeholder="comma, separated, tags" className="text-sm" />
               ) : (
@@ -418,7 +418,7 @@ export default function DocumentDetail() {
 
             {/* Details */}
             <div className="bg-card rounded-xl border p-6 space-y-4">
-              <h3 className="font-medium text-sm">Details</h3>
+              <h3 className="font-medium text-sm -mx-6 -mt-6 px-6 py-2 bg-slate-100 rounded-t-lg">Details</h3>
               <div className="space-y-3 text-sm">
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <Copy className="h-4 w-4" />
