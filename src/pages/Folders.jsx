@@ -72,16 +72,16 @@ export default function Folders() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="bg-card rounded-xl border p-4">
             <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Documents</h2>
-            <FolderTreeView folders={folders} documents={showFiles ? documents : []} onFoldersChanged={loadData} onlyRootIds={new Set([...docRootIds, ...otherRootIds])} />
+            <FolderTreeView folders={folders} documents={showFiles ? documents : []} onFoldersChanged={loadData} onlyRootIds={new Set([...docRootIds, ...otherRootIds])} showFiles={showFiles} />
           </div>
           <div className="bg-card rounded-xl border p-4">
             <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Receipt Folders</h2>
-            <FolderTreeView folders={folders} documents={showFiles ? documents : []} onFoldersChanged={loadData} onlyRootIds={recRootIds} />
+            <FolderTreeView folders={folders} documents={showFiles ? documents : []} onFoldersChanged={loadData} onlyRootIds={recRootIds} showFiles={showFiles} />
           </div>
         </div>
       ) : (
         <div className="bg-card rounded-xl border p-4">
-          <FolderTreeView folders={folders} documents={showFiles ? documents : []} onFoldersChanged={loadData} />
+          <FolderTreeView folders={folders} documents={showFiles ? documents : []} onFoldersChanged={loadData} showFiles={showFiles} />
         </div>
       )}
 

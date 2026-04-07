@@ -130,7 +130,7 @@ function FolderNode({ folder, allFolders, documents, depth, onDrop, draggingId, 
   );
 }
 
-export default function FolderTreeView({ folders, documents = [], onFoldersChanged, onlyRootIds }) {
+export default function FolderTreeView({ folders, documents = [], onFoldersChanged, onlyRootIds, showFiles = false }) {
   const [draggingId, setDraggingId] = useState(null);
   const [rootDragOver, setRootDragOver] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(null); // folder to delete
@@ -247,7 +247,7 @@ export default function FolderTreeView({ folders, documents = [], onFoldersChang
           rootDragOver ? "border-primary/50 bg-primary/5 text-primary" : "border-transparent"
         )}
       >
-        {rootDragOver ? "Drop here to move to root" : "Drag folders or files to reorganize"}
+        {rootDragOver ? "Drop here to move to root" : `Drag folders${showFiles ? ' or files' : ''} to reorganize`}
       </div>
     </div>
   );
