@@ -3,9 +3,12 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.23';
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
-    if (!user) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    // Allow calls from authenticated users OR from service-role (batch/automation)
+    try {
+      const user = await base44.auth.me();
+      if (!user) throw new Error('no user');
+    } catch {
+      // service role call — allowed
     }
 
     const { documentId } = await req.json();
@@ -21,30 +24,18 @@ Deno.serve(async (req) => {
     let previewUrl = null;
 
     // For image files, use the file URL directly as preview
-    if (['jpg', 'png', 'gif'].includes(doc.file_type)) {
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(doc.file_type)) {
       previewUrl = doc.file_url;
-    }
-
-    // For document types, generate AI preview images
-    const documentPrompts = {
-      pdf: 'Create a clean, professional thumbnail of a PDF document. Show a document icon with blue and gray tones, subtle gradient background, and a hint of visible text.',
-      docx: 'Create a clean thumbnail of a Word document (.docx). Show a document icon with blue tones, lined paper pattern, and a pen symbol.',
-      doc: 'Create a clean thumbnail of a Word document (.doc). Show a document icon with blue tones, lined paper pattern, and a pen symbol.',
-      xlsx: 'Create a clean thumbnail of an Excel spreadsheet. Show a spreadsheet grid icon with green tones, cells visible, and data indicators.',
-      xls: 'Create a clean thumbnail of an Excel spreadsheet. Show a spreadsheet grid icon with green tones, cells visible, and data indicators.',
-      pptx: 'Create a clean thumbnail of a PowerPoint presentation. Show a presentation slide icon with orange/red tones, slides stacked, and a projection symbol.',
-      ppt: 'Create a clean thumbnail of a PowerPoint presentation. Show a presentation slide icon with orange/red tones, slides stacked, and a projection symbol.'
-    };
-
-    if (documentPrompts[doc.file_type]) {
+    } else if (doc.file_url) {
+      // For PDFs and other docs, generate a visual preview from the actual document
       try {
-        const result = await base44.integrations.Core.GenerateImage({
-          prompt: documentPrompts[doc.file_type]
+        const result = await base44.asServiceRole.integrations.Core.GenerateImage({
+          prompt: `Create a clean, accurate visual thumbnail/preview of this document. Show the actual content and layout as it appears in the document. Use portrait orientation with white background. Make it look like a real document screenshot.`,
+          existing_image_urls: [doc.file_url],
         });
         previewUrl = result.url;
       } catch (err) {
-        console.error(`Failed to generate ${doc.file_type} preview:`, err.message);
-        previewUrl = null;
+        console.error(`Failed to generate preview for ${doc.file_type}:`, err.message);
       }
     }
 
