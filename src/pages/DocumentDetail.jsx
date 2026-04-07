@@ -170,17 +170,14 @@ export default function DocumentDetail() {
           {/* Row 2 Col 1: empty */}
           <div />
 
-          {/* Row 2 Col 2: Tags + status badges left-justified */}
+          {/* Row 2 Col 2: 3 core badges — file type, category, status */}
           <div style={{display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '8px'}}>
+            {doc.file_type && <Badge variant="outline" className="uppercase text-[10px] font-mono">.{doc.file_type}</Badge>}
+            {category && <Badge variant="secondary">{category.name}</Badge>}
             <span className={`inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full font-medium ${status.className}`}>
               <StatusIcon className={`h-3 w-3 ${doc.processing_status === 'processing' ? 'animate-spin' : ''}`} />
               {status.label}
             </span>
-            {category && <Badge variant="secondary">{category.name}</Badge>}
-            {doc.file_type && <Badge variant="outline" className="uppercase text-[10px]">{doc.file_type}</Badge>}
-            {doc.tags?.length > 0 && doc.tags.map(tag => (
-              <Badge key={tag} variant="secondary" className="text-xs">{tag}</Badge>
-            ))}
           </div>
 
         </div>
