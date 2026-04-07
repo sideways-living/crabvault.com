@@ -26,7 +26,18 @@ Deno.serve(async (req) => {
   for (let i = 0; i < docsNeedingPreviews.length; i += batchSize) {
     const batch = docsNeedingPreviews.slice(i, i + batchSize);
     const results = await Promise.allSettled(batch.map(async (doc) => {
-      const previewUrl = doc.file_url || null;
+      if (!doc.file_url) return false;
+      const encodedUrl = encodeURIComponent(doc.file_url);
+      const isPdf = doc.file_type === 'pdf' || doc.file_url.toLowerCase().includes('.pdf');
+      const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(doc.file_type?.toLowerCase());
+      let previewUrl;
+      if (isPdf) {
+        previewUrl = `https://image.thum.io/get/width/400/page/1/${doc.file_url}`;
+      } else if (isImage) {
+        previewUrl = `https://images.weserv.nl/?url=${encodedUrl}&w=400&output=jpg&q=70`;
+      } else {
+        previewUrl = doc.file_url;
+      }
 
       if (previewUrl) {
         await db.entities.Document.update(doc.id, { preview_url: previewUrl });

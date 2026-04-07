@@ -21,8 +21,21 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Document not found' }, { status: 404 });
     }
 
-    // Use the file URL directly as the preview
-    const previewUrl = doc.file_url || null;
+    // Generate a low-res preview URL via free proxy services
+    let previewUrl = null;
+    if (doc.file_url) {
+      const encodedUrl = encodeURIComponent(doc.file_url);
+      const isPdf = doc.file_type === 'pdf' || doc.file_url.toLowerCase().includes('.pdf');
+      const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(doc.file_type?.toLowerCase());
+      if (isPdf) {
+        // thum.io renders the first page of a PDF as a PNG image
+        previewUrl = `https://image.thum.io/get/width/400/page/1/${doc.file_url}`;
+      } else if (isImage) {
+        previewUrl = `https://images.weserv.nl/?url=${encodedUrl}&w=400&output=jpg&q=70`;
+      } else {
+        previewUrl = doc.file_url; // fallback for other types
+      }
+    }
 
     if (previewUrl) {
       await base44.entities.Document.update(documentId, { preview_url: previewUrl });
