@@ -36,11 +36,9 @@ export default function DocumentDetail() {
   const [suggestedVaultPath, setSuggestedVaultPath] = useState("");
 
   const loadData = async () => {
-    const [docs, flds, cats] = await Promise.all([
-      base44.entities.Document.filter({ id }),
-      base44.entities.Folder.list(),
-      base44.entities.Category.list(),
-    ]);
+    const docs = await base44.entities.Document.filter({ id });
+    const flds = await base44.entities.Folder.list();
+    const cats = await base44.entities.Category.list();
     if (docs.length > 0) {
       setDoc(docs[0]);
       setEditData({
