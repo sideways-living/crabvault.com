@@ -44,8 +44,9 @@ export default function DocumentDetail() {
   const handleProcess = async () => {
     setProcessing(true);
     try {
+      await base44.entities.Document.update(doc.id, { processing_status: 'pending' });
       await base44.functions.invoke('processSingleDocument', { documentId: doc.id });
-      toast.success('Document processed and sent to review queue');
+      toast.success('Document sent back to processing queue');
       loadData();
     } catch (error) {
       toast.error(error.message || 'Processing failed');
