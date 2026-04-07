@@ -40,6 +40,7 @@ export default function DocumentDetail() {
   const [processing, setProcessing] = useState(false);
   const [notesChanged, setNotesChanged] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [transaction, setTransaction] = useState(null);
 
   const handleProcess = async () => {
     setProcessing(true);
@@ -82,6 +83,8 @@ export default function DocumentDetail() {
         tags: docs[0].tags?.join(", ") || "",
         vault_path: docs[0].vault_path || "",
       });
+      const txns = await base44.entities.Transaction.filter({ document_id: docs[0].id });
+      setTransaction(txns.length > 0 ? txns[0] : null);
     }
     const flds = await base44.entities.Folder.list();
     const cats = await base44.entities.Category.list();
@@ -330,7 +333,56 @@ export default function DocumentDetail() {
             )}
           </div>
 
-          {/* Row 2: Notes */}
+          {/* Row 2: Receipt Details */}
+          {transaction && (
+            <div className="bg-card rounded-xl border p-6">
+              <h3 className="font-medium text-sm mb-3">Receipt Details</h3>
+              <div className="space-y-3 text-sm">
+                {transaction.store_brand && (
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide">Store</p>
+                    <p className="font-medium">{transaction.store_brand}</p>
+                    {transaction.store_location && <p className="text-xs text-muted-foreground">{transaction.store_location}</p>}
+                  </div>
+                )}
+                {transaction.transaction_date && (
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide">Date</p>
+                    <p>{moment(transaction.transaction_date, 'YYYYMMDD').format('D MMM YYYY')}
+                    {transaction.transaction_time && ` at ${transaction.transaction_time}`}</p>
+                  </div>
+                )}
+                {transaction.amount && (
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide">Total</p>
+                    <p className="text-lg font-semibold">${transaction.amount.toFixed(2)}</p>
+                  </div>
+                )}
+                {transaction.transaction_type && (
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide">Type</p>
+                    <p className="capitalize">{transaction.transaction_type}</p>
+                  </div>
+                )}
+                {transaction.items?.length > 0 && (
+                  <div className="pt-2 border-t">
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2">Items</p>
+                    <div className="space-y-1 text-xs">
+                      {transaction.items.slice(0, 4).map((item, idx) => (
+                        <div key={idx} className="flex justify-between text-muted-foreground">
+                          <span>{item.name} {item.quantity && `x${item.quantity}`}</span>
+                          {item.total_price && <span>${item.total_price.toFixed(2)}</span>}
+                        </div>
+                      ))}
+                      {transaction.items.length > 4 && <p className="text-[10px] text-muted-foreground/60">+{transaction.items.length - 4} more</p>}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Row 3: Notes */}
           <div className="bg-card rounded-xl border p-6">
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-medium text-sm">Notes</h3>
