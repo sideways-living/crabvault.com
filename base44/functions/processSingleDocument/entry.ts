@@ -89,7 +89,7 @@ For RECEIPTS specifically, the title format is:
 - Refund: "YYYYMMDD - StoreName Location - $XXX.XX Refund Receipt"
 Use the receipt date (not scan date), store name and location from the receipt, and total amount formatted as $XXX.XX.
 
-For RECEIPTS, also extract:
+For RECEIPTS, MUST extract:
 - store_brand: clean store name (e.g. "Woolworths", "Bunnings")
 - store_location: suburb/city and state (e.g. "Docklands VIC")
 - transaction_date: YYYYMMDD format
@@ -101,8 +101,8 @@ For RECEIPTS, also extract:
 - tax_amount: GST/VAT as number, or null
 - last_four_digits: last 4 of card/voucher if shown, or null
 - receipt_number: till/transaction/receipt reference, or null
-- items: ARRAY of ALL line items — each with name, quantity, unit_price, total_price (null if not visible). Do NOT skip items.
-- summary: Brief 1-2 sentence description only (e.g. "Woolworths grocery purchase, $65.76 total"). Do NOT list items in the summary.
+- items: ARRAY of ALL line items — each with name, quantity, unit_price, total_price (null if not visible). Do NOT skip items. This is CRITICAL.
+- summary: 2-3 sentences including store name, date, amount, and 2-3 key items purchased (e.g. "Woolworths Docklands VIC on 15 Mar 2024. Purchased milk, bread, vegetables, and other groceries. Total: $42.50"). Use the extracted items to enrich the summary.
 
 ${categoryList ? 'Categories:\n' + categoryList : ''}
 ${folderList ? '\nFolders:\n' + folderList : ''}
