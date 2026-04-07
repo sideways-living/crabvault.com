@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Link } from "react-router-dom";
 import { FileText, Clock, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import moment from "moment";
@@ -12,7 +11,6 @@ const statusConfig = {
 };
 
 export default function DocumentCard({ document, categories, selected, onToggleSelect }) {
-  const [showPreview, setShowPreview] = useState(false);
   const status = statusConfig[document.processing_status] || statusConfig.pending;
   const StatusIcon = status.icon;
   const category = categories?.find(c => c.id === document.category_id);
@@ -64,8 +62,6 @@ export default function DocumentCard({ document, categories, selected, onToggleS
   return (
     <div
       className={`relative group bg-card rounded-xl border overflow-hidden hover:shadow-lg transition-all duration-300 ${selected ? 'border-primary ring-1 ring-primary' : 'hover:border-primary/20'}`}
-      onMouseEnter={() => hasPreview && setShowPreview(true)}
-      onMouseLeave={() => setShowPreview(false)}
     >
       {/* Checkbox */}
       <button
@@ -81,34 +77,10 @@ export default function DocumentCard({ document, categories, selected, onToggleS
         )}
       </button>
 
-      {/* Hover live preview panel */}
-      {showPreview && hasPreview && (
-        <div className="absolute inset-0 z-20 bg-card rounded-xl overflow-hidden flex flex-col pointer-events-none">
-          <div className="flex-1 overflow-hidden bg-muted">
-            {isPdf && document.file_url ? (
-              <iframe
-                src={`${document.file_url}#toolbar=0&navpanes=0&scrollbar=0`}
-                className="w-full h-full border-0 pointer-events-none"
-                title={document.title}
-              />
-            ) : (
-              <img
-                src={document.preview_url}
-                alt={document.title}
-                className="w-full h-full object-contain"
-              />
-            )}
-          </div>
-          <div className="p-2 border-t bg-card/95 backdrop-blur-sm">
-            <p className="text-xs font-medium truncate">{document.title}</p>
-          </div>
-        </div>
-      )}
-
       {hasPreview ? (
-        <Link to={`/documents/${document.id}`} className="flex">
-          <div className={`${previewWidthClass} shrink-0 bg-muted overflow-hidden`} style={{ minHeight: 120 }}>
-            <img src={document.preview_url} alt={document.title} className="w-full h-full object-cover object-top" />
+        <Link to={`/documents/${document.id}`} className="flex" style={{ minHeight: 140 }}>
+          <div className={`${previewWidthClass} shrink-0 bg-muted overflow-hidden flex items-start justify-center`}>
+            <img src={document.preview_url} alt={document.title} className="w-full object-contain object-top" style={{ maxHeight: 300 }} />
           </div>
           {infoContent}
         </Link>
