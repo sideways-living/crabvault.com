@@ -27,11 +27,28 @@ Deno.serve(async (req) => {
     if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(doc.file_type)) {
       previewUrl = doc.file_url;
     } else if (doc.file_url) {
-      // For PDFs and other docs, generate a visual preview from the actual document
       try {
+        // Step 1: Use InvokeLLM to read and describe the exact visual layout of the document
+        const description = await base44.asServiceRole.integrations.Core.InvokeLLM({
+          prompt: `Look at this document and describe its EXACT visual layout and content as it appears on the page. Include:
+- The exact text content, headings, amounts, dates, line items
+- The visual structure (header area, body, footer)
+- Any logos, tables, or distinct visual sections
+- Font sizes (large heading, medium subheading, small body text)
+- Alignment (centered, left-aligned)
+- Whether it looks like a receipt (narrow strip), letter, invoice, or standard document
+Be very specific about the actual content so it can be faithfully reproduced as a document image.`,
+          file_urls: [doc.file_url],
+        });
+
+        // Step 2: Generate a faithful document page image from the description
+        const isReceipt = doc.ai_data?.is_receipt;
         const result = await base44.asServiceRole.integrations.Core.GenerateImage({
-          prompt: `Create a clean, accurate visual thumbnail/preview of this document. Show the actual content and layout as it appears in the document. Use portrait orientation with white background. Make it look like a real document screenshot.`,
-          existing_image_urls: [doc.file_url],
+          prompt: `Render a realistic, pixel-accurate screenshot of a ${isReceipt ? 'narrow thermal receipt paper' : 'white A4 document page'}. This is NOT an illustration — render it exactly like a scanned document or screenshot. White background, black text, no artistic embellishments. Use monospaced or standard document fonts. Here is the exact content and layout to reproduce:
+
+${description}
+
+Important: make it look exactly like the real document, not a stylized version.`,
         });
         previewUrl = result.url;
       } catch (err) {
