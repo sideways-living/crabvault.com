@@ -10,10 +10,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   ArrowLeft, FileText, Trash2, Clock, CheckCircle2,
-  AlertCircle, Loader2, Calendar, FolderOpen, ExternalLink
+  AlertCircle, Loader2, Calendar, FolderOpen, ExternalLink, Pencil, Sparkles
 } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
-import ProcessDocumentButton from "../components/ProcessDocumentButton";
+
 import moment from "moment";
 
 const statusConfig = {
@@ -34,6 +35,20 @@ export default function DocumentDetail() {
   const [editing, setEditing] = useState(false);
   const [editData, setEditData] = useState({});
   const [suggestedVaultPath, setSuggestedVaultPath] = useState("");
+  const [processing, setProcessing] = useState(false);
+
+  const handleProcess = async () => {
+    setProcessing(true);
+    try {
+      await base44.functions.invoke('processSingleDocument', { documentId: doc.id });
+      toast.success('Document processed and sent to review queue');
+      loadData();
+    } catch (error) {
+      toast.error(error.message || 'Processing failed');
+    } finally {
+      setProcessing(false);
+    }
+  };
 
   const loadDoc = async () => {
     const docs = await base44.entities.Document.filter({ id });
@@ -146,26 +161,8 @@ export default function DocumentDetail() {
             <p className="text-sm text-muted-foreground mt-0.5">{doc.original_filename}</p>
           </div>
 
-          {/* Col 3: Buttons — spans both rows, wraps across rows */}
-          <div style={{gridRow: '1 / 3', gridColumn: '3', display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'flex-end', alignContent: 'flex-start'}}>
-            <ProcessDocumentButton document={doc} categories={categories} folders={folders} onProcessed={loadData} />
-            {!editing ? (
-              <Button variant="outline" size="sm" onClick={() => setEditing(true)}>Edit</Button>
-            ) : (
-              <>
-                <SaveButton size="sm" onSave={handleSave}>Save</SaveButton>
-                <Button variant="ghost" size="sm" onClick={() => setEditing(false)}>Cancel</Button>
-              </>
-            )}
-            {doc.file_url && (
-              <a href={doc.file_url} target="_blank" rel="noopener noreferrer">
-                <Button variant="outline" size="sm"><ExternalLink className="h-4 w-4 mr-1" /> Open</Button>
-              </a>
-            )}
-            <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={handleDelete}>
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
+          {/* Col 3 Row 1: empty */}
+          <div />
 
           {/* Row 2 Col 1: empty */}
           <div />
@@ -178,6 +175,58 @@ export default function DocumentDetail() {
               <StatusIcon className={`h-3 w-3 ${doc.processing_status === 'processing' ? 'animate-spin' : ''}`} />
               {status.label}
             </span>
+          </div>
+
+          {/* Row 2 Col 3: Action buttons — icon only, right justified */}
+          <div style={{display: 'flex', gap: '4px', justifyContent: 'flex-end', alignItems: 'center'}}>
+            <TooltipProvider delayDuration={300}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" onClick={handleProcess} disabled={processing}>
+                    {processing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>AI Process</TooltipContent>
+              </Tooltip>
+
+              {doc.file_url && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <a href={doc.file_url} target="_blank" rel="noopener noreferrer">
+                      <Button variant="ghost" size="icon"><ExternalLink className="h-4 w-4" /></Button>
+                    </a>
+                  </TooltipTrigger>
+                  <TooltipContent>Open file</TooltipContent>
+                </Tooltip>
+              )}
+
+              {editing && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <SaveButton size="icon" onSave={handleSave}><Pencil className="h-4 w-4" /></SaveButton>
+                  </TooltipTrigger>
+                  <TooltipContent>Save changes</TooltipContent>
+                </Tooltip>
+              )}
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant={editing ? 'default' : 'ghost'} size="icon" onClick={() => setEditing(e => !e)}>
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>{editing ? 'Cancel edit' : 'Edit'}</TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={handleDelete}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Delete</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
 
         </div>
