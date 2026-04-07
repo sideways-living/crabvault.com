@@ -83,6 +83,12 @@ ${learningSummary}
 
 Document Naming: <date> - <entity> - <description> - <reference>
 
+For RECEIPTS specifically, the title format is:
+- Purchase: "YYYYMMDD - StoreName Location - $XXX.XX Receipt" (e.g. "20240315 - Woolworths Docklands VIC - $42.50 Receipt")
+- Exchange: "YYYYMMDD - StoreName Location - $XXX.XX Exchange Receipt"
+- Refund: "YYYYMMDD - StoreName Location - $XXX.XX Refund Receipt"
+Use the receipt date (not scan date), store name and location from the receipt, and total amount formatted as $XXX.XX.
+
 ${categoryList ? 'Categories:\n' + categoryList : ''}
 ${folderList ? '\nFolders:\n' + folderList : ''}
 

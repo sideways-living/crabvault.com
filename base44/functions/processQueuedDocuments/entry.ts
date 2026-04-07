@@ -165,7 +165,7 @@ When in doubt, set is_receipt: true.
     - Extract subtotal (amount before tax, as a number) if shown, otherwise null
     - Extract tax_amount (GST/VAT amount, as a number) if shown, otherwise null
     - Extract receipt_number (till/transaction/receipt reference number shown on receipt), otherwise null
-    - suggested_title: "YYYYMMDD - StoreName Location - Receipt" (e.g. "20240315 - Woolworths Docklands VIC - Receipt")
+    - suggested_title format: "YYYYMMDD - StoreName Location - $XXX.XX Receipt" for purchases (e.g. "20240315 - Woolworths Docklands VIC - $42.50 Receipt"), or "YYYYMMDD - StoreName Location - $XXX.XX Exchange Receipt" / "YYYYMMDD - StoreName Location - $XXX.XX Refund Receipt" for exchange/refund. Use the receipt date (not scan date), store name and location from the receipt, and total amount formatted as $XXX.XX. Omit the type word for purchases.
     - folder_id: use the receipts folder structure from the folder list below
     - In summary list ALL items + prices and total.
 
