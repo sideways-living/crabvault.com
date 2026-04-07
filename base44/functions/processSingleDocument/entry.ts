@@ -89,6 +89,21 @@ For RECEIPTS specifically, the title format is:
 - Refund: "YYYYMMDD - StoreName Location - $XXX.XX Refund Receipt"
 Use the receipt date (not scan date), store name and location from the receipt, and total amount formatted as $XXX.XX.
 
+For RECEIPTS, also extract:
+- store_brand: clean store name (e.g. "Woolworths", "Bunnings")
+- store_location: suburb/city and state (e.g. "Docklands VIC")
+- transaction_date: YYYYMMDD format
+- transaction_time: HH:MM 24h if shown, else null
+- transaction_type: purchase / return / exchange
+- tender_type: cash / mastercard / visa / amex / eftpos / gift_voucher / exchange_voucher / other
+- amount: total as number (e.g. 42.50)
+- subtotal: before tax, as number, or null
+- tax_amount: GST/VAT as number, or null
+- last_four_digits: last 4 of card/voucher if shown, or null
+- receipt_number: till/transaction/receipt reference, or null
+- items: ARRAY of ALL line items — each with name, quantity, unit_price, total_price (null if not visible). Do NOT skip items.
+- summary: Brief 1-2 sentence description only (e.g. "Woolworths grocery purchase, $65.76 total"). Do NOT list items in the summary.
+
 ${categoryList ? 'Categories:\n' + categoryList : ''}
 ${folderList ? '\nFolders:\n' + folderList : ''}
 
@@ -108,6 +123,28 @@ ${extractedText ? `Content:\n${extractedText.substring(0, 3000)}` : ''}`,
           document_date: { type: 'string' },
           vendor_name: { type: 'string' },
           store_brand: { type: 'string' },
+          store_location: { type: 'string' },
+          transaction_date: { type: 'string' },
+          transaction_time: { type: 'string' },
+          transaction_type: { type: 'string' },
+          tender_type: { type: 'string' },
+          amount: { type: 'number' },
+          subtotal: { type: 'number' },
+          tax_amount: { type: 'number' },
+          last_four_digits: { type: 'string' },
+          receipt_number: { type: 'string' },
+          items: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                name: { type: 'string' },
+                quantity: { type: 'number' },
+                unit_price: { type: 'number' },
+                total_price: { type: 'number' },
+              },
+            },
+          },
         },
       },
     });

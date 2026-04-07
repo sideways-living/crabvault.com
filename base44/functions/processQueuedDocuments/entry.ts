@@ -167,7 +167,8 @@ When in doubt, set is_receipt: true.
     - Extract receipt_number (till/transaction/receipt reference number shown on receipt), otherwise null
     - suggested_title format: "YYYYMMDD - StoreName Location - $XXX.XX Receipt" for purchases (e.g. "20240315 - Woolworths Docklands VIC - $42.50 Receipt"), or "YYYYMMDD - StoreName Location - $XXX.XX Exchange Receipt" / "YYYYMMDD - StoreName Location - $XXX.XX Refund Receipt" for exchange/refund. Use the receipt date (not scan date), store name and location from the receipt, and total amount formatted as $XXX.XX. Omit the type word for purchases.
     - folder_id: use the receipts folder structure from the folder list below
-    - In summary list ALL items + prices and total.
+    - summary: Brief 1-2 sentence description (e.g. "Woolworths grocery purchase, $65.76 total, paid by Mastercard"). Do NOT list items in the summary — they belong in the items array.
+    - items: CRITICAL — extract EVERY line item from the receipt into this array. Each item must have name, quantity, unit_price, total_price. If a field isn't visible use null. Do not skip items.
 
 2. LETTER / DOCUMENT ABOUT A PERSON:
    - is_receipt: false
