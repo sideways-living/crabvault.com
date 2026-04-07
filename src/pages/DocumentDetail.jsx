@@ -50,7 +50,6 @@ export default function DocumentDetail() {
     }
   };
 
-
   const loadData = async () => {
     const docs = await base44.entities.Document.filter({ id });
     if (docs.length > 0) {
@@ -130,14 +129,14 @@ export default function DocumentDetail() {
 
       {/* Header */}
       <div className="bg-card rounded-xl border p-6">
-        <div className="grid gap-x-4 gap-y-3" style={{gridTemplateColumns: 'auto 1fr 30%', gridTemplateRows: 'auto auto'}}>
+        <div style={{display: 'grid', gridTemplateColumns: 'auto 1fr 30%', gridTemplateRows: 'auto auto', gap: '12px 16px'}}>
 
           {/* Row 1 Col 1: File type icon */}
           <div className="flex items-center justify-center h-12 w-12 rounded-xl bg-primary/10 shrink-0">
             <FileText className="h-6 w-6 text-primary" />
           </div>
 
-          {/* Row 1 Col 2: Title + status/category badges */}
+          {/* Row 1 Col 2: Title + filename */}
           <div className="flex flex-col justify-center">
             {editing ? (
               <Input value={editData.title} onChange={e => setEditData({...editData, title: e.target.value})} className="font-semibold text-lg" />
@@ -147,8 +146,8 @@ export default function DocumentDetail() {
             <p className="text-sm text-muted-foreground mt-0.5">{doc.original_filename}</p>
           </div>
 
-          {/* Col 3: Buttons — spans both rows */}
-          <div className="flex gap-2 flex-wrap justify-end content-start" style={{gridRow: '1 / 3', gridColumn: '3', alignContent: 'flex-start'}}>
+          {/* Col 3: Buttons — spans both rows, wraps across rows */}
+          <div style={{gridRow: '1 / 3', gridColumn: '3', display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'flex-end', alignContent: 'flex-start'}}>
             <ProcessDocumentButton document={doc} categories={categories} folders={folders} onProcessed={loadData} />
             {!editing ? (
               <Button variant="outline" size="sm" onClick={() => setEditing(true)}>Edit</Button>
@@ -172,7 +171,7 @@ export default function DocumentDetail() {
           <div />
 
           {/* Row 2 Col 2: Tags + status badges left-justified */}
-          <div className="flex items-center gap-2 flex-wrap">
+          <div style={{display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '8px'}}>
             <span className={`inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full font-medium ${status.className}`}>
               <StatusIcon className={`h-3 w-3 ${doc.processing_status === 'processing' ? 'animate-spin' : ''}`} />
               {status.label}
