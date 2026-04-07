@@ -38,6 +38,7 @@ export default function DocumentDetail() {
   const [editData, setEditData] = useState({});
   const [suggestedVaultPath, setSuggestedVaultPath] = useState("");
   const [processing, setProcessing] = useState(false);
+  const [notesChanged, setNotesChanged] = useState(false);
 
   const handleProcess = async () => {
     setProcessing(true);
@@ -101,6 +102,12 @@ export default function DocumentDetail() {
     toast.success("Document updated");
     setEditing(false);
     loadDoc();
+  };
+
+  const handleSaveNotes = async () => {
+    await base44.entities.Document.update(doc.id, { notes: editData.notes || undefined });
+    toast.success("Notes saved");
+    setNotesChanged(false);
   };
 
   const handleDelete = async () => {
@@ -296,14 +303,16 @@ export default function DocumentDetail() {
 
           {/* Row 2: Notes */}
           <div className="bg-card rounded-xl border p-6">
-            <h3 className="font-medium text-sm mb-3">Notes</h3>
-            {editing ? (
-              <Textarea value={editData.notes} onChange={e => setEditData({...editData, notes: e.target.value})} rows={4} placeholder="Add your notes..." />
-            ) : (
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                {doc.notes || <span className="italic opacity-50">No notes</span>}
-              </p>
-            )}
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-medium text-sm">Notes</h3>
+              {notesChanged && (
+                <SaveButton size="sm" onSave={handleSaveNotes}>Save Notes</SaveButton>
+              )}
+            </div>
+            <Textarea value={editData.notes} onChange={e => {
+              setEditData({...editData, notes: e.target.value});
+              setNotesChanged(true);
+            }} rows={4} placeholder="Add your notes..." />
           </div>
 
           {/* Row 3: Tags + Details side by side */}
