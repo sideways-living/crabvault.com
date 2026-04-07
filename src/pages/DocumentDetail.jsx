@@ -176,8 +176,11 @@ export default function DocumentDetail() {
               <Select value={editData.category_id || '__uncategorised__'} onValueChange={v => setEditData({...editData, category_id: v === '__uncategorised__' ? '' : v})}>
                 <SelectTrigger className="w-32 h-7 text-xs"><SelectValue placeholder="Select category" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="__uncategorised__">Uncategorised</SelectItem>
-                  {categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                  {CATEGORY_OPTIONS.map(opt => (
+                    <SelectItem key={opt} value={opt === 'Uncategorised' ? '__uncategorised__' : opt}>
+                      {opt}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             ) : (
