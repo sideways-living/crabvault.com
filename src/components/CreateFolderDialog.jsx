@@ -48,8 +48,23 @@ export default function CreateFolderDialog({ open, onOpenChange, folders, catego
     let currentParentId = parentId || undefined;
     let lastFolderName = '';
 
+    // Keep a live list that includes newly created folders this session
+    const allFolders = [...(folders || [])].concat([]);
+
     for (const folderName of folderNames) {
       lastFolderName = folderName.trim();
+
+      // Check if a folder with this name already exists under the current parent
+      const existing = allFolders.find(f =>
+        f.name.toLowerCase() === lastFolderName.toLowerCase() &&
+        (f.parent_folder_id || undefined) === (currentParentId || undefined)
+      );
+
+      if (existing) {
+        currentParentId = existing.id;
+        continue;
+      }
+
       const path = buildPath(currentParentId, lastFolderName);
       const newFolder = await base44.entities.Folder.create({
         name: lastFolderName,
@@ -58,6 +73,7 @@ export default function CreateFolderDialog({ open, onOpenChange, folders, catego
         category_id: categoryId || undefined,
         description: folderNames.length === 1 ? (description || undefined) : undefined,
       });
+      allFolders.push(newFolder);
       currentParentId = newFolder.id;
     }
 
