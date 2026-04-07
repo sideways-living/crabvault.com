@@ -178,11 +178,43 @@ export default function DocumentDetail() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main content */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Summary */}
-          <div className="bg-card rounded-xl border p-6">
+      {/* 3-column grid layout */}
+      <div className="grid grid-cols-3 gap-6">
+
+        {/* Col 1: Document preview */}
+        <div className="col-span-1 row-span-2">
+          <div className="bg-card rounded-xl border overflow-hidden h-full min-h-[400px] flex flex-col">
+            <div className="px-4 py-3 border-b">
+              <h3 className="font-medium text-sm">Document</h3>
+            </div>
+            <div className="flex-1 flex items-center justify-center p-2 bg-muted/20">
+              {doc.file_url ? (
+                ['jpg','jpeg','png','gif','webp'].includes(doc.file_type?.toLowerCase()) ? (
+                  <img src={doc.file_url} alt={doc.title} className="max-w-full max-h-[600px] object-contain rounded" />
+                ) : doc.file_type?.toLowerCase() === 'pdf' ? (
+                  <iframe src={doc.file_url} className="w-full h-full min-h-[500px] rounded" title={doc.title} />
+                ) : (
+                  <div className="text-center p-6">
+                    <FileText className="h-16 w-16 text-muted-foreground/40 mx-auto mb-3" />
+                    <p className="text-sm text-muted-foreground mb-3">{doc.original_filename}</p>
+                    <a href={doc.file_url} target="_blank" rel="noopener noreferrer">
+                      <Button variant="outline" size="sm"><ExternalLink className="h-4 w-4 mr-1" /> Open File</Button>
+                    </a>
+                  </div>
+                )
+              ) : (
+                <div className="text-center p-6">
+                  <FileText className="h-16 w-16 text-muted-foreground/40 mx-auto mb-3" />
+                  <p className="text-sm text-muted-foreground/50 italic">No file available</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Col 2-3: AI Summary */}
+        <div className="col-span-2">
+          <div className="bg-card rounded-xl border p-6 h-full">
             <h3 className="font-medium text-sm mb-3">AI Summary</h3>
             {doc.summary ? (
               <p className="text-sm text-muted-foreground leading-relaxed">{doc.summary}</p>
@@ -190,8 +222,10 @@ export default function DocumentDetail() {
               <p className="text-sm text-muted-foreground/50 italic">Not yet processed. Click "AI Process" to generate.</p>
             )}
           </div>
+        </div>
 
-          {/* Notes */}
+        {/* Col 2-3: Notes */}
+        <div className="col-span-2">
           <div className="bg-card rounded-xl border p-6">
             <h3 className="font-medium text-sm mb-3">Notes</h3>
             {editing ? (
@@ -204,8 +238,29 @@ export default function DocumentDetail() {
           </div>
         </div>
 
-        {/* Sidebar */}
-        <div className="space-y-6">
+        {/* Col 1: empty spacer */}
+        <div className="col-span-1" />
+
+        {/* Col 2: Tags */}
+        <div className="col-span-1">
+          <div className="bg-card rounded-xl border p-6">
+            <h3 className="font-medium text-sm mb-3">Tags</h3>
+            {editing ? (
+              <Input value={editData.tags} onChange={e => setEditData({...editData, tags: e.target.value})} placeholder="comma, separated, tags" className="text-sm" />
+            ) : (
+              <div className="flex flex-wrap gap-1.5">
+                {doc.tags?.length > 0 ? doc.tags.map(tag => (
+                  <Badge key={tag} variant="secondary" className="text-xs">{tag}</Badge>
+                )) : (
+                  <p className="text-xs text-muted-foreground/50 italic">No tags</p>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Col 3: Details */}
+        <div className="col-span-1">
           <div className="bg-card rounded-xl border p-6 space-y-4">
             <h3 className="font-medium text-sm">Details</h3>
             <div className="space-y-3 text-sm">
@@ -264,23 +319,8 @@ export default function DocumentDetail() {
               ) : null}
             </div>
           </div>
-
-          {/* Tags */}
-          <div className="bg-card rounded-xl border p-6">
-            <h3 className="font-medium text-sm mb-3">Tags</h3>
-            {editing ? (
-              <Input value={editData.tags} onChange={e => setEditData({...editData, tags: e.target.value})} placeholder="comma, separated, tags" className="text-sm" />
-            ) : (
-              <div className="flex flex-wrap gap-1.5">
-                {doc.tags?.length > 0 ? doc.tags.map(tag => (
-                  <Badge key={tag} variant="secondary" className="text-xs">{tag}</Badge>
-                )) : (
-                  <p className="text-xs text-muted-foreground/50 italic">No tags</p>
-                )}
-              </div>
-            )}
-          </div>
         </div>
+
       </div>
     </div>
   );
