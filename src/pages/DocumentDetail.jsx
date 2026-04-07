@@ -130,33 +130,25 @@ export default function DocumentDetail() {
 
       {/* Header */}
       <div className="bg-card rounded-xl border p-6">
-        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-          <div className="flex items-start gap-4">
-            <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-              <FileText className="h-6 w-6 text-primary" />
-            </div>
-            <div>
-              {editing ? (
-                <Input value={editData.title} onChange={e => setEditData({...editData, title: e.target.value})} className="font-semibold text-lg" />
-              ) : (
-                <h1 className="text-xl font-semibold">{doc.title}</h1>
-              )}
-              <p className="text-sm text-muted-foreground mt-0.5">{doc.original_filename}</p>
-              <div className="flex items-center gap-2 mt-2 flex-wrap">
-                <span className={`inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full font-medium ${status.className}`}>
-                  <StatusIcon className={`h-3 w-3 ${doc.processing_status === 'processing' ? 'animate-spin' : ''}`} />
-                  {status.label}
-                </span>
-                {category && (
-                  <Badge variant="secondary">{category.name}</Badge>
-                )}
-                {doc.file_type && (
-                  <Badge variant="outline" className="uppercase text-[10px]">{doc.file_type}</Badge>
-                )}
-              </div>
-            </div>
+        <div className="grid gap-x-4 gap-y-3" style={{gridTemplateColumns: 'auto 1fr auto', gridTemplateRows: 'auto auto'}}>
+
+          {/* Row 1 Col 1: File type icon */}
+          <div className="flex items-center justify-center h-12 w-12 rounded-xl bg-primary/10 shrink-0">
+            <FileText className="h-6 w-6 text-primary" />
           </div>
-          <div className="flex items-center gap-2 flex-wrap">
+
+          {/* Row 1 Col 2: Title + status/category badges */}
+          <div className="flex flex-col justify-center">
+            {editing ? (
+              <Input value={editData.title} onChange={e => setEditData({...editData, title: e.target.value})} className="font-semibold text-lg" />
+            ) : (
+              <h1 className="text-xl font-semibold">{doc.title}</h1>
+            )}
+            <p className="text-sm text-muted-foreground mt-0.5">{doc.original_filename}</p>
+          </div>
+
+          {/* Col 3: Buttons — spans both rows */}
+          <div className="flex items-center gap-2 flex-wrap justify-end" style={{gridRow: '1 / 3', gridColumn: '3'}}>
             <ProcessDocumentButton document={doc} categories={categories} folders={folders} onProcessed={loadData} />
             {!editing ? (
               <Button variant="outline" size="sm" onClick={() => setEditing(true)}>Edit</Button>
@@ -175,6 +167,23 @@ export default function DocumentDetail() {
               <Trash2 className="h-4 w-4" />
             </Button>
           </div>
+
+          {/* Row 2 Col 1: empty */}
+          <div />
+
+          {/* Row 2 Col 2: Tags + status badges left-justified */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className={`inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full font-medium ${status.className}`}>
+              <StatusIcon className={`h-3 w-3 ${doc.processing_status === 'processing' ? 'animate-spin' : ''}`} />
+              {status.label}
+            </span>
+            {category && <Badge variant="secondary">{category.name}</Badge>}
+            {doc.file_type && <Badge variant="outline" className="uppercase text-[10px]">{doc.file_type}</Badge>}
+            {doc.tags?.length > 0 && doc.tags.map(tag => (
+              <Badge key={tag} variant="secondary" className="text-xs">{tag}</Badge>
+            ))}
+          </div>
+
         </div>
       </div>
 
