@@ -129,7 +129,7 @@ export default function DocumentDetail() {
 
       {/* Header */}
       <div className="bg-card rounded-xl border p-6">
-        <div style={{display: 'grid', gridTemplateColumns: 'auto 1fr 30%', gridTemplateRows: 'auto auto', gap: '12px 16px'}}>
+        <div style={{display: 'grid', gridTemplateColumns: 'auto 1fr 20%', gridTemplateRows: 'auto auto', gap: '12px 16px'}}>
 
           {/* Row 1 Col 1: File type icon */}
           <div className="flex items-center justify-center h-12 w-12 rounded-xl bg-primary/10 shrink-0">
