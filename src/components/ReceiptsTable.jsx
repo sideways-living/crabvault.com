@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
-import { ExternalLink, Search, Loader2, Receipt } from "lucide-react";
+import { ExternalLink, Search, Loader2, Receipt, AlertTriangle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Link } from "react-router-dom";
 
@@ -52,11 +52,23 @@ function mergeReceiptData(doc, txn) {
   };
 }
 
+function missingFields(r) {
+  const missing = [];
+  if (!r.store_brand) missing.push("Store");
+  if (!r.transaction_date) missing.push("Date");
+  if (r.amount == null) missing.push("Amount");
+  if (!r.transaction_type) missing.push("Type");
+  if (!r.tender_type || r.tender_type === "other") missing.push("Payment");
+  if (!r.items || r.items.length === 0) missing.push("Items");
+  return missing;
+}
+
 export default function ReceiptsTable() {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [expanded, setExpanded] = useState(null);
+  const [incompleteOnly, setIncompleteOnly] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -86,9 +98,10 @@ export default function ReceiptsTable() {
   }, []);
 
   const filtered = useMemo(() => {
+    let base = incompleteOnly ? rows.filter(r => missingFields(r).length > 0) : rows;
     const q = search.toLowerCase().trim();
-    if (!q) return rows;
-    return rows.filter(r => {
+    if (!q) return base;
+    return base.filter(r => {
       const fields = [
         r.store_brand, r.store_location, r.transaction_date, r.transaction_time,
         r.transaction_type, r.tender_type, r.receipt_number, r.last_four_digits,
@@ -98,7 +111,7 @@ export default function ReceiptsTable() {
       ].filter(Boolean).map(s => s.toLowerCase());
       return fields.some(f => f.includes(q));
     });
-  }, [rows, search]);
+  }, [rows, search, incompleteOnly]);
 
   if (loading) {
     return <div className="flex justify-center py-12"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>;
@@ -116,14 +129,32 @@ export default function ReceiptsTable() {
 
   return (
     <div className="space-y-3">
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          placeholder="Search store, date, item, amount, receipt #…"
-          className="pl-9"
-        />
+      <div className="flex gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search store, date, item, amount, receipt #…"
+            className="pl-9"
+          />
+        </div>
+        <button
+          onClick={() => setIncompleteOnly(v => !v)}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors ${
+            incompleteOnly
+              ? "bg-amber-100 border-amber-400 text-amber-800"
+              : "bg-background border-input text-muted-foreground hover:bg-muted"
+          }`}
+        >
+          <AlertTriangle className="h-4 w-4" />
+          Incomplete only
+          {incompleteOnly && (
+            <span className="ml-1 bg-amber-400 text-white text-[10px] font-bold rounded-full px-1.5 py-0.5">
+              {rows.filter(r => missingFields(r).length > 0).length}
+            </span>
+          )}
+        </button>
       </div>
 
       <div className="text-xs text-muted-foreground">{filtered.length} receipt{filtered.length !== 1 ? "s" : ""}</div>
@@ -160,11 +191,18 @@ export default function ReceiptsTable() {
                         {r.transaction_time && <div className="text-muted-foreground">{r.transaction_time}</div>}
                       </td>
                       <td className="px-3 py-2.5 font-medium">
-                        {r.store_brand || (
-                          r.hasAiData ? "—" : (
-                            <span className="text-muted-foreground italic text-xs">{r.doc.title}</span>
-                          )
-                        )}
+                        <div className="flex items-center gap-1.5">
+                          {missingFields(r).length > 0 && (
+                            <span title={`Missing: ${missingFields(r).join(", ")}`}>
+                              <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                            </span>
+                          )}
+                          {r.store_brand || (
+                            r.hasAiData ? "—" : (
+                              <span className="text-muted-foreground italic text-xs">{r.doc.title}</span>
+                            )
+                          )}
+                        </div>
                       </td>
                       <td className="px-3 py-2.5 text-muted-foreground text-xs">{r.store_location || "—"}</td>
                       <td className="px-3 py-2.5">
