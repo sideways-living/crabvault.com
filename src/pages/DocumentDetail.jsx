@@ -25,6 +25,8 @@ const statusConfig = {
   failed: { icon: AlertCircle, label: "Failed", className: "bg-red-100 text-red-700" },
 };
 
+const CATEGORY_OPTIONS = ['Uncategorised', 'Document', 'Image', 'Receipt', 'Video'];
+
 export default function DocumentDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -174,8 +176,11 @@ export default function DocumentDetail() {
               <Select value={editData.category_id} onValueChange={v => setEditData({...editData, category_id: v})}>
                 <SelectTrigger className="w-32 h-7 text-xs"><SelectValue placeholder="Select category" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={null}>Uncategorised</SelectItem>
-                  {categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                  {CATEGORY_OPTIONS.map(opt => (
+                    <SelectItem key={opt} value={opt === 'Uncategorised' ? '' : categories.find(c => c.name === opt)?.id || ''}>
+                      {opt}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             ) : (
