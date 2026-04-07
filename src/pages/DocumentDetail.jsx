@@ -50,10 +50,24 @@ export default function DocumentDetail() {
     }
   };
 
+
   const loadData = async () => {
-    await loadDoc();
-    const flds = await base44.entities.Folder.list();
-    const cats = await base44.entities.Category.list();
+    const [docs, flds, cats] = await Promise.all([
+      base44.entities.Document.filter({ id }),
+      base44.entities.Folder.list(),
+      base44.entities.Category.list(),
+    ]);
+    if (docs.length > 0) {
+      setDoc(docs[0]);
+      setEditData({
+        title: docs[0].title,
+        folder_id: docs[0].folder_id || "",
+        category_id: docs[0].category_id || "",
+        notes: docs[0].notes || "",
+        tags: docs[0].tags?.join(", ") || "",
+        vault_path: docs[0].vault_path || "",
+      });
+    }
     setFolders(flds);
     setCategories(cats);
     setLoading(false);
