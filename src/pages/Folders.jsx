@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { FolderPlus } from "lucide-react";
+import { FolderPlus, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import FolderTreeView from "../components/FolderTreeView";
 import CreateFolderDialog from "../components/CreateFolderDialog";
@@ -8,16 +8,20 @@ import CreateFolderDialog from "../components/CreateFolderDialog";
 
 export default function Folders() {
   const [folders, setFolders] = useState([]);
+  const [documents, setDocuments] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [showFiles, setShowFiles] = useState(false);
   const [loading, setLoading] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
 
   const loadData = async () => {
-    const [flds, cats] = await Promise.all([
+    const [flds, docs, cats] = await Promise.all([
       base44.entities.Folder.list(),
+      base44.entities.Document.list("-created_date", 500),
       base44.entities.Category.list(),
     ]);
     setFolders(flds);
+    setDocuments(docs);
     setCategories(cats);
     setLoading(false);
   };
@@ -48,25 +52,36 @@ export default function Folders() {
           <h1 className="text-2xl font-semibold tracking-tight">Folders</h1>
           <p className="text-sm text-muted-foreground mt-1">Browse your document hierarchy</p>
         </div>
-        <Button onClick={() => setCreateOpen(true)} className="gap-2">
-          <FolderPlus className="h-4 w-4" /> New Folder
-        </Button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowFiles(v => !v)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors ${
+              showFiles ? 'bg-primary text-primary-foreground border-primary' : 'bg-card text-muted-foreground border-border hover:bg-muted'
+            }`}
+          >
+            <FileText className="h-4 w-4" />
+            {showFiles ? 'Files on' : 'Files off'}
+          </button>
+          <Button onClick={() => setCreateOpen(true)} className="gap-2">
+            <FolderPlus className="h-4 w-4" /> New Folder
+          </Button>
+        </div>
       </div>
 
       {showTwoCol ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="bg-card rounded-xl border p-4">
             <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Documents</h2>
-            <FolderTreeView folders={folders} onFoldersChanged={loadData} onlyRootIds={new Set([...docRootIds, ...otherRootIds])} />
+            <FolderTreeView folders={folders} documents={showFiles ? documents : []} onFoldersChanged={loadData} onlyRootIds={new Set([...docRootIds, ...otherRootIds])} />
           </div>
           <div className="bg-card rounded-xl border p-4">
             <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Receipt Folders</h2>
-            <FolderTreeView folders={folders} onFoldersChanged={loadData} onlyRootIds={recRootIds} />
+            <FolderTreeView folders={folders} documents={showFiles ? documents : []} onFoldersChanged={loadData} onlyRootIds={recRootIds} />
           </div>
         </div>
       ) : (
         <div className="bg-card rounded-xl border p-4">
-          <FolderTreeView folders={folders} onFoldersChanged={loadData} />
+          <FolderTreeView folders={folders} documents={showFiles ? documents : []} onFoldersChanged={loadData} />
         </div>
       )}
 

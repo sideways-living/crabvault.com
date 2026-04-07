@@ -1,17 +1,18 @@
 import { useState, useRef } from "react";
 import { Link } from "react-router-dom";
-import { Folder, FolderOpen, ChevronRight, ChevronDown, GripVertical, Pencil, Trash2, Check, X } from "lucide-react";
+import { Folder, FolderOpen, ChevronRight, ChevronDown, GripVertical, Pencil, Trash2, Check, X, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
 
-function FolderNode({ folder, allFolders, depth, onDrop, draggingId, setDraggingId, onRename, onDelete }) {
+function FolderNode({ folder, allFolders, documents, depth, onDrop, draggingId, setDraggingId, onRename, onDelete }) {
   const [expanded, setExpanded] = useState(depth < 2);
   const [dragOver, setDragOver] = useState(false);
   const [renaming, setRenaming] = useState(false);
   const [renameVal, setRenameVal] = useState(folder.name);
   const children = allFolders.filter(f => f.parent_folder_id === folder.id).sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
-  const hasChildren = children.length > 0;
+  const folderDocs = documents.filter(d => d.folder_id === folder.id);
+  const hasChildren = children.length > 0 || folderDocs.length > 0;
 
   const isDescendant = (potentialChildId, targetId) => {
     const ch = allFolders.filter(f => f.parent_folder_id === targetId);
@@ -84,7 +85,7 @@ function FolderNode({ folder, allFolders, depth, onDrop, draggingId, setDragging
         ) : (
           <span className="text-sm font-medium truncate flex-1">{folder.name}</span>
         )}
-        <span className="text-[10px] text-muted-foreground">{children.length > 0 ? children.length : ''}</span>
+        <span className="text-[10px] text-muted-foreground">{folderDocs.length > 0 ? folderDocs.length : (children.length > 0 ? '' : '')}</span>
         {renaming ? (
           <>
             <button onClick={e => { e.stopPropagation(); onRename(folder, renameVal); setRenaming(false); }} className="text-emerald-600 hover:text-emerald-700 p-0.5"><Check className="h-3.5 w-3.5" /></button>
@@ -104,6 +105,7 @@ function FolderNode({ folder, allFolders, depth, onDrop, draggingId, setDragging
               key={child.id}
               folder={child}
               allFolders={allFolders}
+              documents={documents}
               depth={depth + 1}
               onDrop={onDrop}
               draggingId={draggingId}
@@ -112,13 +114,23 @@ function FolderNode({ folder, allFolders, depth, onDrop, draggingId, setDragging
               onDelete={onDelete}
             />
           ))}
+          {folderDocs.map(doc => (
+            <div
+              key={doc.id}
+              className="flex items-center gap-2 py-1.5 px-2 rounded-lg hover:bg-muted/50 transition-colors text-sm"
+              style={{ paddingLeft: `${(depth + 1) * 20 + 8}px` }}
+            >
+              <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              <a href={`/documents/${doc.id}`} className="truncate text-muted-foreground hover:text-foreground flex-1">{doc.title}</a>
+            </div>
+          ))}
         </div>
       )}
     </div>
   );
 }
 
-export default function FolderTreeView({ folders, onFoldersChanged, onlyRootIds }) {
+export default function FolderTreeView({ folders, documents = [], onFoldersChanged, onlyRootIds }) {
   const [draggingId, setDraggingId] = useState(null);
   const [rootDragOver, setRootDragOver] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(null); // folder to delete
@@ -215,6 +227,7 @@ export default function FolderTreeView({ folders, onFoldersChanged, onlyRootIds 
           key={folder.id}
           folder={folder}
           allFolders={folders}
+          documents={documents}
           depth={0}
           onDrop={handleDrop}
           draggingId={draggingId}
