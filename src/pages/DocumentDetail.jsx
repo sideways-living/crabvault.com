@@ -52,11 +52,7 @@ export default function DocumentDetail() {
 
 
   const loadData = async () => {
-    const [docs, flds, cats] = await Promise.all([
-      base44.entities.Document.filter({ id }),
-      base44.entities.Folder.list(),
-      base44.entities.Category.list(),
-    ]);
+    const docs = await base44.entities.Document.filter({ id });
     if (docs.length > 0) {
       setDoc(docs[0]);
       setEditData({
@@ -68,6 +64,8 @@ export default function DocumentDetail() {
         vault_path: docs[0].vault_path || "",
       });
     }
+    const flds = await base44.entities.Folder.list();
+    const cats = await base44.entities.Category.list();
     setFolders(flds);
     setCategories(cats);
     setLoading(false);
