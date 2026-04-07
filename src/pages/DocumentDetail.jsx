@@ -117,7 +117,7 @@ export default function DocumentDetail() {
   const folder = folders.find(f => f.id === doc.folder_id);
 
   return (
-    <div className="space-y-6 max-w-4xl">
+    <div className="space-y-6">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2">
         <Link to="/documents" className="text-muted-foreground hover:text-foreground transition-colors">
@@ -178,21 +178,21 @@ export default function DocumentDetail() {
         </div>
       </div>
 
-      {/* 3-column grid layout */}
-      <div className="grid grid-cols-3 gap-6">
+      {/* Layout: preview on left (1/3), content on right (2/3) */}
+      <div className="flex gap-6 items-stretch">
 
-        {/* Col 1: Document preview */}
-        <div className="col-span-1 row-span-2">
-          <div className="bg-card rounded-xl border overflow-hidden h-full min-h-[400px] flex flex-col">
+        {/* Left: Document preview — full height */}
+        <div className="w-1/3 shrink-0">
+          <div className="bg-card rounded-xl border overflow-hidden flex flex-col" style={{minHeight: '600px', height: '100%'}}>
             <div className="px-4 py-3 border-b">
               <h3 className="font-medium text-sm">Document</h3>
             </div>
             <div className="flex-1 flex items-center justify-center p-2 bg-muted/20">
               {doc.file_url ? (
                 ['jpg','jpeg','png','gif','webp'].includes(doc.file_type?.toLowerCase()) ? (
-                  <img src={doc.file_url} alt={doc.title} className="max-w-full max-h-[600px] object-contain rounded" />
+                  <img src={doc.file_url} alt={doc.title} className="max-w-full object-contain rounded" />
                 ) : doc.file_type?.toLowerCase() === 'pdf' ? (
-                  <iframe src={doc.file_url} className="w-full h-full min-h-[500px] rounded" title={doc.title} />
+                  <iframe src={doc.file_url} className="w-full h-full" style={{minHeight: '560px'}} title={doc.title} />
                 ) : (
                   <div className="text-center p-6">
                     <FileText className="h-16 w-16 text-muted-foreground/40 mx-auto mb-3" />
@@ -212,9 +212,11 @@ export default function DocumentDetail() {
           </div>
         </div>
 
-        {/* Col 2-3: AI Summary */}
-        <div className="col-span-2">
-          <div className="bg-card rounded-xl border p-6 h-full">
+        {/* Right: stacked content (2/3) */}
+        <div className="flex-1 flex flex-col gap-6">
+
+          {/* Row 1: AI Summary */}
+          <div className="bg-card rounded-xl border p-6">
             <h3 className="font-medium text-sm mb-3">AI Summary</h3>
             {doc.summary ? (
               <p className="text-sm text-muted-foreground leading-relaxed">{doc.summary}</p>
@@ -222,10 +224,8 @@ export default function DocumentDetail() {
               <p className="text-sm text-muted-foreground/50 italic">Not yet processed. Click "AI Process" to generate.</p>
             )}
           </div>
-        </div>
 
-        {/* Col 2-3: Notes */}
-        <div className="col-span-2">
+          {/* Row 2: Notes */}
           <div className="bg-card rounded-xl border p-6">
             <h3 className="font-medium text-sm mb-3">Notes</h3>
             {editing ? (
@@ -236,91 +236,88 @@ export default function DocumentDetail() {
               </p>
             )}
           </div>
-        </div>
 
-        {/* Col 1: empty spacer */}
-        <div className="col-span-1" />
+          {/* Row 3: Tags + Details side by side */}
+          <div className="grid grid-cols-2 gap-6">
 
-        {/* Col 2: Tags */}
-        <div className="col-span-1">
-          <div className="bg-card rounded-xl border p-6">
-            <h3 className="font-medium text-sm mb-3">Tags</h3>
-            {editing ? (
-              <Input value={editData.tags} onChange={e => setEditData({...editData, tags: e.target.value})} placeholder="comma, separated, tags" className="text-sm" />
-            ) : (
-              <div className="flex flex-wrap gap-1.5">
-                {doc.tags?.length > 0 ? doc.tags.map(tag => (
-                  <Badge key={tag} variant="secondary" className="text-xs">{tag}</Badge>
-                )) : (
-                  <p className="text-xs text-muted-foreground/50 italic">No tags</p>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Col 3: Details */}
-        <div className="col-span-1">
-          <div className="bg-card rounded-xl border p-6 space-y-4">
-            <h3 className="font-medium text-sm">Details</h3>
-            <div className="space-y-3 text-sm">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Calendar className="h-4 w-4" />
-                <span>Uploaded {moment(doc.created_date).format("MMM D, YYYY")}</span>
-              </div>
-              {doc.document_date && (
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Calendar className="h-4 w-4" />
-                  <span>Document date: {moment(doc.document_date).format("MMM D, YYYY")}</span>
-                </div>
-              )}
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <FolderOpen className="h-4 w-4" />
-                {editing ? (
-                  <Select value={editData.folder_id} onValueChange={v => {
-                    const sel = folders.find(f => f.id === v);
-                    const suggested = sel?.vault_path ? `${sel.vault_path}/${doc.original_filename || doc.title}` : "";
-                    setSuggestedVaultPath(suggested);
-                    setEditData({...editData, folder_id: v, vault_path: editData.vault_path || suggested});
-                  }}>
-                    <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Select folder" /></SelectTrigger>
-                    <SelectContent>
-                      {folders.map(f => <SelectItem key={f.id} value={f.id}>{f.path || f.name}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                ) : (
-                  <span>{folder?.path || folder?.name || "Unfiled"}</span>
-                )}
-              </div>
-              {doc.file_size && (
-                <div className="text-muted-foreground">
-                  Size: {(doc.file_size / 1024).toFixed(0)} KB
-                </div>
-              )}
+            {/* Tags */}
+            <div className="bg-card rounded-xl border p-6">
+              <h3 className="font-medium text-sm mb-3">Tags</h3>
               {editing ? (
-                <div>
-                  <label className="text-[10px] text-muted-foreground uppercase tracking-wide">Vault Path</label>
-                  <Input
-                    value={editData.vault_path}
-                    onChange={e => setEditData({...editData, vault_path: e.target.value})}
-                    placeholder="/vault/path/file.pdf"
-                    className="mt-1 text-xs font-mono h-8"
-                  />
-                  {suggestedVaultPath && editData.vault_path !== suggestedVaultPath && (
-                    <button onClick={() => setEditData({...editData, vault_path: suggestedVaultPath})} className="text-[10px] text-primary hover:underline mt-1">
-                      Use suggested: {suggestedVaultPath}
-                    </button>
+                <Input value={editData.tags} onChange={e => setEditData({...editData, tags: e.target.value})} placeholder="comma, separated, tags" className="text-sm" />
+              ) : (
+                <div className="flex flex-wrap gap-1.5">
+                  {doc.tags?.length > 0 ? doc.tags.map(tag => (
+                    <Badge key={tag} variant="secondary" className="text-xs">{tag}</Badge>
+                  )) : (
+                    <p className="text-xs text-muted-foreground/50 italic">No tags</p>
                   )}
                 </div>
-              ) : doc.vault_path ? (
-                <div className="text-muted-foreground text-xs font-mono bg-muted/50 p-2 rounded break-all">
-                  🔒 {doc.vault_path}
-                </div>
-              ) : null}
+              )}
             </div>
+
+            {/* Details */}
+            <div className="bg-card rounded-xl border p-6 space-y-4">
+              <h3 className="font-medium text-sm">Details</h3>
+              <div className="space-y-3 text-sm">
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Calendar className="h-4 w-4" />
+                  <span>Uploaded {moment(doc.created_date).format("MMM D, YYYY")}</span>
+                </div>
+                {doc.document_date && (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Calendar className="h-4 w-4" />
+                    <span>Document date: {moment(doc.document_date).format("MMM D, YYYY")}</span>
+                  </div>
+                )}
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <FolderOpen className="h-4 w-4" />
+                  {editing ? (
+                    <Select value={editData.folder_id} onValueChange={v => {
+                      const sel = folders.find(f => f.id === v);
+                      const suggested = sel?.vault_path ? `${sel.vault_path}/${doc.original_filename || doc.title}` : "";
+                      setSuggestedVaultPath(suggested);
+                      setEditData({...editData, folder_id: v, vault_path: editData.vault_path || suggested});
+                    }}>
+                      <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Select folder" /></SelectTrigger>
+                      <SelectContent>
+                        {folders.map(f => <SelectItem key={f.id} value={f.id}>{f.path || f.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <span>{folder?.path || folder?.name || "Unfiled"}</span>
+                  )}
+                </div>
+                {doc.file_size && (
+                  <div className="text-muted-foreground">
+                    Size: {(doc.file_size / 1024).toFixed(0)} KB
+                  </div>
+                )}
+                {editing ? (
+                  <div>
+                    <label className="text-[10px] text-muted-foreground uppercase tracking-wide">Vault Path</label>
+                    <Input
+                      value={editData.vault_path}
+                      onChange={e => setEditData({...editData, vault_path: e.target.value})}
+                      placeholder="/vault/path/file.pdf"
+                      className="mt-1 text-xs font-mono h-8"
+                    />
+                    {suggestedVaultPath && editData.vault_path !== suggestedVaultPath && (
+                      <button onClick={() => setEditData({...editData, vault_path: suggestedVaultPath})} className="text-[10px] text-primary hover:underline mt-1">
+                        Use suggested: {suggestedVaultPath}
+                      </button>
+                    )}
+                  </div>
+                ) : doc.vault_path ? (
+                  <div className="text-muted-foreground text-xs font-mono bg-muted/50 p-2 rounded break-all">
+                    🔒 {doc.vault_path}
+                  </div>
+                ) : null}
+              </div>
+            </div>
+
           </div>
         </div>
-
       </div>
     </div>
   );
