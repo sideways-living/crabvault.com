@@ -148,7 +148,7 @@ export default function DocumentDetail() {
           </div>
 
           {/* Col 3: Buttons — spans both rows */}
-          <div className="flex items-center gap-2 flex-wrap justify-end" style={{gridRow: '1 / 3', gridColumn: '3'}}>
+          <div className="flex items-start gap-2 flex-wrap justify-end content-start" style={{gridRow: '1 / 3', gridColumn: '3'}}>
             <ProcessDocumentButton document={doc} categories={categories} folders={folders} onProcessed={loadData} />
             {!editing ? (
               <Button variant="outline" size="sm" onClick={() => setEditing(true)}>Edit</Button>
