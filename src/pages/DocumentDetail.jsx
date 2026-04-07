@@ -337,7 +337,8 @@ export default function DocumentDetail() {
           {transaction && (
             <div className="bg-card rounded-xl border p-6">
               <h3 className="font-medium text-sm mb-3">Receipt Details</h3>
-              <div className="space-y-3 text-sm">
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-3 text-sm">
                 {transaction.store_brand && (
                   <div>
                     <p className="text-xs text-muted-foreground uppercase tracking-wide">Store</p>
@@ -364,17 +365,17 @@ export default function DocumentDetail() {
                     <p className="capitalize">{transaction.transaction_type}</p>
                   </div>
                 )}
+                </div>
                 {transaction.items?.length > 0 && (
-                  <div className="pt-2 border-t">
-                    <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2">Items</p>
+                  <div className="space-y-3 text-sm">
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide">Items</p>
                     <div className="space-y-1 text-xs">
-                      {transaction.items.slice(0, 4).map((item, idx) => (
+                      {transaction.items.map((item, idx) => (
                         <div key={idx} className="flex justify-between text-muted-foreground">
                           <span>{item.name} {item.quantity && `x${item.quantity}`}</span>
                           {item.total_price && <span>${item.total_price.toFixed(2)}</span>}
                         </div>
                       ))}
-                      {transaction.items.length > 4 && <p className="text-[10px] text-muted-foreground/60">+{transaction.items.length - 4} more</p>}
                     </div>
                   </div>
                 )}
