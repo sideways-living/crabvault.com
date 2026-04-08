@@ -27,8 +27,11 @@ if (fs.existsSync(envPath)) {
 const WATCH_FOLDER = process.env.WATCH_FOLDER;
 const INGEST_URL   = process.env.INGEST_URL;   // e.g. https://your-app.base44.app/api/functions/ingestDocument
 const API_KEY      = process.env.INGEST_API_KEY;
+const HEARTBEAT_URL = process.env.HEARTBEAT_URL;
+const HEARTBEAT_KEY = process.env.HEARTBEAT_KEY || API_KEY;
 const MOVE_TO      = process.env.MOVE_AFTER_UPLOAD || ''; // optional: move file here after upload
 const POLL_INTERVAL = parseInt(process.env.POLL_INTERVAL_MS || '5000', 10);
+const HEARTBEAT_INTERVAL = parseInt(process.env.HEARTBEAT_INTERVAL_MS || '60000', 10); // 60 seconds
 
 const SUPPORTED = ['.pdf', '.docx', '.xlsx', '.pptx', '.txt', '.jpg', '.jpeg', '.png'];
 
@@ -84,12 +87,16 @@ async function uploadFile(filePath, filename) {
   const fileBuffer = fs.readFileSync(filePath);
   const boundary = '----DocVaultBoundary' + Date.now();
 
-  const bodyParts = [
-    `--${boundary}\r\nContent-Disposition: form-data; name="filename"\r\n\r\n${filename}`,
-    `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${filename}"\r\nContent-Type: application/octet-stream\r\n\r\n`,
-  ];
-
-  const bodyStart = Buffer.from(bodyParts.join('\r\n') + '\r\n', 'utf8');
+  // Construct proper multipart form data
+  const bodyStart = Buffer.from(
+    `--${boundary}\r\n` +
+    `Content-Disposition: form-data; name="filename"\r\n\r\n` +
+    `${filename}\r\n` +
+    `--${boundary}\r\n` +
+    `Content-Disposition: form-data; name="file"; filename="${filename}"\r\n` +
+    `Content-Type: application/octet-stream\r\n\r\n`,
+    'utf8'
+  );
   const bodyEnd = Buffer.from(`\r\n--${boundary}--\r\n`, 'utf8');
   const body = Buffer.concat([bodyStart, fileBuffer, bodyEnd]);
 
@@ -160,5 +167,53 @@ async function poll() {
   }
 }
 
+// Send heartbeat to report watcher status
+async function sendHeartbeat() {
+  if (!HEARTBEAT_URL) return; // skip if not configured
+  
+  const url = new URL(HEARTBEAT_URL);
+  const transport = url.protocol === 'https:' ? https : http;
+  const body = JSON.stringify({
+    watcher_type: 'ingest',
+    version: '1.0.0',
+    details: {
+      folder: WATCH_FOLDER,
+      files_processed: uploadedFiles.size,
+    }
+  });
+
+  return new Promise((resolve) => {
+    const req = transport.request({
+      hostname: url.hostname,
+      port: url.port || (url.protocol === 'https:' ? 443 : 80),
+      path: url.pathname,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': body.length,
+        'x-api-key': HEARTBEAT_KEY,
+      },
+    }, res => {
+      res.on('data', () => {}); // drain response
+      res.on('end', () => {
+        if (res.statusCode === 200) console.log('💓 Heartbeat sent');
+        else console.warn(`⚠️  Heartbeat failed: HTTP ${res.statusCode}`);
+        resolve();
+      });
+    });
+    req.on('error', (err) => {
+      console.warn('⚠️  Heartbeat error:', err.message);
+      resolve();
+    });
+    req.write(body);
+    req.end();
+  });
+}
+
 setInterval(poll, POLL_INTERVAL);
 poll(); // run immediately on start
+
+if (HEARTBEAT_URL) {
+  sendHeartbeat(); // send immediately on start
+  setInterval(sendHeartbeat, HEARTBEAT_INTERVAL);
+}

@@ -133,8 +133,8 @@ export default function WatcherStatus() {
             <p className="text-blue-800">Add this heartbeat ping to your .env + scripts to auto-report status:</p>
             <div className="bg-white rounded px-3 py-2 font-mono text-xs text-foreground border border-blue-200 overflow-auto">
               <code>
-{`HEARTBEAT_URL=your-app-url/api/functions/watcherHeartbeat
-HEARTBEAT_KEY=${process.env.INGEST_API_KEY}`}
+{`HEARTBEAT_URL=https://your-app.base44.app/api/functions/watcherHeartbeat
+HEARTBEAT_KEY=your-ingest-api-key`}
               </code>
             </div>
             <p className="text-blue-700 text-xs">Refer to the watcher setup guide for integration steps.</p>

@@ -56,13 +56,13 @@ Deno.serve(async (req) => {
       // We're not the oldest — delete self and return the winner
       if (activeNow[0].id !== doc.id) {
         console.log(`⚠️  Race condition dedup: deleting ${doc.id}, keeping ${activeNow[0].id}`);
-        await db.entities.Document.delete(doc.id);
+        try { await db.entities.Document.delete(doc.id); } catch { /* already gone */ }
         return Response.json({ success: true, document_id: activeNow[0].id, filename, duplicate: true });
       }
       // We're the oldest — delete the younger duplicates
       for (const dup of activeNow.slice(1)) {
         console.log(`⚠️  Race condition dedup: deleting younger duplicate ${dup.id}`);
-        await db.entities.Document.delete(dup.id);
+        try { await db.entities.Document.delete(dup.id); } catch { /* already gone */ }
       }
     }
 
