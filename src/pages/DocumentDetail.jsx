@@ -184,37 +184,31 @@ export default function DocumentDetail() {
       </div>
 
       {/* Header */}
-      <div className="bg-card rounded-xl border p-6">
-        <div style={{display: 'grid', gridTemplateColumns: 'auto 1fr 20%', gridTemplateRows: 'auto auto', gap: '12px 16px'}} className="-mx-6 -mt-6 px-6 pt-6 pb-3">
-        <div style={{display: 'contents'}} className="bg-slate-300 rounded-t-lg">
-
-          {/* Row 1 Col 1: File type icon */}
-          <div className="flex items-center justify-center h-12 w-12 rounded-xl bg-primary/10 shrink-0">
-            <FileText className="h-6 w-6 text-primary" />
+      <div className="bg-card rounded-xl border overflow-hidden">
+        {/* Top Section */}
+        <div className="bg-slate-300 px-6 py-4 flex items-center gap-4">
+          <div className="flex items-center justify-center h-12 w-12 rounded-xl bg-white/60 shrink-0">
+            <FileText className="h-6 w-6 text-slate-700" />
           </div>
 
-          {/* Row 1 Col 2: Title + filename */}
-          <div className="flex flex-col justify-center">
+          <div className="flex flex-col justify-center flex-1">
             {editing ? (
-              <Input value={editData.title} onChange={e => setEditData({...editData, title: e.target.value})} className="font-semibold text-lg" />
+              <Input value={editData.title} onChange={e => setEditData({...editData, title: e.target.value})} className="font-semibold text-lg bg-white/80 border-slate-400" />
             ) : (
-              <h1 className="text-xl font-semibold">{doc.title}</h1>
+              <h1 className="text-xl font-semibold text-slate-900">{doc.title}</h1>
             )}
-            <p className="text-sm text-muted-foreground mt-0.5">{doc.original_filename}</p>
+            <p className="text-sm text-slate-700 mt-0.5">{doc.original_filename}</p>
           </div>
+        </div>
 
-          {/* Col 3 Row 1: empty */}
-          <div />
-
-          {/* Row 2 Col 1: empty */}
-          <div />
-
-          {/* Row 2 Col 2: 3 core badges — file type, category, status */}
+        {/* Bottom Section */}
+        <div className="bg-card px-6 py-3 flex flex-wrap items-center justify-between gap-4">
+          {/* Badges */}
           <div style={{display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '8px'}}>
             {doc.file_type && <Badge variant="outline" className="uppercase text-[10px] font-mono">.{doc.file_type}</Badge>}
             {editing ? (
               <Select value={editData.category_id || '__uncategorised__'} onValueChange={v => setEditData({...editData, category_id: v === '__uncategorised__' ? '' : v})}>
-                <SelectTrigger className="w-32 h-7 text-xs"><SelectValue placeholder="Select category" /></SelectTrigger>
+                <SelectTrigger className="w-32 h-7 text-xs bg-background"><SelectValue placeholder="Select category" /></SelectTrigger>
                 <SelectContent>
                   {CATEGORY_OPTIONS.map(opt => (
                     <SelectItem key={opt} value={opt === 'Uncategorised' ? '__uncategorised__' : opt}>
@@ -232,7 +226,7 @@ export default function DocumentDetail() {
             </span>
           </div>
 
-          {/* Row 2 Col 3: Action buttons — icon only, right justified */}
+          {/* Actions */}
           <div style={{display: 'flex', gap: '4px', justifyContent: 'flex-end', alignItems: 'center'}}>
             <TooltipProvider delayDuration={300}>
               {!editing ? (
@@ -283,9 +277,8 @@ export default function DocumentDetail() {
               )}
             </TooltipProvider>
           </div>
-          </div>
-          </div>
-          </div>
+        </div>
+      </div>
 
       {/* Layout: preview on left (1/3), content on right (2/3) */}
       <div className="flex gap-6 items-stretch">
