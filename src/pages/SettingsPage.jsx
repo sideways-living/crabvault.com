@@ -22,6 +22,7 @@ export default function SettingsPage() {
   const [reprocessing, setReprocessing] = useState(false);
   const [queueing, setQueueing] = useState(false);
   const [generatingPreviews, setGeneratingPreviews] = useState(false);
+  const [resettingStuck, setResettingStuck] = useState(false);
   const [lastProcessed, setLastProcessed] = useState(null);
   const [folders, setFolders] = useState([]);
 
@@ -139,6 +140,17 @@ export default function SettingsPage() {
       ? ` (${docsToUpdate.length} document${docsToUpdate.length !== 1 ? 's' : ''} moved to Review Queue)`
       : '';
     toast.success(`Category removed${msgSuffix}`);
+  };
+
+  const handleResetStuckProcessing = async () => {
+    if (!confirm('Reset all documents stuck in "processing" status back to pending? Continue?')) return;
+    setResettingStuck(true);
+    const stuckDocs = await base44.entities.Document.filter({ processing_status: 'processing' }, '-created_date', 500);
+    await Promise.all(stuckDocs.map(doc =>
+      base44.entities.Document.update(doc.id, { processing_status: 'pending' })
+    ));
+    setResettingStuck(false);
+    toast.success(`${stuckDocs.length} stuck document(s) reset to pending`);
   };
 
   const handleBatchGeneratePreviews = async () => {
@@ -268,6 +280,10 @@ export default function SettingsPage() {
           <Button onClick={handleReprocessAll} disabled={processing || reprocessing} variant="outline" className="border-amber-300 text-amber-700 hover:bg-amber-50">
             {reprocessing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Play className="h-4 w-4 mr-2" />}
             {reprocessing ? 'Reprocessing...' : 'Reprocess ALL Documents'}
+          </Button>
+          <Button onClick={handleResetStuckProcessing} disabled={resettingStuck} variant="outline" className="border-red-300 text-red-700 hover:bg-red-50">
+            {resettingStuck ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Play className="h-4 w-4 mr-2" />}
+            {resettingStuck ? 'Resetting...' : 'Reset Stuck Processing Docs'}
           </Button>
           <Button onClick={handleBatchGeneratePreviews} disabled={generatingPreviews} variant="outline" className="border-teal-300 text-teal-700 hover:bg-teal-50">
             {generatingPreviews ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Image className="h-4 w-4 mr-2" />}
