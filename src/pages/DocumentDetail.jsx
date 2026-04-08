@@ -185,7 +185,8 @@ export default function DocumentDetail() {
 
       {/* Header */}
       <div className="bg-card rounded-xl border p-6">
-        <div style={{display: 'grid', gridTemplateColumns: 'auto 1fr 20%', gridTemplateRows: 'auto auto', gap: '12px 16px'}}>
+        <div style={{display: 'grid', gridTemplateColumns: 'auto 1fr 20%', gridTemplateRows: 'auto auto', gap: '12px 16px'}} className="-mx-6 -mt-6 px-6 pt-6 pb-3">
+        <div style={{display: 'contents'}} className="bg-slate-300 rounded-t-lg">
 
           {/* Row 1 Col 1: File type icon */}
           <div className="flex items-center justify-center h-12 w-12 rounded-xl bg-primary/10 shrink-0">
@@ -282,9 +283,9 @@ export default function DocumentDetail() {
               )}
             </TooltipProvider>
           </div>
-
-        </div>
-      </div>
+          </div>
+          </div>
+          </div>
 
       {/* Layout: preview on left (1/3), content on right (2/3) */}
       <div className="flex gap-6 items-stretch">
@@ -292,7 +293,7 @@ export default function DocumentDetail() {
         {/* Left: Document preview — full height */}
         <div className="w-1/3 shrink-0">
           <div className="bg-card rounded-xl border overflow-hidden flex flex-col" style={{minHeight: '600px', height: '100%'}}>
-            <div className="px-4 py-3 border-b">
+            <div className="px-4 py-3 border-b bg-slate-300">
               <h3 className="font-medium text-sm">Document</h3>
             </div>
             <div className="flex-1 flex items-center justify-center p-2 bg-muted/20">
