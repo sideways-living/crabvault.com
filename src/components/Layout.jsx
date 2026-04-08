@@ -36,6 +36,7 @@ export default function Layout() {
   const [vaultHelpOpen, setVaultHelpOpen] = useState(false);
   const [docCounts, setDocCounts] = useState({ pending: 0, processing: 0, review: 0, completed: 0 });
   const [user, setUser] = useState(null);
+  const [exportedBadge, setExportedBadge] = useState(0);
 
   useEffect(() => {
     const checkVault = async () => {
@@ -59,8 +60,18 @@ export default function Layout() {
           review: docs.filter(d => d.processing_status === 'needs_review').length,
           completed: docs.filter(d => d.processing_status === 'completed').length,
         });
+        // Count newly exported docs since last viewed
+        const lastViewed = localStorage.getItem('exportedLastViewed');
+        const newlyExported = lastViewed
+          ? docs.filter(d => d.synced_to_vault && new Date(d.updated_date) > new Date(lastViewed)).length
+          : docs.filter(d => d.synced_to_vault).length;
+        setExportedBadge(newlyExported);
       })
       .catch(() => {});
+
+    // Listen for exported page view to clear badge
+    const onExportedViewed = () => setExportedBadge(0);
+    window.addEventListener('exportedViewed', onExportedViewed);
     
     // Poll user data when on settings page to catch category visibility changes
     if (location.pathname === '/settings') {
@@ -68,8 +79,12 @@ export default function Layout() {
         const currentUser = await base44.auth.me();
         setUser(currentUser);
       }, 500);
-      return () => clearInterval(interval);
+      return () => {
+        clearInterval(interval);
+        window.removeEventListener('exportedViewed', onExportedViewed);
+      };
     }
+    return () => window.removeEventListener('exportedViewed', onExportedViewed);
   }, [location.pathname]);
 
   return (
@@ -157,6 +172,20 @@ export default function Layout() {
                   </Link>
                 );
               })}
+              <Link
+                to="/exported"
+                onClick={() => setSidebarOpen(false)}
+                className={cn(
+                  "flex items-center gap-3 px-3 py-2 rounded-lg text-xs transition-all duration-200",
+                  location.pathname === "/exported"
+                    ? "bg-sidebar-accent text-sidebar-primary"
+                    : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/30"
+                )}
+              >
+                <Lock className="h-3 w-3 shrink-0" />
+                <span className="flex-1">Exported</span>
+                {exportedBadge > 0 && <DocumentBadge count={exportedBadge} />}
+              </Link>
             </div>
           </div>
 

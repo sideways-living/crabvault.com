@@ -79,6 +79,7 @@ process.on('SIGINT', () => process.exit());
 process.on('SIGTERM', () => process.exit());
 
 const seen = uploadedFiles; // alias — same set
+let currentUploadFile = null;
 console.log(`👀  Watching: ${WATCH_FOLDER}`);
 console.log(`📤  Uploading to: ${INGEST_URL}`);
 console.log(`⏱️   Poll interval: ${POLL_INTERVAL}ms\n`);
@@ -149,10 +150,14 @@ async function poll() {
     seen.add(filename); // mark early to avoid double-upload on slow systems
     saveUploadedLog();   // persist immediately so restarts don't re-upload
     console.log(`📄  New file detected: ${filename}`);
+    currentUploadFile = filename;
+    if (HEARTBEAT_URL) sendHeartbeat();
 
     try {
       const result = await uploadFile(filePath, filename);
       console.log(`✅  Uploaded: ${filename} → document_id: ${result.document_id}`);
+      currentUploadFile = null;
+      if (HEARTBEAT_URL) sendHeartbeat();
 
       if (MOVE_TO) {
         const dest = path.join(MOVE_TO, filename);
@@ -162,6 +167,7 @@ async function poll() {
       }
     } catch (err) {
       console.error(`❌  Failed to upload ${filename}:`, err.message);
+      currentUploadFile = null;
       seen.delete(filename); // allow retry on next poll
     }
   }
@@ -179,6 +185,7 @@ async function sendHeartbeat() {
     details: {
       folder: WATCH_FOLDER,
       files_processed: uploadedFiles.size,
+      current_file: currentUploadFile,
     }
   });
 

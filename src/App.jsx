@@ -18,6 +18,7 @@ import DuplicateFinderPage from './pages/DuplicateFinderPage';
 import DeletedDocuments from './pages/DeletedDocuments';
 import ReceiptsPage from './pages/ReceiptsPage';
 import WatcherStatus from './pages/WatcherStatus';
+import ExportedDocuments from './pages/ExportedDocuments';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -61,6 +62,7 @@ const AuthenticatedApp = () => {
         <Route path="/deleted" element={<DeletedDocuments />} />
         <Route path="/receipts" element={<ReceiptsPage />} />
         <Route path="/watcher" element={<WatcherStatus />} />
+        <Route path="/exported" element={<ExportedDocuments />} />
         <Route path="*" element={<PageNotFound />} />
       </Route>
     </Routes>

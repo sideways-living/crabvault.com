@@ -29,10 +29,13 @@ if (fs.existsSync(envPath)) {
   });
 }
 
-const BASE_URL      = (process.env.INGEST_URL || '').replace(/\/ingestDocument$/, '').replace(/\/$/, '');
-const API_KEY       = process.env.INGEST_API_KEY;
-const VAULT_PATH    = process.env.VAULT_PATH;
-const POLL_INTERVAL = parseInt(process.env.POLL_INTERVAL_MS || '60000', 10);
+const BASE_URL        = (process.env.INGEST_URL || '').replace(/\/ingestDocument$/, '').replace(/\/$/, '');
+const API_KEY         = process.env.INGEST_API_KEY;
+const VAULT_PATH      = process.env.VAULT_PATH;
+const POLL_INTERVAL   = parseInt(process.env.POLL_INTERVAL_MS || '60000', 10);
+const HEARTBEAT_URL   = process.env.HEARTBEAT_URL;
+const HEARTBEAT_KEY   = process.env.HEARTBEAT_KEY || API_KEY;
+const HEARTBEAT_INTERVAL = parseInt(process.env.HEARTBEAT_INTERVAL_MS || '60000', 10);
 
 if (!BASE_URL || !API_KEY || !VAULT_PATH) {
   console.error('❌  Missing required env vars: INGEST_URL, INGEST_API_KEY, VAULT_PATH');
@@ -105,6 +108,33 @@ async function markSynced(documentId, vaultFilePath) {
   return apiRequest(`${BASE_URL}/markDocumentSynced`, {
     method: 'POST',
     body: JSON.stringify({ documentId, vaultFilePath }),
+  });
+}
+
+async function sendHeartbeat(currentFile = null, pendingCount = 0) {
+  if (!HEARTBEAT_URL) return;
+  const url = new URL(HEARTBEAT_URL);
+  const transport = url.protocol === 'https:' ? https : http;
+  const body = JSON.stringify({
+    watcher_type: 'sync',
+    version: '1.0.0',
+    details: {
+      vault: VAULT_PATH,
+      current_file: currentFile,
+      pending_count: pendingCount,
+    },
+  });
+  return new Promise((resolve) => {
+    const req = transport.request({
+      hostname: url.hostname,
+      port: url.port || (url.protocol === 'https:' ? 443 : 80),
+      path: url.pathname,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Content-Length': body.length, 'x-api-key': HEARTBEAT_KEY },
+    }, res => { res.on('data', () => {}); res.on('end', resolve); });
+    req.on('error', () => resolve());
+    req.write(body);
+    req.end();
   });
 }
 
@@ -182,18 +212,22 @@ async function poll() {
   const docs = result.documents || [];
   if (docs.length === 0) {
     console.log(`[${new Date().toLocaleTimeString()}] No documents pending vault sync.`);
+    await sendHeartbeat(null, 0);
     return;
   }
 
   console.log(`[${new Date().toLocaleTimeString()}] Syncing ${docs.length} document(s)...`);
 
-  for (const doc of docs) {
+  for (let i = 0; i < docs.length; i++) {
+    const doc = docs[i];
+    await sendHeartbeat(doc.title || doc.original_filename, docs.length - i);
     try {
       await syncDocument(doc);
     } catch (err) {
       console.error(`❌  Failed to sync "${doc.title || doc.id}":`, err.message);
     }
   }
+  await sendHeartbeat(null, 0);
 }
 
 console.log(`🔐  Vault sync started`);
@@ -202,3 +236,8 @@ console.log(`⏱️   Poll interval: ${POLL_INTERVAL / 1000}s\n`);
 
 setInterval(poll, POLL_INTERVAL);
 poll();
+
+if (HEARTBEAT_URL) {
+  sendHeartbeat(null, 0);
+  setInterval(() => sendHeartbeat(null, 0), HEARTBEAT_INTERVAL);
+}
