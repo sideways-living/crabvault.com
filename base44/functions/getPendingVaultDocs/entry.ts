@@ -48,14 +48,15 @@ Deno.serve(async (req) => {
       });
     } else if (d.vault_path) {
       // Already synced — check if folder has changed
-      // vault_path is relative like "Receipts/Woolworths/file.pdf"
-      const vaultDir = d.vault_path.includes('/') || d.vault_path.includes('\\')
-        ? '/' + d.vault_path.replace(/\\/g, '/').split('/').slice(0, -1).join('/')
-        : '';
-      const normalizedVaultDir = vaultDir.replace(/\/+$/, '');
+      // Normalize vault_path slashes, strip leading slash, extract directory
+      const normalizedVaultPath = d.vault_path.replace(/\\/g, '/').replace(/^\//, '');
+      const vaultParts = normalizedVaultPath.split('/');
+      const vaultDirParts = vaultParts.slice(0, -1);
+      const vaultDir = vaultDirParts.length ? '/' + vaultDirParts.join('/') : '';
+
       const normalizedCurrentDir = currentFolderPath.replace(/\/+$/, '');
 
-      if (normalizedVaultDir !== normalizedCurrentDir) {
+      if (vaultDir !== normalizedCurrentDir) {
         documents.push({
           id: d.id,
           title: d.title,

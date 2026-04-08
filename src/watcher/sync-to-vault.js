@@ -146,7 +146,9 @@ function sanitizeName(name) {
 async function syncDocument(doc) {
   // If the doc was already synced but moved to a new folder, delete old file first
   if (doc.needs_move && doc.old_vault_path) {
-    const oldAbsPath = path.join(VAULT_PATH, doc.old_vault_path);
+    // Normalize slashes for cross-platform compatibility
+    const normalizedOld = doc.old_vault_path.replace(/[\\/]/g, path.sep);
+    const oldAbsPath = path.join(VAULT_PATH, normalizedOld);
     if (fs.existsSync(oldAbsPath)) {
       fs.unlinkSync(oldAbsPath);
       console.log(`🗑️   Removed old vault file: ${doc.old_vault_path}`);
