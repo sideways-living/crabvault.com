@@ -21,11 +21,23 @@ export default function DocumentReview() {
     });
   };
 
+  const fetchWithRetry = async (fn, retries = 3, delay = 1000) => {
+    for (let i = 0; i < retries; i++) {
+      try {
+        return await fn();
+      } catch (err) {
+        if (i === retries - 1) throw err;
+        await new Promise(r => setTimeout(r, delay * (i + 1)));
+      }
+    }
+  };
+
   const loadQueue = async () => {
-    const [docs, flds, cats] = await Promise.all([
-      base44.entities.Document.filter({ processing_status: "needs_review" }, "-created_date", 100),
-      base44.entities.Folder.list(),
-      base44.entities.Category.list(),
+    const docs = await fetchWithRetry(() => base44.entities.Document.filter({ processing_status: "needs_review" }, "-created_date", 100));
+    await new Promise(r => setTimeout(r, 300));
+    const [flds, cats] = await Promise.all([
+      fetchWithRetry(() => base44.entities.Folder.list()),
+      fetchWithRetry(() => base44.entities.Category.list()),
     ]);
     setQueue(docs);
     setFolders(flds);
