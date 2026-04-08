@@ -114,8 +114,24 @@ function sanitizeName(name) {
 }
 
 async function syncDocument(doc) {
+  // If the doc was already synced but moved to a new folder, delete old file first
+  if (doc.needs_move && doc.old_vault_path) {
+    const oldAbsPath = path.join(VAULT_PATH, doc.old_vault_path);
+    if (fs.existsSync(oldAbsPath)) {
+      fs.unlinkSync(oldAbsPath);
+      console.log(`🗑️   Removed old vault file: ${doc.old_vault_path}`);
+      // Clean up empty parent directories
+      try {
+        let dir = path.dirname(oldAbsPath);
+        while (dir !== VAULT_PATH && fs.readdirSync(dir).length === 0) {
+          fs.rmdirSync(dir);
+          dir = path.dirname(dir);
+        }
+      } catch { /* ignore cleanup errors */ }
+    }
+  }
+
   // Build local folder path mirroring the app's folder structure
-  // doc.folder_path is like "/Receipts/Woolworths" — map onto VAULT_PATH
   const relPath = doc.folder_path ? doc.folder_path.replace(/^\//, '') : '';
   const localDir = relPath
     ? path.join(VAULT_PATH, ...relPath.split('/').map(sanitizeName))
@@ -147,7 +163,11 @@ async function syncDocument(doc) {
   const relVaultPath = path.relative(VAULT_PATH, destPath);
   await markSynced(doc.id, relVaultPath);
 
-  console.log(`✅  Synced: ${relVaultPath}`);
+  if (doc.needs_move) {
+    console.log(`📦  Moved: ${doc.old_vault_path} → ${relVaultPath}`);
+  } else {
+    console.log(`✅  Synced: ${relVaultPath}`);
+  }
 }
 
 async function poll() {
