@@ -21,14 +21,12 @@ export default function DocumentReview() {
     });
   };
 
-  const delay = (ms) => new Promise(r => setTimeout(r, ms));
-
   const loadQueue = async () => {
-    const docs = await base44.entities.Document.filter({ processing_status: "needs_review" }, "-created_date", 100);
-    await delay(300);
-    const flds = await base44.entities.Folder.list();
-    await delay(300);
-    const cats = await base44.entities.Category.list();
+    const [docs, flds, cats] = await Promise.all([
+      base44.entities.Document.filter({ processing_status: "needs_review" }, "-created_date", 100),
+      base44.entities.Folder.list(),
+      base44.entities.Category.list(),
+    ]);
     setQueue(docs);
     setFolders(flds);
     setCategories(cats);
