@@ -128,16 +128,29 @@ export default function WatcherStatus() {
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-5 space-y-3">
         <div className="flex gap-2">
           <Activity className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />
-          <div className="space-y-2 text-sm">
-            <p className="font-semibold text-blue-900">Update your watcher scripts</p>
-            <p className="text-blue-800">Add this heartbeat ping to your .env + scripts to auto-report status:</p>
-            <div className="bg-white rounded px-3 py-2 font-mono text-xs text-foreground border border-blue-200 overflow-auto">
-              <code>
-{`HEARTBEAT_URL=https://your-app.base44.app/api/functions/watcherHeartbeat
-HEARTBEAT_KEY=your-ingest-api-key`}
-              </code>
-            </div>
-            <p className="text-blue-700 text-xs">Refer to the watcher setup guide for integration steps.</p>
+          <div className="space-y-3 text-sm w-full">
+            <p className="font-semibold text-blue-900">Watcher .env Configuration</p>
+            <p className="text-blue-800 text-xs">Copy these into your <code className="bg-white px-1 rounded">watcher/.env</code> file:</p>
+            {[
+              { label: 'INGEST_URL', value: `${window.location.origin}/api/functions/ingestDocument` },
+              { label: 'HEARTBEAT_URL', value: `${window.location.origin}/api/functions/watcherHeartbeat` },
+              { label: 'INGEST_API_KEY', value: '(your INGEST_API_KEY secret value)' },
+              { label: 'HEARTBEAT_KEY', value: '(same as INGEST_API_KEY)' },
+            ].map(({ label, value }) => (
+              <div key={label} className="flex items-center gap-2">
+                <div className="bg-white rounded px-3 py-2 font-mono text-xs text-foreground border border-blue-200 flex-1 overflow-auto">
+                  {label}={value}
+                </div>
+                <button
+                  onClick={() => copyToClipboard(`${label}=${value}`)}
+                  className="p-1.5 rounded hover:bg-blue-100 text-blue-600"
+                  title="Copy"
+                >
+                  <Copy className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ))}
+            <p className="text-blue-700 text-xs">The watcher sends a heartbeat every 60s. If status shows Offline, check your .env has HEARTBEAT_URL set and restart the watcher.</p>
           </div>
         </div>
       </div>
