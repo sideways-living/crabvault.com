@@ -30,15 +30,15 @@ Deno.serve(async (req) => {
     console.log(`Reset ${reallyStuck.length} stuck document(s) back to pending`);
   }
 
-  // Fetch pending documents
+  // Fetch pending documents — small batch (2) to avoid timeouts
   const pending = await db.entities.Document.filter({
     processing_status: 'pending',
-  }, 'created_date', 5);
+  }, 'created_date', 2);
 
   // Fetch needs_review documents and reset them to pending (clear AI data)
   const inReview = await db.entities.Document.filter({
     processing_status: 'needs_review',
-  }, 'created_date', 5);
+  }, 'created_date', 2);
 
   if (inReview.length > 0) {
     await Promise.all(inReview.map(doc =>
