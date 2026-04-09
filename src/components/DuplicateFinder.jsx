@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   Copy, Trash2, Loader2, ExternalLink, AlertTriangle,
-  CheckCircle2, FileText, RefreshCw, Shield
+  CheckCircle2, FileText, RefreshCw, Shield, XCircle
 } from "lucide-react";
 import moment from "moment";
 import { toast } from "sonner";
@@ -113,6 +113,9 @@ function ComparisonPanel({ group, onResolved }) {
           <p className="text-xs text-muted-foreground mt-0.5">Select the file to keep, then resolve</p>
         </div>
         <div className="flex gap-2">
+          <Button onClick={() => onResolved(group)} disabled={saving} variant="outline" className="gap-2 border-slate-300 text-slate-600">
+            <XCircle className="h-4 w-4" /> Not duplicates
+          </Button>
           <Button onClick={handleKeepOne} disabled={saving} className="gap-2">
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Shield className="h-4 w-4" />}
             Keep selected, delete rest
