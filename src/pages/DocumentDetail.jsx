@@ -71,26 +71,35 @@ export default function DocumentDetail() {
     }
   };
 
-  const loadData = async () => {
-    const docs = await base44.entities.Document.filter({ id });
-    if (docs.length > 0) {
-      setDoc(docs[0]);
-      setEditData({
-        title: docs[0].title,
-        folder_id: docs[0].folder_id || "",
-        category_id: docs[0].category_id || "",
-        notes: docs[0].notes || "",
-        tags: docs[0].tags?.join(", ") || "",
-        vault_path: docs[0].vault_path || "",
-      });
-      const txns = await base44.entities.Transaction.filter({ document_id: docs[0].id });
-      setTransaction(txns.length > 0 ? txns[0] : null);
+  const loadData = async (retries = 3) => {
+    try {
+      const docs = await base44.entities.Document.filter({ id });
+      if (docs.length > 0) {
+        setDoc(docs[0]);
+        setEditData({
+          title: docs[0].title,
+          folder_id: docs[0].folder_id || "",
+          category_id: docs[0].category_id || "",
+          notes: docs[0].notes || "",
+          tags: docs[0].tags?.join(", ") || "",
+          vault_path: docs[0].vault_path || "",
+        });
+        const txns = await base44.entities.Transaction.filter({ document_id: docs[0].id });
+        setTransaction(txns.length > 0 ? txns[0] : null);
+      }
+      const flds = await base44.entities.Folder.list();
+      const cats = await base44.entities.Category.list();
+      setFolders(flds);
+      setCategories(cats);
+      setLoading(false);
+    } catch (err) {
+      if (retries > 0 && (err?.message?.includes('Rate limit') || err?.status === 429)) {
+        await new Promise(r => setTimeout(r, 1500));
+        return loadData(retries - 1);
+      }
+      setLoading(false);
+      throw err;
     }
-    const flds = await base44.entities.Folder.list();
-    const cats = await base44.entities.Category.list();
-    setFolders(flds);
-    setCategories(cats);
-    setLoading(false);
   };
 
   useEffect(() => { loadData(); }, [id]);
