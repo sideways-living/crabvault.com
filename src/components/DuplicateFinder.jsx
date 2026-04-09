@@ -207,8 +207,7 @@ export default function DuplicateFinder() {
     });
   };
 
-  // Auto-scan on mount
-  useEffect(() => { handleScan(); }, []);
+  // No auto-scan — user triggers manually
 
   if (loading) {
     return (
