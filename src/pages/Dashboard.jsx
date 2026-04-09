@@ -17,7 +17,7 @@ export default function Dashboard() {
   const [stats, setStats] = useState(null);
   const [assigningPaths, setAssigningPaths] = useState(false);
 
-  const loadData = async () => {
+  const loadData = async (retries = 3) => {
     try {
       const [docs, flds, cats] = await Promise.all([
         base44.entities.Document.filter({ is_deleted: false }, "-created_date", 200),
@@ -77,6 +77,10 @@ export default function Dashboard() {
         categoryChartData
       });
     } catch (error) {
+      if (retries > 0 && (error?.message?.includes('Rate limit') || error?.status === 429)) {
+        await new Promise(r => setTimeout(r, 1500));
+        return loadData(retries - 1);
+      }
       console.error('Failed to load dashboard data:', error);
     } finally {
       setLoading(false);
