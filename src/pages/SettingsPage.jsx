@@ -66,10 +66,21 @@ export default function SettingsPage() {
 
   const handleProcessQueue = async () => {
     setProcessing(true);
-    const res = await base44.functions.invoke('processQueuedDocuments', {});
-    setLastProcessed(res.data);
-    setProcessing(false);
-    toast.success(res.data?.message || 'Done');
+    try {
+      const res = await base44.functions.invoke('processQueuedDocuments', {});
+      setLastProcessed(res.data);
+      toast.success(res.data?.message || 'Done');
+    } catch (err) {
+      // 504 means the function is still running in the background — not a real error
+      if (err?.response?.status === 504 || err?.message?.includes('504')) {
+        setLastProcessed({ message: 'Processing running in background (this may take a few minutes)' });
+        toast.success('Processing started — running in background');
+      } else {
+        throw err;
+      }
+    } finally {
+      setProcessing(false);
+    }
   };
 
   const handleSendAllToReview = async () => {
