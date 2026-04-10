@@ -106,13 +106,13 @@ export default function Documents() {
     if (!confirm(`Process ${selectedIds.length} document(s) with AI now?`)) return;
     await Promise.all(selectedIds.map(id => base44.entities.Document.update(id, { processing_status: 'pending' })));
     setSelectedIds([]);
+    setSearchParams({ section: 'pending' });
     await loadData();
     toast.success(`${selectedIds.length} document(s) queued — triggering AI now…`);
     try {
       await base44.functions.invoke('processQueuedDocuments', {});
-      toast.success('AI processing started');
     } catch (e) {
-      if (!e?.response?.status === 504 && !e?.message?.includes('504')) toast.error('Processing trigger failed');
+      // 504 = running in background
     }
   };
 
