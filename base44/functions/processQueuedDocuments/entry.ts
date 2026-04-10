@@ -35,31 +35,7 @@ Deno.serve(async (req) => {
     processing_status: 'pending',
   }, 'created_date', 1);
 
-  // Fetch needs_review documents and reset them to pending (clear AI data)
-  const inReview = await db.entities.Document.filter({
-    processing_status: 'needs_review',
-  }, 'created_date', 1);
-
-  if (inReview.length > 0) {
-    await Promise.all(inReview.map(doc =>
-      db.entities.Document.update(doc.id, {
-        processing_status: 'pending',
-        ai_data: null,
-        summary: null,
-        tags: [],
-        category_id: null,
-        folder_id: null,
-        vault_path: null,
-        document_date: null,
-        extracted_text: null,
-        is_searchable_pdf: false,
-      })
-    ));
-    console.log(`Reset ${inReview.length} document(s) from review queue back to pending`);
-  }
-
-  // Combine pending and recently reset documents
-  const allDocs = [...pending, ...inReview];
+  const allDocs = [...pending];
 
   if (allDocs.length === 0) {
     return Response.json({ message: 'No documents to process', processed: 0 });
@@ -343,16 +319,6 @@ ${extractedText ? `Content preview:\n${extractedText.substring(0, 3000)}` : ''}`
       vault_path: vaultPath || undefined,
       ai_data: result,
     });
-
-    // Generate preview image asynchronously (don't block processing)
-    if (!doc.preview_url) {
-      try {
-        await db.functions.invoke('generateDocumentPreview', { documentId: doc.id });
-      } catch (err) {
-        // Log but continue — preview generation failures shouldn't block document review
-        console.warn(`Preview generation skipped for ${doc.id}: ${err.message}`);
-      }
-    }
 
     processedCount++;
   }
