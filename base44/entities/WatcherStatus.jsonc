@@ -7,9 +7,10 @@
       "title": "Watcher Type",
       "enum": [
         "ingest",
+        "ingest2",
         "sync"
       ],
-      "description": "Type of watcher: ingest (watch.js) or sync (sync-to-vault.js)"
+      "description": "Type of watcher: ingest (watch.js), ingest2 (watch2.js), or sync (sync-to-vault.js)"
     },
     "last_heartbeat": {
       "type": "string",
