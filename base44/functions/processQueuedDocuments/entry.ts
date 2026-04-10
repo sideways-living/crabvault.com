@@ -81,29 +81,8 @@ Deno.serve(async (req) => {
   for (const doc of allDocs) {
     await db.entities.Document.update(doc.id, { processing_status: 'processing' });
 
-    // Step 1: OCR — extract text from PDF if not already searchable
-    let extractedText = doc.extracted_text || '';
-    if (doc.file_type === 'pdf' && !doc.is_searchable_pdf && doc.file_url) {
-      try {
-        const ocrResult = await db.integrations.Core.InvokeLLM({
-          prompt: 'Extract ALL text content from this PDF document. Return the full verbatim text, preserving structure where possible. Do not summarise — return the raw extracted text only.',
-          file_urls: [doc.file_url],
-          response_json_schema: {
-            type: 'object',
-            properties: {
-              extracted_text: { type: 'string' },
-            },
-          },
-        });
-        extractedText = ocrResult.extracted_text || '';
-        await db.entities.Document.update(doc.id, {
-          extracted_text: extractedText,
-          is_searchable_pdf: true,
-        });
-      } catch (err) {
-        console.warn(`OCR failed for ${doc.id}: ${err.message}`);
-      }
-    }
+    // Use previously extracted text if available
+    const extractedText = doc.extracted_text || '';
 
     // Step 2: Analyse, categorise, assign vault path
     const prompt = `Analyse this document and return a JSON response.
