@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate, useLocation, Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import SaveButton from "../components/SaveButton";
@@ -30,6 +30,7 @@ const CATEGORY_OPTIONS = ['Uncategorised', 'Document', 'Image', 'Receipt', 'Vide
 export default function DocumentDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [doc, setDoc] = useState(null);
   const [folders, setFolders] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -184,9 +185,9 @@ export default function DocumentDetail() {
     <div className="space-y-6">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2">
-        <Link to="/documents" className="text-muted-foreground hover:text-foreground transition-colors">
+        <button onClick={() => navigate(-1)} className="text-muted-foreground hover:text-foreground transition-colors">
           <ArrowLeft className="h-4 w-4" />
-        </Link>
+        </button>
         <span className="text-sm text-muted-foreground">Documents</span>
         <span className="text-sm text-muted-foreground">/</span>
         <span className="text-sm font-medium truncate">{doc.title}</span>

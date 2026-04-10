@@ -91,8 +91,27 @@ export default function Documents() {
     if (!confirm(`Re-process ${selectedIds.length} document(s) with AI?`)) return;
     await Promise.all(selectedIds.map(id => base44.entities.Document.update(id, { processing_status: 'pending', is_searchable_pdf: false })));
     setSelectedIds([]);
-    loadData();
+    await loadData();
     toast.success(`${selectedIds.length} document(s) queued for reprocessing`);
+    try {
+      await base44.functions.invoke('processQueuedDocuments', {});
+    } catch (e) {
+      // 504 = running in background, not an error
+    }
+  };
+
+  const handleBatchProcessNow = async () => {
+    if (!confirm(`Process ${selectedIds.length} document(s) with AI now?`)) return;
+    await Promise.all(selectedIds.map(id => base44.entities.Document.update(id, { processing_status: 'pending' })));
+    setSelectedIds([]);
+    await loadData();
+    toast.success(`${selectedIds.length} document(s) queued — triggering AI now…`);
+    try {
+      await base44.functions.invoke('processQueuedDocuments', {});
+      toast.success('AI processing started');
+    } catch (e) {
+      if (!e?.response?.status === 504 && !e?.message?.includes('504')) toast.error('Processing trigger failed');
+    }
   };
 
   const handleBatchReview = async () => {
@@ -169,7 +188,8 @@ export default function Documents() {
         <div className="flex flex-wrap items-center gap-2 bg-primary/5 border border-primary/20 rounded-xl px-4 py-3">
           <span className="text-sm font-medium text-primary">{selectedIds.length} selected</span>
           <div className="h-4 w-px bg-border mx-1" />
-          <Button size="sm" variant="outline" className="gap-1.5" onClick={handleBatchReprocess}><RefreshCw className="h-3.5 w-3.5" /> Re-process with AI</Button>
+          <Button size="sm" variant="outline" className="gap-1.5" onClick={handleBatchProcessNow}><RefreshCw className="h-3.5 w-3.5" /> Process with AI</Button>
+          <Button size="sm" variant="outline" className="gap-1.5" onClick={handleBatchReprocess}><RefreshCw className="h-3.5 w-3.5" /> Re-process (reset)</Button>
           <Button size="sm" variant="outline" className="gap-1.5" onClick={handleBatchReview}><ClipboardList className="h-3.5 w-3.5" /> Send to Review Queue</Button>
           <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setBatchEditOpen(true)}><Pencil className="h-3.5 w-3.5" /> Batch Edit</Button>
           <Button size="sm" variant="outline" className="gap-1.5 text-destructive hover:bg-destructive/10 border-destructive/30" onClick={handleBatchDelete}><Trash2 className="h-3.5 w-3.5" /> Delete</Button>
