@@ -22,7 +22,8 @@ export default function Documents() {
   const [filterCategory, setFilterCategory] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
   const [quickSearch, setQuickSearch] = useState("");
-  const [viewMode, setViewMode] = useState("grid");
+  const [viewMode, setViewMode] = useState(() => localStorage.getItem('docViewMode') || 'grid');
+  const setViewModeAndPersist = (mode) => { setViewMode(mode); localStorage.setItem('docViewMode', mode); };
   const [selectedIds, setSelectedIds] = useState([]);
   const [batchEditOpen, setBatchEditOpen] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
@@ -152,10 +153,10 @@ export default function Documents() {
         </div>
         <div className="flex items-center gap-2">
           <div className="flex items-center border rounded-md">
-            <button onClick={() => setViewMode('grid')} className={`p-2 rounded-l-md transition-colors ${viewMode === 'grid' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}><LayoutGrid className="h-4 w-4" /></button>
-            <button onClick={() => setViewMode('list')} className={`p-2 transition-colors ${viewMode === 'list' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}><List className="h-4 w-4" /></button>
-            <button onClick={() => setViewMode('tree')} className={`p-2 transition-colors ${viewMode === 'tree' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}><Layout className="h-4 w-4" /></button>
-            <button onClick={() => setViewMode('icon')} className={`p-2 rounded-r-md transition-colors ${viewMode === 'icon' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}><LayoutGrid className="h-4 w-4" /></button>
+            <button onClick={() => setViewModeAndPersist('grid')} className={`p-2 rounded-l-md transition-colors ${viewMode === 'grid' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}><LayoutGrid className="h-4 w-4" /></button>
+            <button onClick={() => setViewModeAndPersist('list')} className={`p-2 transition-colors ${viewMode === 'list' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}><List className="h-4 w-4" /></button>
+            <button onClick={() => setViewModeAndPersist('tree')} className={`p-2 transition-colors ${viewMode === 'tree' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}><Layout className="h-4 w-4" /></button>
+            <button onClick={() => setViewModeAndPersist('icon')} className={`p-2 rounded-r-md transition-colors ${viewMode === 'icon' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}><LayoutGrid className="h-4 w-4" /></button>
           </div>
           <Button onClick={() => setUploadOpen(true)} className="gap-2">
             <Upload className="h-4 w-4" /> Upload
