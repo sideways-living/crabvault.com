@@ -84,7 +84,7 @@ Deno.serve(async (req) => {
     // Use previously extracted text if available
     const extractedText = doc.extracted_text || '';
 
-    // Step 2: Analyse, categorise, assign vault path
+    // Analyse, categorise, assign vault path
     const prompt = `Analyse this document and return a JSON response.
 ${learningSummary}
 
@@ -101,6 +101,19 @@ Examples:
 - "20240410 - AGL Energy - Electricity Bill - ACC987654"
 - "20241101 - Jane, Marie, JOHNSON - Admission Letter"
 
+=== PREPAID / RECHARGE VOUCHER (CHECK THIS FIRST, BEFORE RECEIPT LOGIC) ===
+If the document is a prepaid mobile/phone recharge voucher (e.g. Telstra, Optus, Boost, Woolworths Mobile top-up slip, prepaid credit voucher):
+- is_recharge_voucher: true
+- is_receipt: false
+- suggested_title format: "YYYYMMDD - StoreName Recharge Voucher - TRANSACTIONTYPE"
+  - Date: from the voucher (YYYYMMDD)
+  - StoreName: store brand with standard capitalisation — first letter uppercase, rest lowercase (e.g. "Woolworths", "Boost", "Telstra")
+  - TRANSACTIONTYPE: transaction type in ALL CAPS (e.g. "PURCHASE", "RECHARGE", "TOP-UP")
+  - Example: "20240315 - Boost Recharge Voucher - PURCHASE"
+- summary: brief description (e.g. "Boost prepaid $30 recharge voucher")
+- tags: include "recharge", "voucher", "phone"
+- folder_id: find the folder whose path contains "phone vouchers" (case-insensitive) from the list below
+
 === RECEIPT DETECTION (VERY IMPORTANT) ===
 A document IS a receipt if it contains ANY of: till/POS printout, store name + items + prices, transaction total, payment method (cash/card/eftpos), receipt/transaction number, barcode at bottom of page, "Thank you for shopping", subtotal/GST lines, or any retail purchase confirmation.
 Do NOT require all fields — even a partial till receipt with just a store name and total qualifies.
@@ -108,6 +121,7 @@ When in doubt, set is_receipt: true.
 
 1. RECEIPT (retail purchase, payment confirmation, till receipt):
     - is_receipt: true
+    - is_recharge_voucher: false
     - Extract the exact transaction date → format as YYYYMMDD
     - Extract vendor_name / store_brand (clean name, e.g. "Woolworths", "Bunnings") — no Pty Ltd etc.
     - Extract store_location (suburb/city and state if visible, e.g. "Docklands VIC")
@@ -127,16 +141,19 @@ When in doubt, set is_receipt: true.
 
 2. LETTER / DOCUMENT ABOUT A PERSON:
    - is_receipt: false
+   - is_recharge_voucher: false
    - Extract: document date (YYYYMMDD), addressee name (format as "FirstName, MiddleName, SURNAME" - uppercase surname), 1-5 word description of content, any reference/letter number.
    - suggested_title: "YYYYMMDD - FirstName, MiddleName, SURNAME - Description - Reference" (omit Reference if none). E.g. "20240315 - John, Paul, SMITH - Medical Report - MR2024001" or "20240410 - Jane, Marie, JOHNSON - Admission Letter"
 
 3. INVOICE / BILL / BUSINESS DOCUMENT:
    - is_receipt: false
+   - is_recharge_voucher: false
    - Extract: document date (YYYYMMDD), entity/company issuing it or subject matter (e.g., "AGL Energy", property address), 1-5 word description, document/invoice/reference number.
    - suggested_title: "YYYYMMDD - EntityName - Description - InvoiceNumber" (e.g. "20240410 - AGL Energy - Electricity Bill - ACC987654" or "20251001 - 702.50 Lorimer St Docklands - Backsplash Quote - QT16628")
 
 4. ALL OTHER DOCUMENTS:
    - is_receipt: false
+   - is_recharge_voucher: false
    - Extract document date if present (YYYYMMDD), key subject or person, and a 1-5 word description.
    - suggested_title: "YYYYMMDD - Subject - Description - ReferenceIfAny" or simple descriptive title if no clear date/subject
 
@@ -171,6 +188,7 @@ ${extractedText ? `Content preview:\n${extractedText.substring(0, 3000)}` : ''}`
             type: 'object',
             properties: {
               is_receipt: { type: 'boolean' },
+              is_recharge_voucher: { type: 'boolean' },
               vendor_name: { type: 'string' },
               store_brand: { type: 'string' },
               store_location: { type: 'string' },
@@ -205,12 +223,12 @@ ${extractedText ? `Content preview:\n${extractedText.substring(0, 3000)}` : ''}`
           },
         });
         console.log(`AI analysis succeeded for ${doc.id} on attempt ${attempt}`);
-        break; // Success
+        break;
       } catch (err) {
         lastError = err.message;
         console.warn(`AI analysis attempt ${attempt}/${maxRetries} failed for ${doc.id}: ${err.message}`);
         if (attempt < maxRetries) {
-          await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2s before retry
+          await new Promise(resolve => setTimeout(resolve, 2000));
         }
       }
     }
@@ -236,7 +254,18 @@ ${extractedText ? `Content preview:\n${extractedText.substring(0, 3000)}` : ''}`
 
     // NOTE: Transaction record is created at user review/confirmation stage, not here
 
-    if (result.is_receipt && (result.store_brand || result.vendor_name)) {
+    if (result.is_recharge_voucher) {
+      // Recharge vouchers always go to Documents/Infrastructure/Phone Vouchers
+      const phoneVouchersFolder = folders.find(f =>
+        (f.path || f.name).toLowerCase().includes('phone vouchers')
+      );
+      if (phoneVouchersFolder) {
+        targetFolderId = phoneVouchersFolder.id;
+        if (phoneVouchersFolder.vault_path) {
+          vaultPath = `${phoneVouchersFolder.vault_path}/${result.suggested_title || doc.title}`;
+        }
+      }
+    } else if (result.is_receipt && (result.store_brand || result.vendor_name)) {
       const vendorName = (result.store_brand || result.vendor_name).trim();
 
       let vendorFolder = folders.find(f =>
@@ -265,11 +294,9 @@ ${extractedText ? `Content preview:\n${extractedText.substring(0, 3000)}` : ''}`
     if (targetFolderId) {
       let folder = folders.find(f => f.id === targetFolderId);
 
-      // For root-level Receipts/Business Cards
       if (folder && !folder.parent_folder_id) {
         categoryTag = folder.name;
       } else if (folder) {
-        // For 2nd level folders (under Documents/Images/Movies)
         let parent = folder;
         while (parent && parent.parent_folder_id) {
           parent = folders.find(f => f.id === parent.parent_folder_id);
