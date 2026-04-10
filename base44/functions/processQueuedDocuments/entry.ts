@@ -101,16 +101,17 @@ Examples:
 - "20240410 - AGL Energy - Electricity Bill - ACC987654"
 - "20241101 - Jane, Marie, JOHNSON - Admission Letter"
 
-=== PREPAID / RECHARGE VOUCHER (CHECK THIS FIRST, BEFORE RECEIPT LOGIC) ===
-If the document is a prepaid mobile/phone recharge voucher (e.g. Telstra, Optus, Boost, Woolworths Mobile top-up slip, prepaid credit voucher):
+=== PREPAID / RECHARGE VOUCHER (CHECK THIS FIRST — OVERRIDES RECEIPT LOGIC) ===
+A document IS a prepaid/recharge voucher if it contains ANY of: the words "prepaid voucher", "recharge voucher", "top-up voucher", a "Voucher Number" or "PIN" field followed by a string of 8-10 digits, or is clearly a mobile credit top-up slip (e.g. Telstra, Optus, Boost, Woolworths Mobile). These are NEVER receipts — even if they show a purchase total.
+If matched:
 - is_recharge_voucher: true
 - is_receipt: false
 - suggested_title format: "YYYYMMDD - StoreName Recharge Voucher - TRANSACTIONTYPE"
   - Date: from the voucher (YYYYMMDD)
-  - StoreName: store brand with standard capitalisation — first letter uppercase, rest lowercase (e.g. "Woolworths", "Boost", "Telstra")
-  - TRANSACTIONTYPE: transaction type in ALL CAPS (e.g. "PURCHASE", "RECHARGE", "TOP-UP")
+  - StoreName: store brand, first letter uppercase rest lowercase (e.g. "Woolworths", "Boost", "Telstra")
+  - TRANSACTIONTYPE: in ALL CAPS (e.g. "PURCHASE", "RECHARGE", "TOP-UP")
   - Example: "20240315 - Boost Recharge Voucher - PURCHASE"
-- summary: brief description (e.g. "Boost prepaid $30 recharge voucher")
+- summary: brief description (e.g. "Boost prepaid $30 recharge voucher, PIN: 1234567890")
 - tags: include "recharge", "voucher", "phone"
 - folder_id: find the folder whose path contains "phone vouchers" (case-insensitive) from the list below
 
