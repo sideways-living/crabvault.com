@@ -48,6 +48,8 @@ export default function Documents() {
 
   useEffect(() => { loadData(); }, []);
 
+  useEffect(() => { setSelectedIds([]); }, [activeSection]);
+
   const getDocsByStatus = (status) => allDocuments.filter(d => d.processing_status === status);
   const pendingDocs = getDocsByStatus('pending');
   const processingDocs = getDocsByStatus('processing');
