@@ -24,7 +24,7 @@ const fileTypeColors = {
 
 export default function DocumentListView({ documents, categories, selectedIds = [], onToggleSelect }) {
   const [previewDocId, setPreviewDocId] = React.useState(null);
-  const previewDoc = documents.find(d => d.id === previewDocId) || documents[0] || null;
+  const previewDoc = previewDocId ? documents.find(d => d.id === previewDocId) : null;
 
   return (
     <div className="flex gap-4">
@@ -50,7 +50,7 @@ export default function DocumentListView({ documents, categories, selectedIds = 
             const isSelected = selectedIds.includes(doc.id);
 
             return (
-              <tr key={doc.id} className={`border-b last:border-0 hover:bg-muted/20 transition-colors cursor-pointer ${isSelected ? 'bg-primary/5' : previewDoc?.id === doc.id ? 'bg-blue-50/40' : i % 2 === 0 ? '' : 'bg-muted/10'}`} onMouseEnter={() => setPreviewDocId(doc.id)}>
+              <tr key={doc.id} className={`border-b last:border-0 hover:bg-muted/20 transition-colors cursor-pointer ${isSelected ? 'bg-primary/5' : i % 2 === 0 ? '' : 'bg-muted/10'}`} onMouseEnter={() => setPreviewDocId(doc.id)}>
                 <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                   <button
                     onClick={() => onToggleSelect && onToggleSelect(doc.id)}
