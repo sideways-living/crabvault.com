@@ -3,6 +3,7 @@ import { X, Trash2 } from "lucide-react";
 
 export default function AnnotationCanvas({ imageUrl, regions, onRegionsChange, fields }) {
   const containerRef = useRef(null);
+  const scrollRef = useRef(null);
   const [drawing, setDrawing] = useState(null);
   const [activeField, setActiveField] = useState(fields[0].key);
 
@@ -12,11 +13,13 @@ export default function AnnotationCanvas({ imageUrl, regions, onRegionsChange, f
     const rect = containerRef.current.getBoundingClientRect();
     const clientX = e.touches ? e.touches[0].clientX : e.clientX;
     const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    // Use offsetHeight (full content height) as denominator so scroll position doesn't affect percentages
+    const fullHeight = containerRef.current.offsetHeight;
     return {
       x: Math.max(0, Math.min(clientX - rect.left, rect.width)),
-      y: Math.max(0, Math.min(clientY - rect.top, rect.height)),
+      y: Math.max(0, Math.min(clientY - rect.top + (scrollRef.current?.scrollTop || 0), fullHeight)),
       w: rect.width,
-      h: rect.height,
+      h: fullHeight,
     };
   };
 
@@ -100,7 +103,7 @@ export default function AnnotationCanvas({ imageUrl, regions, onRegionsChange, f
       </div>
 
       {/* Canvas */}
-      <div className="rounded-xl overflow-y-auto border-2 border-dashed border-border" style={{ maxHeight: 900 }}>
+      <div ref={scrollRef} className="rounded-xl overflow-y-auto border-2 border-dashed border-border" style={{ maxHeight: 900 }}>
         <div
           ref={containerRef}
           className="relative select-none cursor-crosshair"
