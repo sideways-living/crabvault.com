@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { X } from "lucide-react";
+import { X, Trash2 } from "lucide-react";
 
 export default function AnnotationCanvas({ imageUrl, regions, onRegionsChange, fields }) {
   const containerRef = useRef(null);
@@ -85,10 +85,22 @@ export default function AnnotationCanvas({ imageUrl, regions, onRegionsChange, f
           </button>
         ))}
       </div>
-      <p className="text-xs text-muted-foreground">Select a field above, then drag to highlight that area on the receipt.</p>
+
+      {/* Actions row */}
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-muted-foreground">Select a field above, then drag to highlight that area on the receipt.</p>
+        {regions.length > 0 && (
+          <button
+            onClick={() => onRegionsChange([])}
+            className="flex items-center gap-1 text-xs text-destructive hover:underline shrink-0"
+          >
+            <Trash2 className="h-3 w-3" /> Clear all regions
+          </button>
+        )}
+      </div>
 
       {/* Canvas */}
-      <div className="rounded-xl overflow-y-auto border-2 border-dashed border-border" style={{ maxHeight: 600 }}>
+      <div className="rounded-xl overflow-y-auto border-2 border-dashed border-border" style={{ maxHeight: 900 }}>
         <div
           ref={containerRef}
           className="relative select-none cursor-crosshair"
@@ -100,7 +112,7 @@ export default function AnnotationCanvas({ imageUrl, regions, onRegionsChange, f
         >
           {(imageUrl?.toLowerCase().endsWith('.pdf') || imageUrl?.includes('application/pdf') || imageUrl?.includes('.pdf')) ? (
             <>
-              <iframe src={imageUrl} title="Receipt PDF" className="w-full pointer-events-none" style={{ height: 600, display: 'block', border: 0 }} />
+              <iframe src={imageUrl} title="Receipt PDF" className="w-full pointer-events-none" style={{ height: 900, display: 'block', border: 0 }} />
               <div className="absolute inset-0 cursor-crosshair" style={{ zIndex: 10 }} />
             </>
           ) : (

@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Upload, Trash2, Save, Plus, Loader2, BookOpen, X, ChevronDown, ChevronUp, ImagePlus } from "lucide-react";
+import { Upload, Trash2, Save, Plus, Loader2, BookOpen, X, ChevronDown, ChevronUp, ImagePlus, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import AnnotationCanvas from "../components/AnnotationCanvas";
 
@@ -17,35 +17,6 @@ const FIELDS = [
   { key: "last_four_digits",  label: "Last 4 Digits",    color: "#6366f1" },
   { key: "items",             label: "Items",            color: "#14b8a6" },
 ];
-
-function SampleEditor({ sample, index, onChange, onRemove }) {
-  return (
-    <div className="border rounded-xl p-4 space-y-3 bg-muted/20">
-      <div className="flex items-center gap-3">
-        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Sample {index + 1}</span>
-        <Input
-          value={sample.label}
-          onChange={e => onChange({ ...sample, label: e.target.value })}
-          placeholder="Label (e.g. Standard POS, Return receipt, Self-checkout…)"
-          className="h-7 text-xs flex-1"
-        />
-        <button onClick={onRemove} className="text-muted-foreground hover:text-destructive transition-colors shrink-0">
-          <Trash2 className="h-4 w-4" />
-        </button>
-      </div>
-      {sample.image_url ? (
-        <AnnotationCanvas
-          imageUrl={sample.image_url}
-          regions={sample.field_regions || []}
-          onRegionsChange={regions => onChange({ ...sample, field_regions: regions })}
-          fields={FIELDS}
-        />
-      ) : (
-        <UploadImageSlot onUploaded={url => onChange({ ...sample, image_url: url })} />
-      )}
-    </div>
-  );
-}
 
 function UploadImageSlot({ onUploaded }) {
   const [uploading, setUploading] = useState(false);
@@ -75,17 +46,100 @@ function UploadImageSlot({ onUploaded }) {
   );
 }
 
-function TemplateCard({ template, onDelete }) {
+function SampleEditor({ sample, index, onChange, onRemove }) {
+  return (
+    <div className="border rounded-xl p-4 space-y-3 bg-muted/20">
+      <div className="flex items-center gap-3">
+        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Sample {index + 1}</span>
+        <Input
+          value={sample.label}
+          onChange={e => onChange({ ...sample, label: e.target.value })}
+          placeholder="Label (e.g. Standard POS, Return receipt…)"
+          className="h-7 text-xs flex-1"
+        />
+        <button onClick={onRemove} className="text-muted-foreground hover:text-destructive transition-colors shrink-0">
+          <Trash2 className="h-4 w-4" />
+        </button>
+      </div>
+      {sample.image_url ? (
+        <AnnotationCanvas
+          imageUrl={sample.image_url}
+          regions={sample.field_regions || []}
+          onRegionsChange={regions => onChange({ ...sample, field_regions: regions })}
+          fields={FIELDS}
+        />
+      ) : (
+        <UploadImageSlot onUploaded={url => onChange({ ...sample, image_url: url })} />
+      )}
+    </div>
+  );
+}
+
+function EditableTemplateCard({ template, onDelete, onSaved }) {
   const [expanded, setExpanded] = useState(false);
-  const sampleCount = template.samples?.length || 0;
+  const [editing, setEditing] = useState(false);
+  const [storeBrand, setStoreBrand] = useState(template.store_brand);
+  const [notes, setNotes] = useState(template.notes || "");
+  const [samples, setSamples] = useState(template.samples || []);
+  const [saving, setSaving] = useState(false);
+
+  // Reset local state when template changes externally
+  useEffect(() => {
+    setStoreBrand(template.store_brand);
+    setNotes(template.notes || "");
+    setSamples(template.samples || []);
+  }, [template]);
+
+  const updateSample = (i, updated) => setSamples(prev => prev.map((s, idx) => idx === i ? updated : s));
+  const removeSample = (i) => setSamples(prev => prev.filter((_, idx) => idx !== i));
+  const addSample = () => setSamples(prev => [...prev, { label: "", image_url: null, field_regions: [] }]);
+
+  const handleSave = async () => {
+    if (!storeBrand.trim()) { toast.error("Store brand cannot be empty"); return; }
+    setSaving(true);
+    await base44.entities.ReceiptTemplate.update(template.id, {
+      store_brand: storeBrand.trim(),
+      samples,
+      notes: notes.trim() || undefined,
+    });
+    setSaving(false);
+    setEditing(false);
+    toast.success("Template updated");
+    onSaved();
+  };
+
+  const handleCancel = () => {
+    setStoreBrand(template.store_brand);
+    setNotes(template.notes || "");
+    setSamples(template.samples || []);
+    setEditing(false);
+  };
+
+  const sampleCount = samples.length;
 
   return (
     <div className="bg-card border rounded-xl overflow-hidden">
-      <div className="flex items-center gap-4 px-4 py-3">
+      <div className="flex items-center gap-3 px-4 py-3">
         <div className="flex-1 min-w-0">
-          <p className="font-semibold truncate">{template.store_brand}</p>
-          <p className="text-xs text-muted-foreground">{sampleCount} receipt sample{sampleCount !== 1 ? 's' : ''}</p>
+          {editing ? (
+            <Input
+              value={storeBrand}
+              onChange={e => setStoreBrand(e.target.value)}
+              className="h-7 text-sm font-semibold"
+              placeholder="Store brand"
+            />
+          ) : (
+            <p className="font-semibold truncate">{template.store_brand}</p>
+          )}
+          <p className="text-xs text-muted-foreground mt-0.5">{sampleCount} receipt sample{sampleCount !== 1 ? 's' : ''}</p>
         </div>
+        <button
+          onClick={() => { setEditing(true); setExpanded(true); }}
+          className="text-muted-foreground hover:text-foreground transition-colors p-1"
+          title="Edit template"
+        >
+          <Pencil className="h-4 w-4" />
+        </button>
         <button onClick={() => setExpanded(v => !v)} className="text-muted-foreground hover:text-foreground transition-colors p-1">
           {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
         </button>
@@ -96,31 +150,67 @@ function TemplateCard({ template, onDelete }) {
 
       {expanded && (
         <div className="border-t px-4 py-4 space-y-4">
-          {(template.samples || []).map((s, i) => (
-            <div key={i} className="space-y-2">
-              <p className="text-xs font-medium text-muted-foreground">Sample {i + 1}{s.label ? ` — ${s.label}` : ''}</p>
-              <div className="flex gap-3">
-                {s.image_url && (
-                  s.image_url.toLowerCase().includes('.pdf') || s.image_url.includes('pdf') ? (
-                    <iframe src={s.image_url} title="" className="w-20 h-24 rounded-lg border shrink-0" />
-                  ) : (
-                    <img src={s.image_url} alt="" className="w-20 h-24 object-cover rounded-lg border shrink-0" />
-                  )
-                )}
-                <div className="flex flex-wrap gap-1 content-start">
-                  {(s.field_regions || []).map((r, j) => {
-                    const f = FIELDS.find(f => f.key === r.field);
-                    return (
-                      <span key={j} className="text-[10px] px-1.5 py-0.5 rounded text-white font-medium" style={{ backgroundColor: f?.color || '#666' }}>
-                        {f?.label || r.field}
-                      </span>
-                    );
-                  })}
-                </div>
+          {editing ? (
+            <>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground block mb-1">Notes (optional)</label>
+                <Input value={notes} onChange={e => setNotes(e.target.value)} placeholder="e.g. multiple POS types" className="text-sm" />
               </div>
-            </div>
-          ))}
-          {template.notes && <p className="text-xs text-muted-foreground italic">{template.notes}</p>}
+
+              {samples.map((s, i) => (
+                <SampleEditor
+                  key={i}
+                  index={i}
+                  sample={s}
+                  onChange={updated => updateSample(i, updated)}
+                  onRemove={() => removeSample(i)}
+                />
+              ))}
+
+              <button
+                onClick={addSample}
+                className="w-full flex items-center justify-center gap-2 border-2 border-dashed rounded-xl py-3 text-sm text-muted-foreground hover:text-primary hover:border-primary/50 transition-all"
+              >
+                <ImagePlus className="h-4 w-4" /> Add another receipt sample
+              </button>
+
+              <div className="flex gap-2 pt-1">
+                <Button onClick={handleSave} disabled={saving} size="sm" className="gap-2">
+                  {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                  Save Changes
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleCancel}>Cancel</Button>
+              </div>
+            </>
+          ) : (
+            <>
+              {samples.map((s, i) => (
+                <div key={i} className="space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground">Sample {i + 1}{s.label ? ` — ${s.label}` : ''}</p>
+                  <div className="flex gap-3">
+                    {s.image_url && (
+                      s.image_url.toLowerCase().includes('.pdf') || s.image_url.includes('pdf') ? (
+                        <iframe src={s.image_url} title="" className="w-28 h-36 rounded-lg border shrink-0" />
+                      ) : (
+                        <img src={s.image_url} alt="" className="w-28 h-36 object-cover rounded-lg border shrink-0" />
+                      )
+                    )}
+                    <div className="flex flex-wrap gap-1 content-start">
+                      {(s.field_regions || []).map((r, j) => {
+                        const f = FIELDS.find(f => f.key === r.field);
+                        return (
+                          <span key={j} className="text-[10px] px-1.5 py-0.5 rounded text-white font-medium" style={{ backgroundColor: f?.color || '#666' }}>
+                            {f?.label || r.field}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {template.notes && <p className="text-xs text-muted-foreground italic">{template.notes}</p>}
+            </>
+          )}
         </div>
       )}
     </div>
@@ -207,7 +297,6 @@ export default function ReceiptTrainer() {
           </div>
         </div>
 
-        {/* Samples */}
         <div className="space-y-4">
           {samples.map((sample, i) => (
             <SampleEditor
@@ -249,7 +338,14 @@ export default function ReceiptTrainer() {
           </div>
         ) : (
           <div className="space-y-3">
-            {templates.map(t => <TemplateCard key={t.id} template={t} onDelete={handleDelete} />)}
+            {templates.map(t => (
+              <EditableTemplateCard
+                key={t.id}
+                template={t}
+                onDelete={handleDelete}
+                onSaved={loadTemplates}
+              />
+            ))}
           </div>
         )}
       </div>
