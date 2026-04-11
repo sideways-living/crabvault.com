@@ -104,11 +104,12 @@ export default function Documents() {
 
   const handleBatchProcessNow = async () => {
     if (!confirm(`Process ${selectedIds.length} document(s) with AI now?`)) return;
-    await Promise.all(selectedIds.map(id => base44.entities.Document.update(id, { processing_status: 'processing' })));
+    // Set to pending so processQueuedDocuments picks them up
+    await Promise.all(selectedIds.map(id => base44.entities.Document.update(id, { processing_status: 'pending', summary: undefined, ai_data: undefined })));
     setSelectedIds([]);
-    setSearchParams({ section: 'processing' });
+    setSearchParams({ section: 'pending' });
     await loadData();
-    toast.success(`${selectedIds.length} document(s) sent to AI processing…`);
+    toast.success(`${selectedIds.length} document(s) queued for AI processing…`);
     try {
       await base44.functions.invoke('processQueuedDocuments', {});
     } catch (e) {
