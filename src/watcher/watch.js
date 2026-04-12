@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* eslint-env node */
 /**
  * DocVault Local Folder Watcher
  * Watches a folder for new files and uploads them to DocVault automatically.

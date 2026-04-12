@@ -109,8 +109,8 @@ ${folderList ? '\nFolders:\n' + folderList : ''}
 
 Document: ${doc.title}
 Filename: ${doc.original_filename || ''}
-${extractedText ? `Content:\n${extractedText.substring(0, 3000)}` : ''}`,
-      file_urls: doc.file_url ? [doc.file_url] : undefined,
+${extractedText ? `Content:\n${extractedText.substring(0, 1500)}` : ''}`,
+      file_urls: (['png','jpg','jpeg','gif','webp'].includes(doc.file_type?.toLowerCase()) && doc.file_url) ? [doc.file_url] : undefined,
       response_json_schema: {
         type: 'object',
         properties: {

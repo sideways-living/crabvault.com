@@ -169,7 +169,7 @@ ${folderList}
 
 Document title: ${doc.title}
 Filename: ${doc.original_filename || ''}
-${extractedText ? `Content preview:\n${extractedText.substring(0, 3000)}` : ''}`;
+${extractedText ? `Content preview:\n${extractedText.substring(0, 1500)}` : ''}`;
 
     // Only pass file_url for images — PDFs/docs rely on extracted_text to avoid LLM timeouts
     const imageFormats = ['png', 'jpeg', 'jpg', 'gif', 'webp'];

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* eslint-env node */
 /**
  * DocVault Local Folder Watcher #2
  * Second watch folder — same behavior as watch.js but fully independent.
