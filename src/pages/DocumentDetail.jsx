@@ -219,13 +219,12 @@ export default function DocumentDetail() {
           <div style={{display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '8px'}}>
             {doc.file_type && <Badge variant="outline" className="uppercase text-[10px] font-mono">.{doc.file_type}</Badge>}
             {editing ? (
-              <Select value={editData.category_id || '__uncategorised__'} onValueChange={v => setEditData({...editData, category_id: v === '__uncategorised__' ? '' : v})}>
-                <SelectTrigger className="w-32 h-7 text-xs bg-background"><SelectValue placeholder="Select category" /></SelectTrigger>
+              <Select value={editData.category_id || '__none__'} onValueChange={v => setEditData({...editData, category_id: v === '__none__' ? '' : v})}>
+                <SelectTrigger className="w-40 h-7 text-xs bg-background"><SelectValue placeholder="Select category" /></SelectTrigger>
                 <SelectContent>
-                  {CATEGORY_OPTIONS.map(opt => (
-                    <SelectItem key={opt} value={opt === 'Uncategorised' ? '__uncategorised__' : opt}>
-                      {opt}
-                    </SelectItem>
+                  <SelectItem value="__none__">Uncategorised</SelectItem>
+                  {categories.map(c => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
