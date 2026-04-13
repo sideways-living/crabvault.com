@@ -146,7 +146,7 @@ export default function DocumentReview() {
         </div>
 
         {/* Detail panel */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-hidden">
           {selected && (
            <ReviewDetail
              key={selected.id}
