@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +8,35 @@ import {
 } from "lucide-react";
 import moment from "moment";
 import { toast } from "sonner";
+
+// ─── Dismissed pairs storage ──────────────────────────────────────────────────
+const DISMISSED_KEY = 'docvault_dismissed_duplicates';
+
+function getDismissed() {
+  try { return new Set(JSON.parse(localStorage.getItem(DISMISSED_KEY) || '[]')); }
+  catch { return new Set(); }
+}
+
+function dismissGroup(group) {
+  const dismissed = getDismissed();
+  const ids = group.map(d => d.id).sort();
+  for (let i = 0; i < ids.length; i++) {
+    for (let j = i + 1; j < ids.length; j++) {
+      dismissed.add(`${ids[i]}|${ids[j]}`);
+    }
+  }
+  localStorage.setItem(DISMISSED_KEY, JSON.stringify([...dismissed]));
+}
+
+function isDismissed(group, dismissed) {
+  const ids = group.map(d => d.id).sort();
+  for (let i = 0; i < ids.length; i++) {
+    for (let j = i + 1; j < ids.length; j++) {
+      if (dismissed.has(`${ids[i]}|${ids[j]}`)) return true;
+    }
+  }
+  return false;
+}
 
 // ─── Duplicate grouping ───────────────────────────────────────────────────────
 function groupDuplicates(docs) {
@@ -113,7 +142,7 @@ function ComparisonPanel({ group, onResolved }) {
           <p className="text-xs text-muted-foreground mt-0.5">Select the file to keep, then resolve</p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={() => onResolved(group)} disabled={saving} variant="outline" className="gap-2 border-slate-300 text-slate-600">
+          <Button onClick={() => { dismissGroup(group); onResolved(group); }} disabled={saving} variant="outline" className="gap-2 border-slate-300 text-slate-600">
             <XCircle className="h-4 w-4" /> Not duplicates
           </Button>
           <Button onClick={handleKeepOne} disabled={saving} className="gap-2">
@@ -193,7 +222,8 @@ export default function DuplicateFinder() {
     setGroups(null);
     setSelectedGroup(null);
     const docs = await base44.entities.Document.filter({ is_deleted: false }, '-created_date', 10000);
-    const found = groupDuplicates(docs);
+    const dismissed = getDismissed();
+    const found = groupDuplicates(docs).filter(g => !isDismissed(g, dismissed));
     setGroups(found);
     if (found.length > 0) setSelectedGroup(found[0]);
     setLoading(false);
@@ -206,8 +236,6 @@ export default function DuplicateFinder() {
       return next;
     });
   };
-
-  // No auto-scan — user triggers manually
 
   if (loading) {
     return (
