@@ -9,6 +9,7 @@ import FolderSelect from "./FolderSelect";
 import { toast } from "sonner";
 
 const NONE = "__none__";
+const REMOVE = "__remove__";
 
 export default function BatchEditDialog({ open, onOpenChange, selectedIds, folders, categories, onDone }) {
   const [folderId, setFolderId] = useState(NONE);
@@ -18,8 +19,8 @@ export default function BatchEditDialog({ open, onOpenChange, selectedIds, folde
 
   const handleSave = async () => {
     const updates = {};
-    if (folderId !== NONE) updates.folder_id = folderId || undefined;
-    if (categoryId !== NONE) updates.category_id = categoryId || undefined;
+    if (folderId !== NONE) updates.folder_id = folderId === REMOVE ? undefined : folderId;
+    if (categoryId !== NONE) updates.category_id = categoryId === REMOVE ? undefined : categoryId;
     if (status !== NONE) updates.processing_status = status;
     if (Object.keys(updates).length === 0) { toast.error("No changes selected"); return; }
 
@@ -50,7 +51,7 @@ export default function BatchEditDialog({ open, onOpenChange, selectedIds, folde
               className="mt-1"
               extraItems={[
                 { value: "__none__", label: "— no change —" },
-                { value: "", label: "— remove folder —" },
+                { value: "__remove__", label: "— remove folder —" },
               ]}
             />
           </div>
@@ -61,7 +62,7 @@ export default function BatchEditDialog({ open, onOpenChange, selectedIds, folde
               <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value={NONE}>— no change —</SelectItem>
-                <SelectItem value={null}>— remove category —</SelectItem>
+                <SelectItem value={REMOVE}>— remove category —</SelectItem>
                 {categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
               </SelectContent>
             </Select>

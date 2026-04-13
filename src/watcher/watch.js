@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* eslint-env node */
+/* eslint-disable no-undef */
 /**
  * DocVault Local Folder Watcher
  * Watches a folder for new files and uploads them to DocVault automatically.

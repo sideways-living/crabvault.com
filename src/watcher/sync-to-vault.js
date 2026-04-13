@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* eslint-env node */
+/* eslint-disable no-undef */
 /**
  * DocVault → Cryptomator Vault Sync
  * Polls for completed documents and writes them to your local Cryptomator vault.
