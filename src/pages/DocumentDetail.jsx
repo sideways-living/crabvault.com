@@ -74,7 +74,13 @@ export default function DocumentDetail() {
 
   const loadData = async (retries = 3) => {
     try {
-      const docs = await base44.entities.Document.filter({ id });
+      const [docs, flds, cats] = await Promise.all([
+        base44.entities.Document.filter({ id }),
+        base44.entities.Folder.list(),
+        base44.entities.Category.list(),
+      ]);
+      setFolders(flds);
+      setCategories(cats);
       if (docs.length > 0) {
         setDoc(docs[0]);
         setEditData({
@@ -88,10 +94,6 @@ export default function DocumentDetail() {
         const txns = await base44.entities.Transaction.filter({ document_id: docs[0].id });
         setTransaction(txns.length > 0 ? txns[0] : null);
       }
-      const flds = await base44.entities.Folder.list();
-      const cats = await base44.entities.Category.list();
-      setFolders(flds);
-      setCategories(cats);
       setLoading(false);
     } catch (err) {
       if (retries > 0 && (err?.message?.includes('Rate limit') || err?.status === 429)) {
