@@ -74,8 +74,9 @@ export default function DocumentDetail() {
 
   const loadData = async (retries = 3) => {
     try {
-      const [docs, flds, cats] = await Promise.all([
-        base44.entities.Document.filter({ id }),
+      const docs = await base44.entities.Document.filter({ id });
+      await new Promise(r => setTimeout(r, 300));
+      const [flds, cats] = await Promise.all([
         base44.entities.Folder.list(),
         base44.entities.Category.list(),
       ]);
@@ -91,13 +92,14 @@ export default function DocumentDetail() {
           tags: docs[0].tags?.join(", ") || "",
           vault_path: docs[0].vault_path || "",
         });
+        await new Promise(r => setTimeout(r, 200));
         const txns = await base44.entities.Transaction.filter({ document_id: docs[0].id });
         setTransaction(txns.length > 0 ? txns[0] : null);
       }
       setLoading(false);
     } catch (err) {
       if (retries > 0 && (err?.message?.includes('Rate limit') || err?.status === 429)) {
-        await new Promise(r => setTimeout(r, 1500));
+        await new Promise(r => setTimeout(r, 2000));
         return loadData(retries - 1);
       }
       setLoading(false);
