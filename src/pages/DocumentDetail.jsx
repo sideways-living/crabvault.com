@@ -76,10 +76,9 @@ export default function DocumentDetail() {
     try {
       const docs = await base44.entities.Document.filter({ id });
       await new Promise(r => setTimeout(r, 300));
-      const [flds, cats] = await Promise.all([
-        base44.entities.Folder.list(),
-        base44.entities.Category.list(),
-      ]);
+      const flds = await base44.entities.Folder.list();
+      await new Promise(r => setTimeout(r, 200));
+      const cats = await base44.entities.Category.list();
       setFolders(flds);
       setCategories(cats);
       if (docs.length > 0) {
