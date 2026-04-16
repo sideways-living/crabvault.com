@@ -1,11 +1,19 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.23';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 Deno.serve(async (req) => {
   if (req.method !== 'POST') {
     return Response.json({ error: 'POST only' }, { status: 405 });
   }
 
+  // Validate API key (same key as ingest)
+  const apiKey = req.headers.get('x-api-key');
+  if (apiKey !== Deno.env.get('INGEST_API_KEY')) {
+    return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   const base44 = createClientFromRequest(req);
+  const db = base44.asServiceRole;
+
   const body = await req.json();
   const { watcher_type, version, details } = body;
 
@@ -14,21 +22,18 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const existing = await base44.asServiceRole.entities.WatcherStatus.filter({
-      watcher_type,
-    });
-
+    const existing = await db.entities.WatcherStatus.filter({ watcher_type });
     const now = new Date().toISOString();
 
     if (existing.length > 0) {
-      await base44.asServiceRole.entities.WatcherStatus.update(existing[0].id, {
+      await db.entities.WatcherStatus.update(existing[0].id, {
         last_heartbeat: now,
         status: 'running',
         version: version || existing[0].version,
         details: details || existing[0].details,
       });
     } else {
-      await base44.asServiceRole.entities.WatcherStatus.create({
+      await db.entities.WatcherStatus.create({
         watcher_type,
         last_heartbeat: now,
         status: 'running',
