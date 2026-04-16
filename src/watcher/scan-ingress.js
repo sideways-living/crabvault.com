@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* eslint-disable no-undef */
 /**
  * DocVault Ingress Folder Scanner
  * Scans the ingress folder and compares against the app's document database.
