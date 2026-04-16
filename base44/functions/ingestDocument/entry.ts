@@ -18,7 +18,7 @@ Deno.serve(async (req) => {
 
     // Extract file type from extension
     const ext = filename.split('.').pop()?.toLowerCase() || 'other';
-    const fileType = ['pdf', 'docx', 'xlsx', 'pptx', 'txt', 'jpg', 'jpeg', 'png'].includes(ext) ? ext : 'other';
+    const fileType = ['pdf', 'docx', 'xlsx', 'pptx', 'txt', 'jpg', 'jpeg', 'png', 'heic'].includes(ext) ? ext : 'other';
 
     const base44 = createClientFromRequest(req);
     const db = base44.asServiceRole;

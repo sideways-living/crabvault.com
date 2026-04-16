@@ -29,6 +29,7 @@
         "txt",
         "jpg",
         "png",
+        "heic",
         "other"
       ]
     },

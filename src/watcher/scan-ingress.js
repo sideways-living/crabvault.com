@@ -180,7 +180,7 @@ async function main() {
   // Show unsupported file types breakdown
   const unsupportedFiles = files.filter(f => {
     const ext = f.name.slice(f.name.lastIndexOf('.')).toLowerCase();
-    return !['.pdf', '.docx', '.xlsx', '.pptx', '.txt', '.jpg', '.jpeg', '.png'].includes(ext);
+    return !['.pdf', '.docx', '.xlsx', '.pptx', '.txt', '.jpg', '.jpeg', '.png', '.heic'].includes(ext);
   });
   if (unsupportedFiles.length > 0) {
     const byExt = {};
