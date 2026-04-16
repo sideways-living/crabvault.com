@@ -161,7 +161,7 @@ Deno.serve(async (req) => {
   const db = base44.asServiceRole;
 
   // Get up to 2 pending documents
-  const pending = await db.entities.Document.filter({ processing_status: 'pending' }, 'created_date', 2);
+  const pending = await db.entities.Document.filter({ processing_status: 'pending' }, 'created_date', 4);
 
   if (pending.length === 0) {
     return Response.json({ message: 'No pending documents', processed: 0 });
