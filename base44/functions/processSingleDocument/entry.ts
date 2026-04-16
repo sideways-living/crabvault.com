@@ -1,38 +1,14 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
-Deno.serve(async (req) => {
-  const base44 = createClientFromRequest(req);
-
-  try {
-    const user = await base44.auth.me();
-    if (user?.role !== 'admin') {
-      return Response.json({ error: 'Forbidden' }, { status: 403 });
-    }
-  } catch {
-    // Scheduled automation call — allow through
-  }
-
-  const db = base44.asServiceRole;
-
-  // Get the first pending document
-  const pending = await db.entities.Document.filter({ processing_status: 'pending' }, 'created_date', 1);
-
-  if (pending.length === 0) {
-    return Response.json({ message: 'No pending documents', processed: 0 });
-  }
-
-  const doc = pending[0];
-
+async function processDoc(db, doc) {
   const logTask = async (task, status = 'in_progress', details = '') => {
     await db.entities.ProcessingLog.create({ document_id: doc.id, task, status, details });
   };
 
-  // Mark as processing immediately
   await db.entities.Document.update(doc.id, { processing_status: 'processing' });
   await logTask('Starting document processing');
 
   try {
-    // Step 1: AI analysis — send file URL directly (works for PDFs, images, etc.)
     await logTask('AI analysis & categorization', 'in_progress');
 
     const categories = await db.entities.Category.list();
@@ -122,7 +98,7 @@ ${doc.extracted_text ? `Previously extracted text:\n${doc.extracted_text.substri
 
     await logTask('AI analysis completed', 'completed');
 
-    // Step 2: Save receipt transaction if detected
+    // Save receipt transaction if detected
     if (result.is_receipt && result.transaction_date) {
       const existing = await db.entities.Transaction.filter({ document_id: doc.id });
       const txnData = {
@@ -147,7 +123,7 @@ ${doc.extracted_text ? `Previously extracted text:\n${doc.extracted_text.substri
       }
     }
 
-    // Step 3: Update document metadata
+    // Update document metadata
     await db.entities.Document.update(doc.id, {
       title: result.suggested_title || doc.title,
       summary: result.summary,
@@ -161,15 +137,40 @@ ${doc.extracted_text ? `Previously extracted text:\n${doc.extracted_text.substri
 
     await logTask('Document ready for review', 'completed');
 
-    return Response.json({
-      message: 'Document processed successfully',
-      documentId: doc.id,
-      title: result.suggested_title || doc.title,
-    });
+    return { documentId: doc.id, title: result.suggested_title || doc.title, success: true };
 
   } catch (error) {
     await logTask('Processing failed', 'failed', error.message);
     await db.entities.Document.update(doc.id, { processing_status: 'failed' });
-    return Response.json({ error: error.message, documentId: doc.id }, { status: 500 });
+    return { documentId: doc.id, error: error.message, success: false };
   }
+}
+
+Deno.serve(async (req) => {
+  const base44 = createClientFromRequest(req);
+
+  try {
+    const user = await base44.auth.me();
+    if (user?.role !== 'admin') {
+      return Response.json({ error: 'Forbidden' }, { status: 403 });
+    }
+  } catch {
+    // Scheduled automation call — allow through
+  }
+
+  const db = base44.asServiceRole;
+
+  // Get up to 2 pending documents
+  const pending = await db.entities.Document.filter({ processing_status: 'pending' }, 'created_date', 2);
+
+  if (pending.length === 0) {
+    return Response.json({ message: 'No pending documents', processed: 0 });
+  }
+
+  const results = [];
+  for (const doc of pending) {
+    results.push(await processDoc(db, doc));
+  }
+
+  return Response.json({ message: `Processed ${results.length} document(s)`, results });
 });
