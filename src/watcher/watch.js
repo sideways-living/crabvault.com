@@ -34,7 +34,7 @@ const MOVE_TO      = process.env.MOVE_AFTER_UPLOAD || ''; // optional: move file
 const POLL_INTERVAL = parseInt(process.env.POLL_INTERVAL_MS || '5000', 10);
 const HEARTBEAT_INTERVAL = parseInt(process.env.HEARTBEAT_INTERVAL_MS || '60000', 10); // 60 seconds
 
-const SUPPORTED = ['.pdf', '.docx', '.xlsx', '.pptx', '.txt', '.jpg', '.jpeg', '.png'];
+const SUPPORTED = ['.pdf', '.docx', '.xlsx', '.pptx', '.txt', '.jpg', '.jpeg', '.png', '.heic'];
 
 if (!WATCH_FOLDER || !INGEST_URL || !API_KEY) {
   console.error('❌  Missing required env vars: WATCH_FOLDER, INGEST_URL, INGEST_API_KEY');
