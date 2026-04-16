@@ -34,11 +34,10 @@ export default function DocumentReview() {
 
   const loadQueue = async () => {
     const docs = await fetchWithRetry(() => base44.entities.Document.filter({ processing_status: "needs_review" }, "-created_date", 100));
-    await new Promise(r => setTimeout(r, 300));
-    const [flds, cats] = await Promise.all([
-      fetchWithRetry(() => base44.entities.Folder.list()),
-      fetchWithRetry(() => base44.entities.Category.list()),
-    ]);
+    await new Promise(r => setTimeout(r, 400));
+    const flds = await fetchWithRetry(() => base44.entities.Folder.list());
+    await new Promise(r => setTimeout(r, 400));
+    const cats = await fetchWithRetry(() => base44.entities.Category.list());
     setQueue(docs);
     setFolders(flds);
     setCategories(cats);
