@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, FileText, FolderTree, Search, Settings, Shield, Menu, X, BookOpen, ClipboardCheck, Trash2, Lock, Copy, Zap, Briefcase, Image, Film, Receipt } from "lucide-react";
+import { LayoutDashboard, FileText, FolderTree, Search, Settings, Shield, Menu, X, BookOpen, ClipboardCheck, Trash2, Lock, Copy, Zap, Briefcase, Image, Film, Receipt, ScanSearch } from "lucide-react";
 import DocumentBadge from "./DocumentBadge";
 import ProcessingStatus from "./ProcessingStatus";
 import { useState, useEffect } from "react";
@@ -311,6 +311,19 @@ export default function Layout() {
               >
                 <Zap className="h-3.5 w-3.5" />
                 Receipt Trainer
+              </Link>
+              <Link
+                to="/ingress-scanner"
+                onClick={() => setSidebarOpen(false)}
+                className={cn(
+                  "flex items-center gap-3 px-3 py-2 rounded-lg text-xs transition-all duration-200",
+                  location.pathname === "/ingress-scanner"
+                    ? "bg-sidebar-accent text-sidebar-primary"
+                    : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/30"
+                )}
+              >
+                <ScanSearch className="h-3.5 w-3.5" />
+                Ingress Scanner
               </Link>
             </div>
           </div>

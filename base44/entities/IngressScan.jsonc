@@ -1,0 +1,57 @@
+{
+  "name": "IngressScan",
+  "type": "object",
+  "properties": {
+    "scanned_at": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Scanned At"
+    },
+    "total_ingress": {
+      "type": "number",
+      "title": "Total Files in Ingress Folder"
+    },
+    "total_supported": {
+      "type": "number",
+      "title": "Total Supported Files"
+    },
+    "total_missing": {
+      "type": "number",
+      "title": "Total Missing from App"
+    },
+    "total_found": {
+      "type": "number",
+      "title": "Total Found in App"
+    },
+    "total_duplicates": {
+      "type": "number",
+      "title": "Total Duplicates"
+    },
+    "total_unsupported": {
+      "type": "number",
+      "title": "Total Unsupported File Types"
+    },
+    "missing_files": {
+      "type": "array",
+      "title": "Missing Files",
+      "items": {
+        "type": "object"
+      }
+    },
+    "duplicate_files": {
+      "type": "array",
+      "title": "Duplicate Files",
+      "items": {
+        "type": "object"
+      }
+    },
+    "found_files": {
+      "type": "array",
+      "title": "Found Files",
+      "items": {
+        "type": "object"
+      }
+    }
+  },
+  "required": []
+}
