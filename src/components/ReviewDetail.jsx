@@ -175,7 +175,11 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
   const handleReprocess = async () => {
     if (!confirm("Reset this document and reprocess from scratch? All AI data will be cleared.")) return;
     setReprocessing(true);
+    const originalTitle = doc.original_filename
+      ? doc.original_filename.replace(/\.[^/.]+$/, '')
+      : doc.title;
     await base44.entities.Document.update(doc.id, {
+      title: originalTitle,
       processing_status: "pending",
       ai_data: null,
       summary: null,
