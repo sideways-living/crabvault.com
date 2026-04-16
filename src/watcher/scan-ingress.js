@@ -177,6 +177,23 @@ async function main() {
     });
   }
 
+  // Show unsupported file types breakdown
+  const unsupportedFiles = files.filter(f => {
+    const ext = f.name.slice(f.name.lastIndexOf('.')).toLowerCase();
+    return !['.pdf', '.docx', '.xlsx', '.pptx', '.txt', '.jpg', '.jpeg', '.png'].includes(ext);
+  });
+  if (unsupportedFiles.length > 0) {
+    const byExt = {};
+    unsupportedFiles.forEach(f => {
+      const ext = f.name.includes('.') ? f.name.slice(f.name.lastIndexOf('.')).toLowerCase() : '(no extension)';
+      byExt[ext] = (byExt[ext] || 0) + 1;
+    });
+    console.log('\n⛔  Unsupported file types:');
+    Object.entries(byExt).sort((a, b) => b[1] - a[1]).forEach(([ext, count]) => {
+      console.log(`  ${ext}: ${count} file(s)`);
+    });
+  }
+
   if (!DO_UPLOAD) {
     if (missing.length > 0) {
       console.log('\n💡  Run with --upload to automatically re-upload missing files:');
