@@ -221,9 +221,21 @@ export default function DuplicateFinder() {
     setLoading(true);
     setGroups(null);
     setSelectedGroup(null);
-    const docs = await base44.entities.Document.filter({ is_deleted: false }, '-created_date', 10000);
+
+    // Paginate to avoid rate limits
+    const allDocs = [];
+    const pageSize = 200;
+    let skip = 0;
+    while (true) {
+      const page = await base44.entities.Document.filter({ is_deleted: false }, '-created_date', pageSize, skip);
+      allDocs.push(...page);
+      if (page.length < pageSize) break;
+      skip += pageSize;
+      await new Promise(r => setTimeout(r, 300)); // small delay between pages
+    }
+
     const dismissed = getDismissed();
-    const found = groupDuplicates(docs).filter(g => !isDismissed(g, dismissed));
+    const found = groupDuplicates(allDocs).filter(g => !isDismissed(g, dismissed));
     setGroups(found);
     if (found.length > 0) setSelectedGroup(found[0]);
     setLoading(false);
