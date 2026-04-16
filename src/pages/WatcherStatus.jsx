@@ -9,14 +9,19 @@ export default function WatcherStatus() {
 
   useEffect(() => {
     loadStatuses();
-    const interval = setInterval(loadStatuses, 5000);
+    const interval = setInterval(loadStatuses, 30000);
     return () => clearInterval(interval);
   }, []);
 
   const loadStatuses = async () => {
-    const data = await base44.entities.WatcherStatus.list('-last_heartbeat', 10);
-    setStatuses(data);
-    setLoading(false);
+    try {
+      const data = await base44.entities.WatcherStatus.list('-last_heartbeat', 10);
+      setStatuses(data);
+    } catch (err) {
+      // silently ignore polling errors to avoid crashing the page
+    } finally {
+      setLoading(false);
+    }
   };
 
   const isRunning = (status) => {
