@@ -111,6 +111,6 @@ Deno.serve(async (req) => {
     total_found: found.length,
     total_duplicates: duplicates.length,
     total_unsupported: unsupported.length,
-    missing: missing,
+    missing_files: missing,
   });
 });
