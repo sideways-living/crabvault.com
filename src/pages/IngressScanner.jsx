@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,9 @@ export default function IngressScanner() {
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState("missing");
   const [search, setSearch] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState({ done: 0, total: 0, current: "" });
+  const fileInputRef = useRef(null);
 
   const loadScan = async () => {
     setLoading(true);
@@ -45,6 +48,56 @@ export default function IngressScanner() {
       const name = item.name || item.file?.name || "";
       return name.toLowerCase().includes(q);
     });
+  };
+
+  const missingNames = new Set((scan?.missing_files || []).map(f => f.name));
+
+  const handleUploadMissing = async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+
+    // Only upload files that are in the missing list
+    const toUpload = files.filter(f => missingNames.has(f.name));
+    const skipped = files.length - toUpload.length;
+
+    if (toUpload.length === 0) {
+      toast.error("None of the selected files match the missing list.");
+      return;
+    }
+    if (skipped > 0) {
+      toast.info(`${skipped} file(s) were not in the missing list and will be skipped.`);
+    }
+
+    setUploading(true);
+    setUploadProgress({ done: 0, total: toUpload.length, current: "" });
+    let succeeded = 0;
+    let failed = 0;
+
+    for (const file of toUpload) {
+      setUploadProgress(p => ({ ...p, current: file.name }));
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("filename", file.name);
+        await fetch("/api/functions/ingestDocument", {
+          method: "POST",
+          headers: { "x-api-key": "" }, // key handled server-side via env
+          body: formData,
+        });
+        succeeded++;
+      } catch {
+        failed++;
+      }
+      setUploadProgress(p => ({ ...p, done: p.done + 1 }));
+    }
+
+    setUploading(false);
+    setUploadProgress({ done: 0, total: 0, current: "" });
+    fileInputRef.current.value = "";
+
+    if (succeeded > 0) toast.success(`Uploaded ${succeeded} file(s) successfully.`);
+    if (failed > 0) toast.error(`${failed} file(s) failed to upload.`);
+    await loadScan();
   };
 
   const copyMissingList = () => {
@@ -71,9 +124,18 @@ export default function IngressScanner() {
             Compare your local ingress folder against documents in the app
           </p>
         </div>
-        <Button variant="outline" onClick={loadScan} className="gap-2">
-          <RefreshCw className="h-4 w-4" /> Refresh
-        </Button>
+        <div className="flex items-center gap-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            className="hidden"
+            onChange={handleUploadMissing}
+          />
+          <Button variant="outline" onClick={loadScan} className="gap-2">
+            <RefreshCw className="h-4 w-4" /> Refresh
+          </Button>
+        </div>
       </div>
 
       {/* Setup instructions */}
@@ -143,9 +205,28 @@ export default function IngressScanner() {
               className="max-w-xs h-8 text-sm"
             />
             {tab === "missing" && scan.total_missing > 0 && (
-              <Button variant="outline" size="sm" onClick={copyMissingList} className="gap-1.5 h-8">
-                <Copy className="h-3.5 w-3.5" /> Copy missing list
-              </Button>
+              <>
+                <Button variant="outline" size="sm" onClick={copyMissingList} className="gap-1.5 h-8">
+                  <Copy className="h-3.5 w-3.5" /> Copy missing list
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  className="gap-1.5 h-8"
+                >
+                  {uploading ? (
+                    <>
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      {uploadProgress.done}/{uploadProgress.total} — {uploadProgress.current}
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="h-3.5 w-3.5" /> Upload missing files
+                    </>
+                  )}
+                </Button>
+              </>
             )}
           </div>
 
