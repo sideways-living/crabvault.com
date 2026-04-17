@@ -64,6 +64,8 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
 
   const [title, setTitle] = useState(doc.title || "");
   const [folderId, setFolderId] = useState(doc.folder_id || "");
+  const [folderId2, setFolderId2] = useState(doc.folder_id_2 || "");
+  const [showFolder2, setShowFolder2] = useState(!!doc.folder_id_2);
   const [categoryId, setCategoryId] = useState(doc.category_id || "");
   const [summary, setSummary] = useState(doc.summary || "");
   const [tags, setTags] = useState((doc.tags || []).join(", "));
@@ -89,6 +91,7 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
   const [merging, setMerging] = useState(false);
   const [reprocessing, setReprocessing] = useState(false);
   const [showFolderPicker, setShowFolderPicker] = useState(false);
+  const [showFolderPicker2, setShowFolderPicker2] = useState(false);
 
   useEffect(() => {
     if (!folderId) return;
@@ -110,6 +113,17 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
     }
     return parts.join(' / ');
   })();
+  const folderObj2 = folders.find(f => f.id === folderId2);
+  const folderDisplay2 = (() => {
+    if (!folderObj2) return "No folder assigned";
+    const parts = [];
+    let current = folderObj2;
+    while (current) {
+      parts.unshift(current.name);
+      current = current.parent_folder_id ? folders.find(f => f.id === current.parent_folder_id) : null;
+    }
+    return parts.join(' / ');
+  })();
   const categoryObj = categories.find(c => c.id === categoryId);
 
   const handleAccept = async () => {
@@ -118,6 +132,7 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
     await base44.entities.Document.update(doc.id, {
       title,
       folder_id: folderId || undefined,
+      folder_id_2: folderId2 || undefined,
       category_id: categoryId || undefined,
       summary,
       tags: tags.split(",").map(t => t.trim()).filter(Boolean),
@@ -280,13 +295,51 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
                <button
                  onClick={() => setShowFolderPicker(true)}
                  className="flex items-center gap-1.5 text-sm text-foreground hover:text-primary transition-colors"
-                 disabled={mode !== "edit"}
                >
                  <FolderOpen className="h-4 w-4 text-primary shrink-0" />
                  <span className="font-medium">{folderDisplay}</span>
                </button>
               )}
               </div>
+            {/* Second destination folder */}
+            {showFolder2 ? (
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-primary">2nd Destination Folder</p>
+                  <button
+                    onClick={() => { setShowFolder2(false); setFolderId2(""); setShowFolderPicker2(false); }}
+                    className="text-[10px] text-muted-foreground hover:text-destructive transition-colors"
+                  >
+                    Remove
+                  </button>
+                </div>
+                {showFolderPicker2 ? (
+                  <HierarchicalFolderPicker
+                    value={folderId2}
+                    onValueChange={setFolderId2}
+                    folders={folders}
+                    onFolderCreated={onFolderCreated}
+                    onDone={() => setShowFolderPicker2(false)}
+                  />
+                ) : (
+                  <button
+                    onClick={() => setShowFolderPicker2(true)}
+                    className="flex items-center gap-1.5 text-sm text-foreground hover:text-primary transition-colors"
+                  >
+                    <FolderOpen className="h-4 w-4 text-primary shrink-0" />
+                    <span className="font-medium">{folderDisplay2}</span>
+                  </button>
+                )}
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowFolder2(true)}
+                className="flex items-center gap-1.5 text-xs text-primary hover:underline"
+              >
+                <span>+ Add destination folder</span>
+              </button>
+            )}
+
             {vaultPath && (
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Vault Path</p>

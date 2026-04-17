@@ -41,6 +41,10 @@
       "type": "string",
       "title": "Folder ID"
     },
+    "folder_id_2": {
+      "type": "string",
+      "title": "Second Folder ID"
+    },
     "category_id": {
       "type": "string",
       "title": "Category ID"
