@@ -65,6 +65,7 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
   const [title, setTitle] = useState(doc.title || "");
   const [folderId, setFolderId] = useState(doc.folder_id || "");
   const [folderId2, setFolderId2] = useState(doc.folder_id_2 || "");
+  const [title2, setTitle2] = useState(doc.title_2 || "");
   const [showFolder2, setShowFolder2] = useState(!!doc.folder_id_2);
   const [categoryId, setCategoryId] = useState(doc.category_id || "");
   const [summary, setSummary] = useState(doc.summary || "");
@@ -133,6 +134,7 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
       title,
       folder_id: folderId || undefined,
       folder_id_2: folderId2 || undefined,
+      title_2: (folderId2 && title2) ? title2 : undefined,
       category_id: categoryId || undefined,
       summary,
       tags: tags.split(",").map(t => t.trim()).filter(Boolean),
@@ -307,7 +309,7 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
                 <div className="flex items-center justify-between mb-1">
                   <p className="text-[10px] font-bold uppercase tracking-widest text-primary">2nd Destination Folder</p>
                   <button
-                    onClick={() => { setShowFolder2(false); setFolderId2(""); setShowFolderPicker2(false); }}
+                    onClick={() => { setShowFolder2(false); setFolderId2(""); setTitle2(""); setShowFolderPicker2(false); }}
                     className="text-[10px] text-muted-foreground hover:text-destructive transition-colors"
                   >
                     Remove
@@ -330,6 +332,15 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
                     <span className="font-medium">{folderDisplay2}</span>
                   </button>
                 )}
+                <div className="mt-2">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">2nd Filename</p>
+                  <Input
+                    value={title2}
+                    onChange={e => setTitle2(e.target.value)}
+                    placeholder={title || "Same as primary filename"}
+                    className="text-sm h-8"
+                  />
+                </div>
               </div>
             ) : (
               <button
