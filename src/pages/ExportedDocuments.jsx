@@ -1,9 +1,27 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { Lock, FileText, Calendar, FolderOpen, Loader2 } from "lucide-react";
+import { Lock, FileText, Calendar, FolderOpen, Loader2, Copy } from "lucide-react";
 import { Link } from "react-router-dom";
 import moment from "moment";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { duplicateDocument } from "@/lib/duplicateDocument";
+
+function DuplicateBtn({ doc }) {
+  const [duplicating, setDuplicating] = useState(false);
+  return (
+    <Button
+      size="sm"
+      variant="outline"
+      disabled={duplicating}
+      onClick={async (e) => { e.preventDefault(); setDuplicating(true); await duplicateDocument(doc); setDuplicating(false); }}
+      className="gap-1.5 text-violet-700 border-violet-300 hover:bg-violet-50 shrink-0"
+    >
+      {duplicating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Copy className="h-3.5 w-3.5" />}
+      Duplicate
+    </Button>
+  );
+}
 
 export default function ExportedDocuments() {
   const [docs, setDocs] = useState([]);
@@ -45,26 +63,23 @@ export default function ExportedDocuments() {
         <div className="bg-card border rounded-xl overflow-hidden">
           <div className="divide-y">
             {docs.map(doc => (
-              <Link
-                key={doc.id}
-                to={`/documents/${doc.id}`}
-                className="flex items-center gap-4 px-5 py-3 hover:bg-muted/30 transition-colors"
-              >
+              <div key={doc.id} className="flex items-center gap-4 px-5 py-3 hover:bg-muted/30 transition-colors">
                 <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{doc.title}</p>
+                <Link to={`/documents/${doc.id}`} className="flex-1 min-w-0 group">
+                  <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">{doc.title}</p>
                   {doc.vault_path && (
                     <p className="text-xs text-muted-foreground font-mono truncate mt-0.5">🔒 {doc.vault_path}</p>
                   )}
-                </div>
+                </Link>
                 <div className="flex items-center gap-3 shrink-0 text-xs text-muted-foreground">
                   {doc.file_type && <Badge variant="outline" className="uppercase text-[10px] font-mono">.{doc.file_type}</Badge>}
                   <span className="flex items-center gap-1">
                     <Calendar className="h-3 w-3" />
                     {moment(doc.updated_date).format('D MMM YYYY')}
                   </span>
+                  <DuplicateBtn doc={doc} />
                 </div>
-              </Link>
+              </div>
             ))}
           </div>
         </div>

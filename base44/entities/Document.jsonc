@@ -6,10 +6,6 @@
       "type": "string",
       "title": "Document Title"
     },
-    "title_2": {
-      "type": "string",
-      "title": "Second Document Title (for 2nd folder)"
-    },
     "file_url": {
       "type": "string",
       "title": "File URL"
@@ -44,10 +40,6 @@
     "folder_id": {
       "type": "string",
       "title": "Folder ID"
-    },
-    "folder_id_2": {
-      "type": "string",
-      "title": "Second Folder ID"
     },
     "category_id": {
       "type": "string",

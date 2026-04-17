@@ -1,8 +1,9 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Clock, CheckCircle2, AlertCircle, Loader2 } from "lucide-react"
+import { FileText, Clock, CheckCircle2, AlertCircle, Loader2, Copy } from "lucide-react"
 import moment from "moment";
+import { duplicateDocument } from "@/lib/duplicateDocument";
 
 const statusConfig = {
   pending: { icon: Clock, className: "text-amber-600", label: "Pending" },
@@ -11,6 +12,21 @@ const statusConfig = {
   completed: { icon: CheckCircle2, className: "text-emerald-600", label: "Done" },
   failed: { icon: AlertCircle, className: "text-red-600", label: "Failed" },
 };
+
+function DuplicateBtn({ doc }) {
+  const [duplicating, setDuplicating] = useState(false);
+  return (
+    <button
+      onClick={async () => { setDuplicating(true); await duplicateDocument(doc); setDuplicating(false); }}
+      disabled={duplicating}
+      title="Duplicate to file elsewhere"
+      className="flex items-center gap-1 px-2 py-1 rounded-md bg-violet-100 text-violet-700 hover:bg-violet-200 transition-colors text-[11px] font-medium"
+    >
+      {duplicating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Copy className="h-3 w-3" />}
+      <span className="hidden lg:inline">Duplicate</span>
+    </button>
+  );
+}
 
 const fileTypeColors = {
   pdf: "bg-red-100 text-red-700",
@@ -39,6 +55,7 @@ export default function DocumentListView({ documents, categories, selectedIds = 
             <th className="text-left px-4 py-3 font-medium text-muted-foreground hidden sm:table-cell">Type</th>
             <th className="text-left px-4 py-3 font-medium text-muted-foreground hidden lg:table-cell">Date</th>
             <th className="text-left px-4 py-3 font-medium text-muted-foreground">Status</th>
+            <th className="w-10 px-4 py-3" />
           </tr>
         </thead>
         <tbody>
@@ -48,6 +65,7 @@ export default function DocumentListView({ documents, categories, selectedIds = 
             const category = categories.find(c => c.id === doc.category_id);
             const typeColor = fileTypeColors[doc.file_type] || "bg-gray-100 text-gray-700";
             const isSelected = selectedIds.includes(doc.id);
+            const isCompleted = doc.processing_status === 'completed';
 
             return (
               <tr key={doc.id} className={`border-b last:border-0 hover:bg-muted/20 transition-colors cursor-pointer ${isSelected ? 'bg-primary/5' : i % 2 === 0 ? '' : 'bg-muted/10'}`} onMouseEnter={() => setPreviewDocId(doc.id)}>
@@ -91,6 +109,11 @@ export default function DocumentListView({ documents, categories, selectedIds = 
                     <StatusIcon className={`h-3.5 w-3.5 ${doc.processing_status === 'processing' ? 'animate-spin' : ''}`} />
                     <span className="hidden sm:inline text-xs">{status.label}</span>
                   </span>
+                </td>
+                <td className="px-2 py-3" onClick={e => e.stopPropagation()}>
+                  {isCompleted && (
+                    <DuplicateBtn doc={doc} />
+                  )}
                 </td>
               </tr>
             );

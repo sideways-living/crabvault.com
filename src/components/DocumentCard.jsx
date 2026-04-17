@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
-import { FileText, Clock, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
+import { FileText, Clock, CheckCircle2, AlertCircle, Loader2, Copy } from "lucide-react";
 import moment from "moment";
+import { duplicateDocument } from "@/lib/duplicateDocument";
 
 const statusConfig = {
   pending: { icon: Clock, label: "Pending", className: "bg-amber-100 text-amber-700" },
@@ -16,6 +18,15 @@ export default function DocumentCard({ document, categories, selected, onToggleS
   const category = categories?.find(c => c.id === document.category_id);
   const isReceipt = document.ai_data?.is_receipt;
   const previewWidthClass = isReceipt ? 'w-1/4' : 'w-1/3';
+  const [duplicating, setDuplicating] = useState(false);
+  const isCompleted = document.processing_status === 'completed';
+
+  const handleDuplicate = async (e) => {
+    e.preventDefault();
+    setDuplicating(true);
+    await duplicateDocument(document);
+    setDuplicating(false);
+  };
 
   return (
     <div
@@ -85,6 +96,17 @@ export default function DocumentCard({ document, categories, selected, onToggleS
           </p>
         </div>
       </Link>
+      {isCompleted && (
+        <button
+          onClick={handleDuplicate}
+          disabled={duplicating}
+          title="Duplicate to file elsewhere"
+          className="absolute bottom-2 right-2 flex items-center gap-1 px-2 py-1 rounded-md bg-violet-100 text-violet-700 hover:bg-violet-200 transition-colors text-[11px] font-medium opacity-0 group-hover:opacity-100"
+        >
+          {duplicating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Copy className="h-3 w-3" />}
+          Duplicate
+        </button>
+      )}
     </div>
   );
 }
