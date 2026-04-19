@@ -54,6 +54,7 @@ export default function DocumentCard({ document, categories, selected, onToggleS
               src={document.preview_url}
               alt={document.title}
               className="w-full object-contain object-top"
+              style={{ imageOrientation: 'from-image' }}
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center">

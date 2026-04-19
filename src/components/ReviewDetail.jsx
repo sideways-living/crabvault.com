@@ -29,7 +29,7 @@ function DocPreview({ doc }) {
     );
   }
   if (isImage) {
-    return <img src={doc.file_url} alt={doc.title} className="w-full h-full object-contain" />;
+    return <img src={doc.file_url} alt={doc.title} className="w-full h-full object-contain" style={{ imageOrientation: 'from-image' }} />;
   }
   if (isPdf) {
     return <iframe src={doc.file_url} title={doc.title} className="w-full h-full border-0" style={{ display: "block" }} />;

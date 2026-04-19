@@ -86,7 +86,7 @@ export default function DocumentListView({ documents, categories, selectedIds = 
                 <td className="px-4 py-3">
                   <Link to={`/documents/${doc.id}`} className="flex items-center gap-2.5 group">
                     {doc.preview_url ? (
-                      <img src={doc.preview_url} alt="preview" className="h-6 w-6 rounded object-cover flex-shrink-0" />
+                      <img src={doc.preview_url} alt="preview" className="h-6 w-6 rounded object-cover flex-shrink-0" style={{ imageOrientation: 'from-image' }} />
                     ) : (
                       <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
                     )}
@@ -128,7 +128,7 @@ export default function DocumentListView({ documents, categories, selectedIds = 
         {previewDoc ? (
           <>
             {previewDoc.preview_url ? (
-              <img src={previewDoc.preview_url} alt={previewDoc.title} className="w-full h-auto rounded-lg border bg-muted object-cover max-h-64" />
+              <img src={previewDoc.preview_url} alt={previewDoc.title} className="w-full h-auto rounded-lg border bg-muted object-cover max-h-64" style={{ imageOrientation: 'from-image' }} />
             ) : (
               <div className="w-full h-40 rounded-lg border bg-muted flex items-center justify-center text-muted-foreground">
                 <FileText className="h-8 w-8" />
