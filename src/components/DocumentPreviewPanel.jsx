@@ -45,7 +45,7 @@ export default function DocumentPreviewPanel({ doc }) {
               />
             </div>
           ) : ["jpg", "jpeg", "png", "gif", "webp"].includes(doc.file_type?.toLowerCase()) ? (
-            <div style={{ transform: `rotate(${rotation}deg)`, transformOrigin: "center" }}>
+            <div style={{ transform: `rotate(${rotation}deg) scaleY(-1)`, transformOrigin: "center" }}>
               <img
                 src={doc.file_url}
                 alt={doc.title}
