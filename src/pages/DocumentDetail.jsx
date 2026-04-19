@@ -28,12 +28,20 @@ function PdfPreview({ src, title }) {
           ↻ Rotate
         </button>
       </div>
-      <div className="flex-1" style={{ transform: `rotate(${rotation}deg)`, transformOrigin: "center center" }}>
+      <div className="flex-1 overflow-hidden relative">
         <iframe
           key={rotation}
           src={src}
           title={title}
-          style={{ width: "100%", height: "100%", border: 0, display: "block" }}
+          style={{
+            position: "absolute",
+            top: 0, left: 0,
+            width: "100%",
+            height: "100%",
+            border: 0,
+            transform: rotation ? `rotate(${rotation}deg)` : undefined,
+            transformOrigin: "center center",
+          }}
         />
       </div>
     </div>
