@@ -220,9 +220,9 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
             </button>
           </div>
           {/* Preview Area */}
-          <div style={{ flex: 1, minHeight: 0, overflow: "auto", padding: "16px", display: "flex", alignItems: "flex-start", justifyContent: "center" }}>
+          <div style={{ flex: 1, minHeight: 0, overflow: "auto", padding: "16px" }}>
             {doc.file_url ? (
-              <div style={{ transform: `rotate(${pdfRotation}deg)`, width: "100%", height: "100%" }}>
+              <div style={{ transform: `rotate(${pdfRotation}deg)`, width: "100%", minHeight: "100%" }}>
                 {doc.file_type?.toLowerCase() === 'pdf' ? (
                   <iframe src={doc.file_url} title={doc.title} style={{ width: "100%", height: "auto", border: "none" }} />
                 ) : ["jpg", "jpeg", "png", "gif", "webp"].includes(doc.file_type?.toLowerCase()) ? (
