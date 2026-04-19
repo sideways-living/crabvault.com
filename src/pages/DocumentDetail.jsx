@@ -314,14 +314,11 @@ export default function DocumentDetail() {
                       className="border-0"
                       style={{
                         display: "block",
-                        width: pdfRotation === 90 || pdfRotation === 270 ? "100vh" : "100%",
-                        height: pdfRotation === 90 || pdfRotation === 270 ? "100vw" : "560px",
-                        transform: `rotate(${pdfRotation}deg)`,
+                        width: "100%",
+                        height: "100%",
+                        minHeight: "560px",
+                        transform: pdfRotation ? `rotate(${pdfRotation}deg)` : undefined,
                         transformOrigin: "center center",
-                        position: "absolute",
-                        top: "50%",
-                        left: "50%",
-                        translate: "-50% -50%",
                       }}
                     />
                     <button

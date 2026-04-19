@@ -52,21 +52,17 @@ function DocPreview({ doc }) {
   }
   if (isPdf) {
     return (
-      <div className="relative w-full h-full overflow-hidden">
+      <div className="relative w-full h-full overflow-hidden flex items-center justify-center">
         <iframe
           src={doc.file_url}
           title={doc.title}
           className="border-0"
           style={{
             display: "block",
-            width: rotation === 90 || rotation === 270 ? "100vh" : "100%",
-            height: rotation === 90 || rotation === 270 ? "100vw" : "100%",
-            transform: `rotate(${rotation}deg)`,
+            width: "100%",
+            height: "100%",
+            transform: rotation ? `rotate(${rotation}deg)` : undefined,
             transformOrigin: "center center",
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            translate: "-50% -50%",
           }}
         />
         <button
