@@ -3,7 +3,7 @@ import { FileText, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function DocumentPreviewPanel({ doc }) {
-  const [rotation, setRotation] = useState(180);
+  const [rotation, setRotation] = useState(0);
 
   return (
     <div className="flex flex-col h-full bg-card border rounded-xl overflow-hidden">
