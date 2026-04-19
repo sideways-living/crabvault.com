@@ -17,6 +17,29 @@ import { duplicateDocument } from "@/lib/duplicateDocument";
 // ─── PDF Preview with rotation toggle ────────────────────────────────────────
 function PdfPreview({ src, title }) {
   const [rotation, setRotation] = useState(180);
+  const is90or270 = rotation === 90 || rotation === 270;
+
+  // For 90/270 we need to swap width/height and offset so the rotated iframe fits
+  const containerStyle = is90or270
+    ? { position: "relative", width: "100%", paddingTop: "141.4%", overflow: "hidden" }
+    : { position: "relative", width: "100%", paddingTop: "130%", overflow: "hidden" };
+
+  const iframeStyle = is90or270
+    ? {
+        position: "absolute", top: "0", left: "0",
+        width: "70.7%", height: "141.4%",
+        transform: `rotate(${rotation}deg) translateX(41.4%)`,
+        transformOrigin: "top left",
+        border: 0,
+      }
+    : {
+        position: "absolute", top: "0", left: "0",
+        width: "100%", height: "100%",
+        transform: rotation === 180 ? "rotate(180deg)" : undefined,
+        transformOrigin: "center center",
+        border: 0,
+      };
+
   return (
     <div className="w-full h-full flex flex-col overflow-hidden">
       <div className="flex justify-end gap-1 px-2 py-1 shrink-0 bg-muted/40 border-b">
@@ -26,18 +49,9 @@ function PdfPreview({ src, title }) {
         </button>
       </div>
       <div className="flex-1 overflow-y-auto">
-        <iframe
-          key={rotation}
-          src={src}
-          title={title}
-          className="border-0 block"
-          style={{
-            width: "100%",
-            height: "800px",
-            transform: `rotate(${rotation}deg)`,
-            transformOrigin: "center center",
-          }}
-        />
+        <div style={containerStyle}>
+          <iframe key={rotation} src={src} title={title} style={iframeStyle} />
+        </div>
       </div>
     </div>
   );
