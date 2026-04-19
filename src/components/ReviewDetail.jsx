@@ -33,17 +33,17 @@ function DocPreview({ doc }) {
   }
   if (isImage) {
     return (
-      <div className="relative w-full h-full flex items-center justify-center overflow-hidden">
+      <div className="relative w-full h-full overflow-y-auto">
         <img
           src={doc.file_url}
           alt={doc.title}
-          className="max-w-full max-h-full object-contain transition-transform duration-300"
-          style={{ transform: `rotate(${rotation}deg)` }}
+          className="w-full h-auto transition-transform duration-300 block"
+          style={{ transform: `rotate(${rotation}deg)`, transformOrigin: "center top" }}
         />
         <button
           onClick={rotate}
           title="Rotate image 90°"
-          className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white rounded-full p-1.5 transition-colors"
+          className="sticky top-2 float-right mr-2 bg-black/50 hover:bg-black/70 text-white rounded-full p-1.5 transition-colors"
         >
           <RotateCw className="h-4 w-4" />
         </button>
@@ -245,7 +245,7 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
 
         {/* LEFT: Document Preview */}
         <div className="flex flex-col border-r bg-zinc-50" style={{ width: "55%", minWidth: 0 }}>
-          <div style={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
+          <div style={{ flex: 1, minHeight: 0, overflow: "auto" }}>
             <DocPreview doc={doc} />
           </div>
           <div className="shrink-0 border-t px-4 py-2 bg-white flex items-center gap-2 text-xs text-muted-foreground">
