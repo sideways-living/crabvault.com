@@ -42,7 +42,7 @@ function DocPreview({ doc }) {
         />
         <button
           onClick={rotate}
-          title="Rotate image 90°"
+          title="Rotate 90°"
           className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white rounded-full p-1.5 transition-colors z-10"
         >
           <RotateCw className="h-4 w-4" />
@@ -51,7 +51,33 @@ function DocPreview({ doc }) {
     );
   }
   if (isPdf) {
-    return <iframe src={doc.file_url} title={doc.title} className="w-full h-full border-0" style={{ display: "block" }} />;
+    return (
+      <div className="relative w-full h-full overflow-hidden">
+        <iframe
+          src={doc.file_url}
+          title={doc.title}
+          className="border-0"
+          style={{
+            display: "block",
+            width: rotation === 90 || rotation === 270 ? "100vh" : "100%",
+            height: rotation === 90 || rotation === 270 ? "100vw" : "100%",
+            transform: `rotate(${rotation}deg)`,
+            transformOrigin: "center center",
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            translate: "-50% -50%",
+          }}
+        />
+        <button
+          onClick={rotate}
+          title="Rotate 90°"
+          className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white rounded-full p-1.5 transition-colors z-10"
+        >
+          <RotateCw className="h-4 w-4" />
+        </button>
+      </div>
+    );
   }
   return (
     <div className="flex flex-col items-center justify-center h-full gap-4 text-muted-foreground">
