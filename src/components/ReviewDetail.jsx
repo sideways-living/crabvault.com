@@ -14,54 +14,7 @@ import FolderSelect from "./FolderSelect";
 import { toast } from "sonner";
 import { duplicateDocument } from "@/lib/duplicateDocument";
 
-// ─── PDF Preview with rotation toggle ────────────────────────────────────────
-function PdfPreview({ src, title, rotation }) {
-  return (
-    <div style={{ width: "100%", height: "100%", position: "relative" }}>
-      <iframe
-        src={src}
-        title={title}
-        style={{
-          position: "absolute",
-          top: 0, left: 0,
-          width: "100%",
-          height: "100%",
-          border: "none",
-          transform: rotation !== 0 ? `rotate(${rotation}deg)` : undefined,
-          transformOrigin: "center center",
-        }}
-      />
-    </div>
-  );
-}
 
-// ─── Document Preview ─────────────────────────────────────────────────────────
-function DocPreview({ doc }) {
-  const type = (doc.file_type || "").toLowerCase();
-  const isImage = ["jpg", "jpeg", "png", "gif", "webp"].includes(type);
-
-  if (!doc.file_url) {
-    return (
-      <div className="flex flex-col items-center justify-center gap-3 text-muted-foreground" style={{ width: "100%", height: "100%" }}>
-        <FileText className="h-20 w-20 opacity-20" />
-        <p className="text-sm">No file available</p>
-      </div>
-    );
-  }
-  if (isImage) {
-    return <img src={doc.file_url} alt={doc.title} style={{ width: "100%", height: "100%", objectFit: "contain", imageOrientation: 'from-image' }} />;
-  }
-  return (
-    <div className="flex flex-col items-center justify-center h-full gap-4 text-muted-foreground">
-      <FileText className="h-16 w-16 opacity-30" />
-      <p className="text-sm font-medium">{doc.original_filename}</p>
-      <a href={doc.file_url} target="_blank" rel="noopener noreferrer"
-        className="flex items-center gap-1.5 text-sm text-primary hover:underline">
-        <ExternalLink className="h-4 w-4" /> Open file externally
-      </a>
-    </div>
-  );
-}
 
 // ─── Info Row ─────────────────────────────────────────────────────────────────
 function InfoRow({ label, value, mono }) {
@@ -244,41 +197,49 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
 
         {/* LEFT: Document Preview */}
         <div style={{ width: "55%", minWidth: 0, display: "flex", flexDirection: "column", overflow: "hidden", borderRight: "1px solid hsl(var(--border))", background: "#fafafa" }}>
-          {/* filename + toolbar bar */}
-          <div style={{ flexShrink: 0 }} className="border-b px-4 py-2 bg-white flex items-center justify-between gap-2 text-xs text-muted-foreground">
-            <div className="flex items-center gap-2">
-              <FileText className="h-3.5 w-3.5 shrink-0" />
-              <span className="truncate font-mono">{doc.original_filename || doc.title}</span>
-              {doc.file_type && (
-                <span className="uppercase font-semibold bg-muted px-1.5 py-0.5 rounded text-[10px] shrink-0">
-                  {doc.file_type}
-                </span>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              {doc.file_type?.toLowerCase() === 'pdf' && (
-                <button onClick={() => setPdfRotation(r => (r + 90) % 360)}
-                  className="text-xs px-2 py-0.5 rounded bg-muted hover:bg-muted/80 shrink-0">
-                  ↻ Rotate
-                </button>
-              )}
+          {/* Header */}
+          <div style={{ flexShrink: 0 }} className="border-b px-4 py-3 bg-white">
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <FileText className="h-3.5 w-3.5 shrink-0" />
+                <span className="truncate font-mono">{doc.original_filename || doc.title}</span>
+                {doc.file_type && (
+                  <span className="uppercase font-semibold bg-muted px-1.5 py-0.5 rounded text-[10px] shrink-0">
+                    {doc.file_type}
+                  </span>
+                )}
+              </div>
               {doc.file_url && (
-                <a href={doc.file_url} target="_blank" rel="noopener noreferrer"
-                  className="shrink-0 hover:text-primary transition-colors">
+                <a href={doc.file_url} target="_blank" rel="noopener noreferrer" className="shrink-0 hover:text-primary transition-colors">
                   <ExternalLink className="h-3.5 w-3.5" />
                 </a>
               )}
             </div>
+            <button onClick={() => setPdfRotation(r => (r + 90) % 360)} className="text-xs px-2 py-1 rounded bg-muted hover:bg-muted/80 text-muted-foreground">
+              ↻ Rotate
+            </button>
           </div>
-          {/* preview area — takes all remaining height */}
-          <div style={{ flex: 1, minHeight: 0, position: "relative" }}>
-            <div style={{ position: "absolute", inset: 0 }}>
-              {doc.file_type?.toLowerCase() === 'pdf' ? (
-                <PdfPreview src={doc.file_url} title={doc.title} rotation={pdfRotation} />
-              ) : (
-                <DocPreview doc={doc} />
-              )}
-            </div>
+          {/* Preview Area */}
+          <div style={{ flex: 1, minHeight: 0, overflow: "auto", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            {doc.file_url ? (
+              <div style={{ transform: `rotate(${pdfRotation}deg)` }}>
+                {doc.file_type?.toLowerCase() === 'pdf' ? (
+                  <iframe src={doc.file_url} title={doc.title} style={{ width: "100%", height: "auto", border: "none", maxHeight: "100vh" }} />
+                ) : ["jpg", "jpeg", "png", "gif", "webp"].includes(doc.file_type?.toLowerCase()) ? (
+                  <img src={doc.file_url} alt={doc.title} style={{ maxWidth: "100%", height: "auto", imageOrientation: 'from-image' }} />
+                ) : (
+                  <div className="text-center text-muted-foreground">
+                    <FileText className="h-16 w-16 opacity-30 mx-auto mb-2" />
+                    <p className="text-sm">{doc.original_filename}</p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-center text-muted-foreground">
+                <FileText className="h-20 w-20 opacity-20 mx-auto mb-2" />
+                <p className="text-sm">No file available</p>
+              </div>
+            )}
           </div>
         </div>
 
