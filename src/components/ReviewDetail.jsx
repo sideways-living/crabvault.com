@@ -26,7 +26,7 @@ function PdfPreview({ src, title }) {
           ↻ Rotate
         </button>
       </div>
-      <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
+      <div style={{ flex: 1, overflow: "hidden", position: "relative" }}>
         <iframe
           src={src}
           title={title}
@@ -36,7 +36,7 @@ function PdfPreview({ src, title }) {
             width: "100%",
             height: "100%",
             border: "none",
-            transform: `rotate(${rotation}deg)`,
+            transform: rotation !== 0 ? `rotate(${rotation}deg)` : undefined,
             transformOrigin: "center center",
           }}
         />
@@ -256,13 +256,9 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
       <div className="flex flex-1 min-h-0">
 
         {/* LEFT: Document Preview */}
-        <div className="flex flex-col border-r bg-zinc-50" style={{ width: "55%", minWidth: 0, overflow: "hidden" }}>
-          <div style={{ flex: 1, minHeight: 0, position: "relative" }}>
-            <div style={{ position: "absolute", inset: 0 }}>
-              <DocPreview doc={doc} />
-            </div>
-          </div>
-          <div className="shrink-0 border-t px-4 py-2 bg-white flex items-center gap-2 text-xs text-muted-foreground">
+        <div style={{ width: "55%", minWidth: 0, display: "flex", flexDirection: "column", overflow: "hidden", borderRight: "1px solid hsl(var(--border))", background: "#fafafa" }}>
+          {/* filename bar */}
+          <div style={{ flexShrink: 0 }} className="border-b px-4 py-2 bg-white flex items-center gap-2 text-xs text-muted-foreground">
             <FileText className="h-3.5 w-3.5 shrink-0" />
             <span className="truncate font-mono">{doc.original_filename || doc.title}</span>
             {doc.file_type && (
@@ -276,6 +272,12 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
                 <ExternalLink className="h-3.5 w-3.5" />
               </a>
             )}
+          </div>
+          {/* preview area — takes all remaining height */}
+          <div style={{ flex: 1, minHeight: 0, position: "relative" }}>
+            <div style={{ position: "absolute", inset: 0 }}>
+              <DocPreview doc={doc} />
+            </div>
           </div>
         </div>
 
