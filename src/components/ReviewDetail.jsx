@@ -16,7 +16,7 @@ import { duplicateDocument } from "@/lib/duplicateDocument";
 
 // ─── Document Preview ─────────────────────────────────────────────────────────
 function DocPreview({ doc }) {
-  const [rotation, setRotation] = useState(0);
+  const [rotation, setRotation] = useState((doc.ai_data?.rotation_degrees || 0));
   const type = (doc.file_type || "").toLowerCase();
   const isImage = ["jpg", "jpeg", "png", "gif", "webp", "heic"].includes(type);
   const isPdf = type === "pdf";

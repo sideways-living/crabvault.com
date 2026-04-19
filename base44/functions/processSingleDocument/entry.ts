@@ -51,6 +51,8 @@ For RECEIPTS, MUST extract:
 - items: ARRAY of ALL line items — each with name, quantity, unit_price, total_price (null if not visible). Do NOT skip items. This is CRITICAL.
 - summary: 2-3 sentences including store name, date, amount, and 2-3 key items purchased. Use the extracted items to enrich the summary.
 
+IMAGE ORIENTATION: If this is an image, determine whether the text/content is rotated. Return rotation_degrees as the number of clockwise degrees needed to make the document read correctly upright. Must be 0, 90, 180, or 270. If already upright or this is not an image, return 0.
+
 ${categoryList ? 'Categories:\n' + categoryList : ''}
 ${folderList ? '\nFolders:\n' + folderList : ''}
 
@@ -80,6 +82,7 @@ ${doc.extracted_text ? `Previously extracted text:\n${doc.extracted_text.substri
           tax_amount: { type: 'number' },
           last_four_digits: { type: 'string' },
           receipt_number: { type: 'string' },
+          rotation_degrees: { type: 'number' },
           items: {
             type: 'array',
             items: {
@@ -132,7 +135,7 @@ ${doc.extracted_text ? `Previously extracted text:\n${doc.extracted_text.substri
       tags: result.tags || [],
       document_date: result.document_date,
       processing_status: 'needs_review',
-      ai_data: result,
+      ai_data: { ...result, rotation_degrees: result.rotation_degrees || 0 },
     });
 
     await logTask('Document ready for review', 'completed');
