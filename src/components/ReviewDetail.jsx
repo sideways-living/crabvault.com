@@ -33,17 +33,17 @@ function DocPreview({ doc }) {
   }
   if (isImage) {
     return (
-      <div className="relative w-full h-full overflow-y-auto">
+      <div className="relative w-full h-full overflow-y-auto overflow-x-hidden">
         <img
           src={doc.file_url}
           alt={doc.title}
-          className="w-full h-auto transition-transform duration-300 block"
-          style={{ transform: `rotate(${rotation}deg)`, transformOrigin: "center top" }}
+          className="w-full h-auto block transition-transform duration-300"
+          style={{ transform: `rotate(${rotation}deg)`, transformOrigin: "top center" }}
         />
         <button
           onClick={rotate}
           title="Rotate image 90°"
-          className="sticky top-2 float-right mr-2 bg-black/50 hover:bg-black/70 text-white rounded-full p-1.5 transition-colors"
+          className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white rounded-full p-1.5 transition-colors z-10"
         >
           <RotateCw className="h-4 w-4" />
         </button>
