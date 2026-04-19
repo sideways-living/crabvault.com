@@ -21,14 +21,14 @@ function PdfPreview({ src, title }) {
   const [rotation, setRotation] = useState(180);
 
   return (
-    <div className="w-full h-full flex flex-col overflow-hidden">
-      <div className="flex justify-end gap-1 px-2 py-1 shrink-0 bg-muted/40 border-b">
+    <div style={{ display: "flex", flexDirection: "column", width: "100%", height: "100%" }}>
+      <div className="flex justify-end gap-1 px-2 py-1 bg-muted/40 border-b" style={{ flexShrink: 0 }}>
         <button onClick={() => setRotation(r => (r + 90) % 360)}
           className="text-xs px-2 py-0.5 rounded bg-muted hover:bg-muted/80 text-muted-foreground">
           ↻ Rotate
         </button>
       </div>
-      <div className="flex-1 overflow-hidden relative">
+      <div style={{ flex: 1, minHeight: 0, position: "relative" }}>
         <iframe
           key={rotation}
           src={src}
@@ -38,8 +38,8 @@ function PdfPreview({ src, title }) {
             top: 0, left: 0,
             width: "100%",
             height: "100%",
-            border: 0,
-            transform: rotation ? `rotate(${rotation}deg)` : undefined,
+            border: "none",
+            transform: `rotate(${rotation}deg)`,
             transformOrigin: "center center",
           }}
         />
