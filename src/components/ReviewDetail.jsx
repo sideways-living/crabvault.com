@@ -8,7 +8,7 @@ import HierarchicalFolderPicker from "./HierarchicalFolderPicker";
 import {
   Loader2, Save, Trash2, FileText, ExternalLink,
   GitMerge, AlertTriangle, FolderOpen,
-  X, Pencil, FileCheck, RefreshCw, Copy
+  X, Pencil, FileCheck, RefreshCw, Copy, RotateCw
 } from "lucide-react";
 import FolderSelect from "./FolderSelect";
 import { toast } from "sonner";
@@ -16,9 +16,12 @@ import { duplicateDocument } from "@/lib/duplicateDocument";
 
 // ─── Document Preview ─────────────────────────────────────────────────────────
 function DocPreview({ doc }) {
+  const [rotation, setRotation] = useState(0);
   const type = (doc.file_type || "").toLowerCase();
-  const isImage = ["jpg", "jpeg", "png", "gif", "webp"].includes(type);
+  const isImage = ["jpg", "jpeg", "png", "gif", "webp", "heic"].includes(type);
   const isPdf = type === "pdf";
+
+  const rotate = () => setRotation(r => (r + 90) % 360);
 
   if (!doc.file_url) {
     return (
@@ -29,7 +32,23 @@ function DocPreview({ doc }) {
     );
   }
   if (isImage) {
-    return <img src={doc.file_url} alt={doc.title} className="w-full h-full object-contain" />;
+    return (
+      <div className="relative w-full h-full flex items-center justify-center overflow-hidden">
+        <img
+          src={doc.file_url}
+          alt={doc.title}
+          className="max-w-full max-h-full object-contain transition-transform duration-300"
+          style={{ transform: `rotate(${rotation}deg)` }}
+        />
+        <button
+          onClick={rotate}
+          title="Rotate image 90°"
+          className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white rounded-full p-1.5 transition-colors"
+        >
+          <RotateCw className="h-4 w-4" />
+        </button>
+      </div>
+    );
   }
   if (isPdf) {
     return <iframe src={doc.file_url} title={doc.title} className="w-full h-full border-0" style={{ display: "block" }} />;
