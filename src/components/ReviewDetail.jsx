@@ -196,7 +196,7 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
       <div className="flex flex-1 min-h-0">
 
         {/* LEFT: Document Preview */}
-        <div style={{ width: "55%", minWidth: 0, display: "flex", flexDirection: "column", overflow: "hidden", borderRight: "1px solid hsl(var(--border))", background: "#fafafa" }}>
+        <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", overflow: "hidden", borderRight: "1px solid hsl(var(--border))", background: "#fafafa" }}>
           {/* Header */}
           <div style={{ flexShrink: 0 }} className="border-b px-4 py-3 bg-white">
             <div className="flex items-center justify-between gap-2 mb-2">
