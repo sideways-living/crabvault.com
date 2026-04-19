@@ -1,9 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FileText, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function DocumentPreviewPanel({ doc }) {
   const [rotation, setRotation] = useState(0);
+
+  useEffect(() => {
+    setRotation(0);
+  }, [doc.id]);
 
   return (
     <div className="flex flex-col h-full bg-card border rounded-xl overflow-hidden">
