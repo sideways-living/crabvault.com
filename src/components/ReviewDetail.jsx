@@ -63,7 +63,7 @@ function DocPreview({ doc }) {
     return <img src={doc.file_url} alt={doc.title} className="w-full h-full object-contain" style={{ imageOrientation: 'from-image' }} />;
   }
   if (isPdf) {
-    return <PdfPreview src={doc.file_url} title={doc.title} />;
+    return <div style={{ display: "flex", flexDirection: "column", width: "100%", height: "100%", flex: "1 1 0" }}><PdfPreview src={doc.file_url} title={doc.title} /></div>;
   }
   return (
     <div className="flex flex-col items-center justify-center h-full gap-4 text-muted-foreground">
@@ -257,7 +257,7 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
 
         {/* LEFT: Document Preview */}
         <div className="flex flex-col border-r bg-zinc-50" style={{ width: "55%", minWidth: 0, overflow: "hidden" }}>
-          <div style={{ flex: "1 1 0", minHeight: 0 }}>
+          <div style={{ flex: "1 1 0", minHeight: 0, display: "flex", flexDirection: "column" }}>
             <DocPreview doc={doc} />
           </div>
           <div className="shrink-0 border-t px-4 py-2 bg-white flex items-center gap-2 text-xs text-muted-foreground">
