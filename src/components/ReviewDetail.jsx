@@ -8,7 +8,7 @@ import HierarchicalFolderPicker from "./HierarchicalFolderPicker";
 import {
   Loader2, Save, Trash2, FileText, ExternalLink,
   GitMerge, AlertTriangle, FolderOpen,
-  X, Pencil, FileCheck, RefreshCw, Copy, RotateCw
+  X, Pencil, FileCheck, RefreshCw, Copy
 } from "lucide-react";
 import FolderSelect from "./FolderSelect";
 import { toast } from "sonner";
@@ -16,12 +16,9 @@ import { duplicateDocument } from "@/lib/duplicateDocument";
 
 // ─── Document Preview ─────────────────────────────────────────────────────────
 function DocPreview({ doc }) {
-  const [rotation, setRotation] = useState((doc.ai_data?.rotation_degrees || 0));
   const type = (doc.file_type || "").toLowerCase();
-  const isImage = ["jpg", "jpeg", "png", "gif", "webp", "heic"].includes(type);
+  const isImage = ["jpg", "jpeg", "png", "gif", "webp"].includes(type);
   const isPdf = type === "pdf";
-
-  const rotate = () => setRotation(r => (r + 90) % 360);
 
   if (!doc.file_url) {
     return (
@@ -32,48 +29,10 @@ function DocPreview({ doc }) {
     );
   }
   if (isImage) {
-    return (
-      <div className="relative w-full h-full overflow-y-auto overflow-x-hidden">
-        <img
-          src={doc.file_url}
-          alt={doc.title}
-          className="w-full h-auto block transition-transform duration-300"
-          style={{ transform: `rotate(${rotation}deg)`, transformOrigin: "top center" }}
-        />
-        <button
-          onClick={rotate}
-          title="Rotate 90°"
-          className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white rounded-full p-1.5 transition-colors z-10"
-        >
-          <RotateCw className="h-4 w-4" />
-        </button>
-      </div>
-    );
+    return <img src={doc.file_url} alt={doc.title} className="w-full h-full object-contain" />;
   }
   if (isPdf) {
-    return (
-      <div className="relative w-full h-full overflow-hidden flex items-center justify-center">
-        <iframe
-          src={doc.file_url}
-          title={doc.title}
-          className="border-0"
-          style={{
-            display: "block",
-            width: "100%",
-            height: "100%",
-            transform: rotation ? `rotate(${rotation}deg)` : undefined,
-            transformOrigin: "center center",
-          }}
-        />
-        <button
-          onClick={rotate}
-          title="Rotate 90°"
-          className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white rounded-full p-1.5 transition-colors z-10"
-        >
-          <RotateCw className="h-4 w-4" />
-        </button>
-      </div>
-    );
+    return <iframe src={doc.file_url} title={doc.title} className="w-full h-full border-0" style={{ display: "block" }} />;
   }
   return (
     <div className="flex flex-col items-center justify-center h-full gap-4 text-muted-foreground">
@@ -267,7 +226,7 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
 
         {/* LEFT: Document Preview */}
         <div className="flex flex-col border-r bg-zinc-50" style={{ width: "55%", minWidth: 0 }}>
-          <div style={{ flex: 1, minHeight: 0, overflow: "auto" }}>
+          <div style={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
             <DocPreview doc={doc} />
           </div>
           <div className="shrink-0 border-t px-4 py-2 bg-white flex items-center gap-2 text-xs text-muted-foreground">

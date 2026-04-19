@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   ArrowLeft, FileText, Trash2, Clock, CheckCircle2,
-  AlertCircle, Loader2, Calendar, FolderOpen, ExternalLink, Pencil, Sparkles, Copy, RotateCw
+  AlertCircle, Loader2, Calendar, FolderOpen, ExternalLink, Pencil, Sparkles, Copy
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
@@ -42,7 +42,6 @@ export default function DocumentDetail() {
   const [notesChanged, setNotesChanged] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [transaction, setTransaction] = useState(null);
-  const [pdfRotation, setPdfRotation] = useState(0);
 
   const handleProcess = async () => {
     setProcessing(true);
@@ -307,28 +306,7 @@ export default function DocumentDetail() {
                 ['jpg','jpeg','png','gif','webp'].includes(doc.file_type?.toLowerCase()) ? (
                   <img src={doc.file_url} alt={doc.title} className="max-w-full object-contain rounded" />
                 ) : doc.file_type?.toLowerCase() === 'pdf' ? (
-                  <div className="relative w-full h-full" style={{minHeight: '560px'}}>
-                    <iframe
-                      src={doc.file_url}
-                      title={doc.title}
-                      className="border-0"
-                      style={{
-                        display: "block",
-                        width: "100%",
-                        height: "100%",
-                        minHeight: "560px",
-                        transform: pdfRotation ? `rotate(${pdfRotation}deg)` : undefined,
-                        transformOrigin: "center center",
-                      }}
-                    />
-                    <button
-                      onClick={() => setPdfRotation(r => (r + 90) % 360)}
-                      title="Rotate 90°"
-                      className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white rounded-full p-1.5 transition-colors z-10"
-                    >
-                      <RotateCw className="h-4 w-4" />
-                    </button>
-                  </div>
+                  <iframe src={doc.file_url} className="w-full h-full" style={{minHeight: '560px'}} title={doc.title} />
                 ) : (
                   <div className="text-center p-6">
                     <FileText className="h-16 w-16 text-muted-foreground/40 mx-auto mb-3" />
