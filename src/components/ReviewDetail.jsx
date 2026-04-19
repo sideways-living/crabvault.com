@@ -220,13 +220,13 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
             </button>
           </div>
           {/* Preview Area */}
-          <div style={{ flex: 1, minHeight: 0, overflow: "auto", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ flex: 1, minHeight: 0, overflow: "auto", padding: "16px", display: "flex", alignItems: "flex-start", justifyContent: "center" }}>
             {doc.file_url ? (
-              <div style={{ transform: `rotate(${pdfRotation}deg)` }}>
+              <div style={{ transform: `rotate(${pdfRotation}deg)`, width: "100%", height: "100%" }}>
                 {doc.file_type?.toLowerCase() === 'pdf' ? (
-                  <iframe src={doc.file_url} title={doc.title} style={{ width: "100%", height: "auto", border: "none", maxHeight: "100vh" }} />
+                  <iframe src={doc.file_url} title={doc.title} style={{ width: "100%", height: "100%", border: "none" }} />
                 ) : ["jpg", "jpeg", "png", "gif", "webp"].includes(doc.file_type?.toLowerCase()) ? (
-                  <img src={doc.file_url} alt={doc.title} style={{ maxWidth: "100%", height: "auto", imageOrientation: 'from-image' }} />
+                  <img src={doc.file_url} alt={doc.title} style={{ width: "100%", height: "auto", imageOrientation: 'from-image' }} />
                 ) : (
                   <div className="text-center text-muted-foreground">
                     <FileText className="h-16 w-16 opacity-30 mx-auto mb-2" />
