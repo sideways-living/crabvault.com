@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Loader2, CheckCircle2, ClipboardList, Copy } from "lucide-react";
 import ReviewDetail from "../components/ReviewDetail";
+import DocumentPreviewPanel from "../components/DocumentPreviewPanel";
 
 export default function DocumentReview() {
   const [queue, setQueue] = useState([]);
@@ -87,78 +88,83 @@ export default function DocumentReview() {
         <span className="bg-primary text-primary-foreground text-xs font-bold px-2 py-0.5 rounded-full">{queue.length}</span>
       </div>
       <div className="flex gap-4 h-[calc(100vh-160px)]">
-        {/* Queue list */}
-        <div className="w-64 shrink-0 flex flex-col gap-1 overflow-y-auto">
-          {queue.map(doc => {
-            const dups = getDuplicates(doc, queue);
-            return (
-              <button
-                key={doc.id}
-                onClick={() => setSelected(doc)}
-                className={`text-left px-3 py-2.5 rounded-lg border transition-all ${
-                  selected?.id === doc.id
-                    ? "border-primary bg-primary/5 shadow-sm"
-                    : "border-transparent hover:bg-muted/60"
-                }`}
-              >
-                 <div className="flex items-center gap-1.5">
-                  <p className="text-sm font-medium truncate flex-1">{doc.title}</p>
-                  {dups.length > 0 && (
-                    <span title={`${dups.length} possible duplicate(s)`}>
-                      <Copy className="h-3 w-3 text-amber-500 shrink-0" />
-                    </span>
-                  )}
-                </div>
-                <p className="text-xs text-muted-foreground truncate mt-0.5">{doc.original_filename}</p>
-                {doc.ai_data?.is_receipt && (() => {
-                  const ai = doc.ai_data;
-                  const txType = ai.transaction_type;
-                  const tender = ai.tender_type;
-                  const last4 = ai.last_four_digits;
-                  const amount = ai.amount;
-                  const items = ai.items || [];
-                  const txColors = { purchase: 'text-emerald-600', return: 'text-red-500', exchange: 'text-blue-500' };
-                  return (
-                    <div className="mt-1.5 space-y-1">
-                      <div className="flex flex-wrap gap-1">
-                        {txType && <span className={`text-[10px] font-semibold uppercase ${txColors[txType] || 'text-muted-foreground'}`}>{txType}</span>}
-                        {amount != null && <span className="text-[10px] font-mono text-foreground">${Number(amount).toFixed(2)}</span>}
-                        {tender && <span className="text-[10px] text-muted-foreground">{tender}{last4 ? ` ••${last4}` : ''}</span>}
-                      </div>
-                      {items.length > 0 && (
-                        <div className="text-[10px] text-muted-foreground space-y-0.5">
-                          {items.slice(0, 4).map((item, i) => (
-                            <div key={i} className="flex justify-between gap-2">
-                              <span className="truncate">{item.name || '—'}</span>
-                              <span className="shrink-0 font-mono">{item.total_price != null ? `$${Number(item.total_price).toFixed(2)}` : ''}</span>
-                            </div>
-                          ))}
-                          {items.length > 4 && <p className="text-muted-foreground/60">+{items.length - 4} more</p>}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })()}
-              </button>
-            );
-          })}
-        </div>
+         {/* Queue list */}
+         <div className="w-64 shrink-0 flex flex-col gap-1 overflow-y-auto">
+           {queue.map(doc => {
+             const dups = getDuplicates(doc, queue);
+             return (
+               <button
+                 key={doc.id}
+                 onClick={() => setSelected(doc)}
+                 className={`text-left px-3 py-2.5 rounded-lg border transition-all ${
+                   selected?.id === doc.id
+                     ? "border-primary bg-primary/5 shadow-sm"
+                     : "border-transparent hover:bg-muted/60"
+                 }`}
+               >
+                  <div className="flex items-center gap-1.5">
+                   <p className="text-sm font-medium truncate flex-1">{doc.title}</p>
+                   {dups.length > 0 && (
+                     <span title={`${dups.length} possible duplicate(s)`}>
+                       <Copy className="h-3 w-3 text-amber-500 shrink-0" />
+                     </span>
+                   )}
+                 </div>
+                 <p className="text-xs text-muted-foreground truncate mt-0.5">{doc.original_filename}</p>
+                 {doc.ai_data?.is_receipt && (() => {
+                   const ai = doc.ai_data;
+                   const txType = ai.transaction_type;
+                   const tender = ai.tender_type;
+                   const last4 = ai.last_four_digits;
+                   const amount = ai.amount;
+                   const items = ai.items || [];
+                   const txColors = { purchase: 'text-emerald-600', return: 'text-red-500', exchange: 'text-blue-500' };
+                   return (
+                     <div className="mt-1.5 space-y-1">
+                       <div className="flex flex-wrap gap-1">
+                         {txType && <span className={`text-[10px] font-semibold uppercase ${txColors[txType] || 'text-muted-foreground'}`}>{txType}</span>}
+                         {amount != null && <span className="text-[10px] font-mono text-foreground">${Number(amount).toFixed(2)}</span>}
+                         {tender && <span className="text-[10px] text-muted-foreground">{tender}{last4 ? ` ••${last4}` : ''}</span>}
+                       </div>
+                       {items.length > 0 && (
+                         <div className="text-[10px] text-muted-foreground space-y-0.5">
+                           {items.slice(0, 4).map((item, i) => (
+                             <div key={i} className="flex justify-between gap-2">
+                               <span className="truncate">{item.name || '—'}</span>
+                               <span className="shrink-0 font-mono">{item.total_price != null ? `$${Number(item.total_price).toFixed(2)}` : ''}</span>
+                             </div>
+                           ))}
+                           {items.length > 4 && <p className="text-muted-foreground/60">+{items.length - 4} more</p>}
+                         </div>
+                       )}
+                     </div>
+                   );
+                 })()}
+               </button>
+             );
+           })}
+         </div>
 
-        {/* Detail panel */}
-        <div className="flex-1 overflow-hidden">
-          {selected && (
-           <ReviewDetail
-             key={selected.id}
-             doc={selected}
-             folders={folders}
-             categories={categories}
-             duplicates={getDuplicates(selected, queue)}
-             onConfirmed={handleConfirmed}
-             onFolderCreated={handleFolderCreated}
-           />
-          )}
-        </div>
-      </div>
+         {/* Preview panel (40%) */}
+         <div className="flex-1" style={{ minWidth: 0, maxWidth: '40%' }}>
+           {selected && <DocumentPreviewPanel doc={selected} />}
+         </div>
+
+         {/* Detail panel (60%) */}
+         <div className="flex-1" style={{ minWidth: 0 }}>
+           {selected && (
+            <ReviewDetail
+              key={selected.id}
+              doc={selected}
+              folders={folders}
+              categories={categories}
+              duplicates={getDuplicates(selected, queue)}
+              onConfirmed={handleConfirmed}
+              onFolderCreated={handleFolderCreated}
+            />
+           )}
+         </div>
+       </div>
     </div>
   );
 }
