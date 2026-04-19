@@ -34,7 +34,7 @@ export default function DocumentPreviewPanel({ doc }) {
       </div>
 
       {/* Preview Area */}
-      <div className="flex-1 overflow-auto bg-muted/20 flex items-center justify-center">
+      <div className="flex-1 overflow-auto bg-muted/20">
         {doc.file_url ? (
           doc.file_type?.toLowerCase() === 'pdf' ? (
             <iframe
