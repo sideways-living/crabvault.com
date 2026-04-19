@@ -16,7 +16,7 @@ import { duplicateDocument } from "@/lib/duplicateDocument";
 
 // ─── PDF Preview with rotation toggle ────────────────────────────────────────
 function PdfPreview({ src, title }) {
-  const [rotation, setRotation] = useState(180);
+  const [rotation, setRotation] = useState(0);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", width: "100%", height: "100%" }}>
@@ -26,18 +26,17 @@ function PdfPreview({ src, title }) {
           ↻ Rotate
         </button>
       </div>
-      <div style={{ flex: 1, minHeight: 0, position: "relative" }}>
+      <div style={{ flex: "1 1 0", minHeight: 0, position: "relative" }}>
         <iframe
-          key={rotation}
-          src={src}
+          src={`${src}#toolbar=0`}
           title={title}
           style={{
             position: "absolute",
-            top: 0, left: 0,
+            inset: 0,
             width: "100%",
             height: "100%",
             border: "none",
-            transform: `rotate(${rotation}deg)`,
+            transform: rotation ? `rotate(${rotation}deg)` : "none",
             transformOrigin: "center center",
           }}
         />
@@ -257,8 +256,8 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
       <div className="flex flex-1 min-h-0">
 
         {/* LEFT: Document Preview */}
-        <div className="flex flex-col border-r bg-zinc-50" style={{ width: "55%", minWidth: 0 }}>
-          <div style={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
+        <div className="flex flex-col border-r bg-zinc-50" style={{ width: "55%", minWidth: 0, overflow: "hidden" }}>
+          <div style={{ flex: "1 1 0", minHeight: 0 }}>
             <DocPreview doc={doc} />
           </div>
           <div className="shrink-0 border-t px-4 py-2 bg-white flex items-center gap-2 text-xs text-muted-foreground">
