@@ -192,59 +192,11 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
   return (
     <div className="flex flex-col h-full bg-card border rounded-xl overflow-hidden">
 
-      {/* ── Top row: preview + info ── */}
-      <div className="flex flex-1 min-h-0">
+      {/* ── Content area ── */}
+      <div className="flex flex-col flex-1 min-h-0">
 
-        {/* LEFT: Document Preview */}
-        <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", overflow: "hidden", borderRight: "1px solid hsl(var(--border))", background: "#fafafa" }}>
-          {/* Header */}
-          <div style={{ flexShrink: 0 }} className="border-b px-4 py-3 bg-white">
-            <div className="flex items-center justify-between gap-2 mb-2">
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <FileText className="h-3.5 w-3.5 shrink-0" />
-                <span className="truncate font-mono">{doc.original_filename || doc.title}</span>
-                {doc.file_type && (
-                  <span className="uppercase font-semibold bg-muted px-1.5 py-0.5 rounded text-[10px] shrink-0">
-                    {doc.file_type}
-                  </span>
-                )}
-              </div>
-              {doc.file_url && (
-                <a href={doc.file_url} target="_blank" rel="noopener noreferrer" className="shrink-0 hover:text-primary transition-colors">
-                  <ExternalLink className="h-3.5 w-3.5" />
-                </a>
-              )}
-            </div>
-            <button onClick={() => setPdfRotation(r => (r + 90) % 360)} className="text-xs px-2 py-1 rounded bg-muted hover:bg-muted/80 text-muted-foreground">
-              ↻ Rotate
-            </button>
-          </div>
-          {/* Preview Area */}
-          <div style={{ flex: 1, minHeight: 0, overflow: "auto", display: "flex" }}>
-            {doc.file_url ? (
-              <div style={{ transform: `rotate(${pdfRotation}deg)`, flex: 1, minWidth: 0, height: "100%" }}>
-                {doc.file_type?.toLowerCase() === 'pdf' ? (
-                  <iframe src={doc.file_url} title={doc.title} style={{ width: "100%", height: "100%", border: "none" }} />
-                ) : ["jpg", "jpeg", "png", "gif", "webp"].includes(doc.file_type?.toLowerCase()) ? (
-                  <img src={doc.file_url} alt={doc.title} style={{ width: "100%", height: "100%", objectFit: "contain", imageOrientation: 'from-image' }} />
-                ) : (
-                  <div className="text-center text-muted-foreground">
-                    <FileText className="h-16 w-16 opacity-30 mx-auto mb-2" />
-                    <p className="text-sm">{doc.original_filename}</p>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="text-center text-muted-foreground">
-                <FileText className="h-20 w-20 opacity-20 mx-auto mb-2" />
-                <p className="text-sm">No file available</p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* RIGHT: Info panel */}
-        <div className="flex flex-col" style={{ width: "45%", minWidth: 0 }}>
+        {/* Info panel */}
+        <div className="flex flex-col flex-1 min-h-0">
 
           {/* Duplicate warning */}
           {duplicates.length > 0 && (
