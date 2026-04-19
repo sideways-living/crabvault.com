@@ -32,7 +32,7 @@ export default function Documents() {
   const loadData = async () => {
     try {
       const [docs, flds, cats] = await Promise.all([
-        base44.entities.Document.filter({ is_deleted: false }, "-created_date", 100),
+        base44.entities.Document.filter({ is_deleted: false }, "-created_date"),
       base44.entities.Folder.list(),
       base44.entities.Category.list(),
     ]);
