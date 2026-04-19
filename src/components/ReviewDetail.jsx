@@ -220,7 +220,7 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
             </button>
           </div>
           {/* Preview Area */}
-          <div style={{ flex: 1, minHeight: 0, overflow: "auto", padding: "16px", display: "flex" }}>
+          <div style={{ flex: 1, minHeight: 0, overflow: "auto", display: "flex" }}>
             {doc.file_url ? (
               <div style={{ transform: `rotate(${pdfRotation}deg)`, flex: 1, width: "100%", height: "100%" }}>
                 {doc.file_type?.toLowerCase() === 'pdf' ? (
