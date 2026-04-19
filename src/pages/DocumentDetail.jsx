@@ -19,27 +19,6 @@ import moment from "moment";
 
 function PdfPreview({ src, title }) {
   const [rotation, setRotation] = useState(180);
-  const is90or270 = rotation === 90 || rotation === 270;
-
-  const containerStyle = is90or270
-    ? { position: "relative", width: "100%", paddingTop: "141.4%", overflow: "hidden" }
-    : { position: "relative", width: "100%", paddingTop: "130%", overflow: "hidden" };
-
-  const iframeStyle = is90or270
-    ? {
-        position: "absolute", top: "0", left: "0",
-        width: "70.7%", height: "141.4%",
-        transform: `rotate(${rotation}deg) translateX(41.4%)`,
-        transformOrigin: "top left",
-        border: 0,
-      }
-    : {
-        position: "absolute", top: "0", left: "0",
-        width: "100%", height: "100%",
-        transform: rotation === 180 ? "rotate(180deg)" : undefined,
-        transformOrigin: "center center",
-        border: 0,
-      };
 
   return (
     <div className="w-full h-full flex flex-col overflow-hidden">
@@ -49,10 +28,13 @@ function PdfPreview({ src, title }) {
           ↻ Rotate
         </button>
       </div>
-      <div className="flex-1 overflow-y-auto">
-        <div style={containerStyle}>
-          <iframe key={rotation} src={src} title={title} style={iframeStyle} />
-        </div>
+      <div className="flex-1" style={{ transform: `rotate(${rotation}deg)`, transformOrigin: "center center" }}>
+        <iframe
+          key={rotation}
+          src={src}
+          title={title}
+          style={{ width: "100%", height: "100%", border: 0, display: "block" }}
+        />
       </div>
     </div>
   );
