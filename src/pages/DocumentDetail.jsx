@@ -306,7 +306,23 @@ export default function DocumentDetail() {
                 ['jpg','jpeg','png','gif','webp'].includes(doc.file_type?.toLowerCase()) ? (
                   <img src={doc.file_url} alt={doc.title} className="max-w-full object-contain rounded" style={{ imageOrientation: 'from-image' }} />
                 ) : doc.file_type?.toLowerCase() === 'pdf' ? (
-                  <iframe src={doc.file_url} className="w-full h-full" style={{minHeight: '560px'}} title={doc.title} />
+                  <div className="w-full h-full relative overflow-hidden" style={{minHeight: '560px'}}>
+                    <iframe
+                      src={doc.file_url}
+                      title={doc.title}
+                      className="border-0"
+                      style={{
+                        display: "block",
+                        width: "141%",
+                        height: "141%",
+                        transform: "rotate(180deg) scale(0.707)",
+                        transformOrigin: "center center",
+                        position: "absolute",
+                        top: "-20.5%",
+                        left: "-20.5%",
+                      }}
+                    />
+                  </div>
                 ) : (
                   <div className="text-center p-6">
                     <FileText className="h-16 w-16 text-muted-foreground/40 mx-auto mb-3" />

@@ -32,7 +32,25 @@ function DocPreview({ doc }) {
     return <img src={doc.file_url} alt={doc.title} className="w-full h-full object-contain" style={{ imageOrientation: 'from-image' }} />;
   }
   if (isPdf) {
-    return <iframe src={doc.file_url} title={doc.title} className="w-full h-full border-0" style={{ display: "block" }} />;
+    return (
+      <div className="w-full h-full overflow-hidden relative">
+        <iframe
+          src={doc.file_url}
+          title={doc.title}
+          className="border-0"
+          style={{
+            display: "block",
+            width: "141%",
+            height: "141%",
+            transform: "rotate(180deg) scale(0.707)",
+            transformOrigin: "center center",
+            position: "absolute",
+            top: "-20.5%",
+            left: "-20.5%",
+          }}
+        />
+      </div>
+    );
   }
   return (
     <div className="flex flex-col items-center justify-center h-full gap-4 text-muted-foreground">
