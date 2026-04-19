@@ -15,32 +15,22 @@ import { toast } from "sonner";
 import { duplicateDocument } from "@/lib/duplicateDocument";
 
 // ─── PDF Preview with rotation toggle ────────────────────────────────────────
-function PdfPreview({ src, title }) {
-  const [rotation, setRotation] = useState(180);
-
+function PdfPreview({ src, title, rotation }) {
   return (
-    <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column" }}>
-      <div className="flex justify-end gap-1 px-2 py-1 bg-muted/40 border-b" style={{ flexShrink: 0 }}>
-        <button onClick={() => setRotation(r => (r + 90) % 360)}
-          className="text-xs px-2 py-0.5 rounded bg-muted hover:bg-muted/80 text-muted-foreground">
-          ↻ Rotate
-        </button>
-      </div>
-      <div style={{ flex: 1, overflow: "hidden", position: "relative" }}>
-        <iframe
-          src={src}
-          title={title}
-          style={{
-            position: "absolute",
-            top: 0, left: 0,
-            width: "100%",
-            height: "100%",
-            border: "none",
-            transform: rotation !== 0 ? `rotate(${rotation}deg)` : undefined,
-            transformOrigin: "center center",
-          }}
-        />
-      </div>
+    <div style={{ width: "100%", height: "100%", position: "relative" }}>
+      <iframe
+        src={src}
+        title={title}
+        style={{
+          position: "absolute",
+          top: 0, left: 0,
+          width: "100%",
+          height: "100%",
+          border: "none",
+          transform: rotation !== 0 ? `rotate(${rotation}deg)` : undefined,
+          transformOrigin: "center center",
+        }}
+      />
     </div>
   );
 }
@@ -49,7 +39,6 @@ function PdfPreview({ src, title }) {
 function DocPreview({ doc }) {
   const type = (doc.file_type || "").toLowerCase();
   const isImage = ["jpg", "jpeg", "png", "gif", "webp"].includes(type);
-  const isPdf = type === "pdf";
 
   if (!doc.file_url) {
     return (
@@ -61,9 +50,6 @@ function DocPreview({ doc }) {
   }
   if (isImage) {
     return <img src={doc.file_url} alt={doc.title} style={{ width: "100%", height: "100%", objectFit: "contain", imageOrientation: 'from-image' }} />;
-  }
-  if (isPdf) {
-    return <PdfPreview src={doc.file_url} title={doc.title} />;
   }
   return (
     <div className="flex flex-col items-center justify-center h-full gap-4 text-muted-foreground">
@@ -93,6 +79,7 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
   const ai = doc.ai_data || {};
   const isReceipt = !!ai.is_receipt;
   const [mode, setMode] = useState("review");
+  const [pdfRotation, setPdfRotation] = useState(180);
 
   const [title, setTitle] = useState(doc.title || "");
   const [folderId, setFolderId] = useState(doc.folder_id || "");
@@ -257,26 +244,40 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
 
         {/* LEFT: Document Preview */}
         <div style={{ width: "55%", minWidth: 0, display: "flex", flexDirection: "column", overflow: "hidden", borderRight: "1px solid hsl(var(--border))", background: "#fafafa" }}>
-          {/* filename bar */}
-          <div style={{ flexShrink: 0 }} className="border-b px-4 py-2 bg-white flex items-center gap-2 text-xs text-muted-foreground">
-            <FileText className="h-3.5 w-3.5 shrink-0" />
-            <span className="truncate font-mono">{doc.original_filename || doc.title}</span>
-            {doc.file_type && (
-              <span className="ml-auto uppercase font-semibold bg-muted px-1.5 py-0.5 rounded text-[10px] shrink-0">
-                {doc.file_type}
-              </span>
-            )}
-            {doc.file_url && (
-              <a href={doc.file_url} target="_blank" rel="noopener noreferrer"
-                className="shrink-0 hover:text-primary transition-colors">
-                <ExternalLink className="h-3.5 w-3.5" />
-              </a>
-            )}
+          {/* filename + toolbar bar */}
+          <div style={{ flexShrink: 0 }} className="border-b px-4 py-2 bg-white flex items-center justify-between gap-2 text-xs text-muted-foreground">
+            <div className="flex items-center gap-2">
+              <FileText className="h-3.5 w-3.5 shrink-0" />
+              <span className="truncate font-mono">{doc.original_filename || doc.title}</span>
+              {doc.file_type && (
+                <span className="uppercase font-semibold bg-muted px-1.5 py-0.5 rounded text-[10px] shrink-0">
+                  {doc.file_type}
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              {doc.file_type?.toLowerCase() === 'pdf' && (
+                <button onClick={() => setPdfRotation(r => (r + 90) % 360)}
+                  className="text-xs px-2 py-0.5 rounded bg-muted hover:bg-muted/80 shrink-0">
+                  ↻ Rotate
+                </button>
+              )}
+              {doc.file_url && (
+                <a href={doc.file_url} target="_blank" rel="noopener noreferrer"
+                  className="shrink-0 hover:text-primary transition-colors">
+                  <ExternalLink className="h-3.5 w-3.5" />
+                </a>
+              )}
+            </div>
           </div>
           {/* preview area — takes all remaining height */}
           <div style={{ flex: 1, minHeight: 0, position: "relative" }}>
             <div style={{ position: "absolute", inset: 0 }}>
-              <DocPreview doc={doc} />
+              {doc.file_type?.toLowerCase() === 'pdf' ? (
+                <PdfPreview src={doc.file_url} title={doc.title} rotation={pdfRotation} />
+              ) : (
+                <DocPreview doc={doc} />
+              )}
             </div>
           </div>
         </div>
