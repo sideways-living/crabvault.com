@@ -18,8 +18,7 @@ import { toast } from "sonner";
 import moment from "moment";
 
 function PdfPreview({ src, title }) {
-  const [rotation, setRotation] = useState(0);
-  const embedUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(src)}&embedded=true`;
+  const [rotation, setRotation] = useState(180);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", width: "100%", height: "100%" }}>
@@ -31,7 +30,7 @@ function PdfPreview({ src, title }) {
       </div>
       <div style={{ flex: "1 1 0", minHeight: 0, overflow: "hidden", position: "relative" }}>
         <iframe
-          src={embedUrl}
+          src={src}
           title={title}
           style={{
             position: "absolute",
@@ -39,7 +38,7 @@ function PdfPreview({ src, title }) {
             width: "100%",
             height: "100%",
             border: "none",
-            transform: rotation ? `rotate(${rotation}deg)` : "none",
+            transform: `rotate(${rotation}deg)`,
             transformOrigin: "center center",
           }}
         />

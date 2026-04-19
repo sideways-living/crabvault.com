@@ -16,7 +16,7 @@ import { duplicateDocument } from "@/lib/duplicateDocument";
 
 // ─── PDF Preview with rotation toggle ────────────────────────────────────────
 function PdfPreview({ src, title }) {
-  const [rotation, setRotation] = useState(0);
+  const [rotation, setRotation] = useState(180);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", width: "100%", height: "100%" }}>
@@ -27,23 +27,19 @@ function PdfPreview({ src, title }) {
         </button>
       </div>
       <div style={{ flex: "1 1 0", minHeight: 0, overflow: "hidden", position: "relative" }}>
-        <object
-          data={src}
-          type="application/pdf"
+        <iframe
+          src={src}
+          title={title}
           style={{
             position: "absolute",
             inset: 0,
             width: "100%",
             height: "100%",
             border: "none",
-            transform: rotation ? `rotate(${rotation}deg)` : "none",
+            transform: `rotate(${rotation}deg)`,
             transformOrigin: "center center",
           }}
-        >
-          <a href={src} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-sm text-primary hover:underline p-4">
-            <ExternalLink className="h-4 w-4" /> Open PDF
-          </a>
-        </object>
+        />
       </div>
     </div>
   );
