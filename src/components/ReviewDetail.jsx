@@ -19,20 +19,20 @@ function PdfPreview({ src, title }) {
   const [rotation, setRotation] = useState(180);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", width: "100%", height: "100%" }}>
+    <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column" }}>
       <div className="flex justify-end gap-1 px-2 py-1 bg-muted/40 border-b" style={{ flexShrink: 0 }}>
         <button onClick={() => setRotation(r => (r + 90) % 360)}
           className="text-xs px-2 py-0.5 rounded bg-muted hover:bg-muted/80 text-muted-foreground">
           ↻ Rotate
         </button>
       </div>
-      <div style={{ flex: "1 1 0", minHeight: 0, overflow: "hidden", position: "relative" }}>
+      <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
         <iframe
           src={src}
           title={title}
           style={{
             position: "absolute",
-            inset: 0,
+            top: 0, left: 0,
             width: "100%",
             height: "100%",
             border: "none",
@@ -53,17 +53,17 @@ function DocPreview({ doc }) {
 
   if (!doc.file_url) {
     return (
-      <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground">
+      <div className="flex flex-col items-center justify-center gap-3 text-muted-foreground" style={{ width: "100%", height: "100%" }}>
         <FileText className="h-20 w-20 opacity-20" />
         <p className="text-sm">No file available</p>
       </div>
     );
   }
   if (isImage) {
-    return <img src={doc.file_url} alt={doc.title} className="w-full h-full object-contain" style={{ imageOrientation: 'from-image' }} />;
+    return <img src={doc.file_url} alt={doc.title} style={{ width: "100%", height: "100%", objectFit: "contain", imageOrientation: 'from-image' }} />;
   }
   if (isPdf) {
-    return <div style={{ display: "flex", flexDirection: "column", width: "100%", height: "100%", flex: "1 1 0" }}><PdfPreview src={doc.file_url} title={doc.title} /></div>;
+    return <PdfPreview src={doc.file_url} title={doc.title} />;
   }
   return (
     <div className="flex flex-col items-center justify-center h-full gap-4 text-muted-foreground">
@@ -257,8 +257,10 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
 
         {/* LEFT: Document Preview */}
         <div className="flex flex-col border-r bg-zinc-50" style={{ width: "55%", minWidth: 0, overflow: "hidden" }}>
-          <div style={{ flex: "1 1 0", minHeight: 0, display: "flex", flexDirection: "column" }}>
-            <DocPreview doc={doc} />
+          <div style={{ flex: 1, minHeight: 0, position: "relative" }}>
+            <div style={{ position: "absolute", inset: 0 }}>
+              <DocPreview doc={doc} />
+            </div>
           </div>
           <div className="shrink-0 border-t px-4 py-2 bg-white flex items-center gap-2 text-xs text-muted-foreground">
             <FileText className="h-3.5 w-3.5 shrink-0" />
