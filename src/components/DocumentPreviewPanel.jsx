@@ -44,14 +44,14 @@ export default function DocumentPreviewPanel({ doc }) {
             <iframe
               src={doc.file_url}
               title={doc.title}
-              style={{ width: "100%", height: "100%", border: "none", transform: `rotate(${rotation}deg)`, transformOrigin: "center" }}
+              style={{ width: "100%", height: "100%", border: "none", transform: `scaleY(-1) rotate(${rotation}deg)`, transformOrigin: "center" }}
             />
 
           ) : ["jpg", "jpeg", "png", "gif", "webp"].includes(doc.file_type?.toLowerCase()) ? (
             <img
               src={doc.file_url}
               alt={doc.title}
-              style={{ width: "100%", height: "100%", objectFit: "contain", transform: `rotate(${rotation}deg)`, transformOrigin: "center", display: "block" }}
+              style={{ width: "100%", height: "100%", objectFit: "contain", transform: `scaleY(-1) rotate(${rotation}deg)`, transformOrigin: "center", display: "block" }}
             />
           ) : (
             <div className="text-center text-muted-foreground">
