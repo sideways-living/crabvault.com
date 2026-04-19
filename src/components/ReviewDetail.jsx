@@ -17,7 +17,6 @@ import { duplicateDocument } from "@/lib/duplicateDocument";
 // ─── PDF Preview with rotation toggle ────────────────────────────────────────
 function PdfPreview({ src, title }) {
   const [rotation, setRotation] = useState(180);
-  const rotated = rotation === 90 || rotation === 270;
   return (
     <div className="w-full h-full flex flex-col">
       <div className="flex justify-end gap-1 px-2 py-1 shrink-0 bg-muted/40 border-b">
@@ -26,19 +25,12 @@ function PdfPreview({ src, title }) {
           ↻ Rotate
         </button>
       </div>
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 overflow-auto relative">
         <iframe
           src={src}
           title={title}
-          className="border-0"
-          style={{
-            display: "block",
-            width: rotated ? "100vh" : "100%",
-            height: rotated ? "100vw" : "100%",
-            minHeight: rotated ? undefined : "600px",
-            transform: rotation ? `rotate(${rotation}deg)` : undefined,
-            transformOrigin: "top left",
-          }}
+          className="border-0 absolute inset-0 w-full h-full"
+          style={{ transform: `rotate(${rotation}deg)`, transformOrigin: "center center" }}
         />
       </div>
     </div>
