@@ -17,6 +17,36 @@ import { toast } from "sonner";
 
 import moment from "moment";
 
+function PdfPreview({ src, title }) {
+  const [rotation, setRotation] = useState(0);
+  const rotated = rotation === 90 || rotation === 270;
+  return (
+    <div className="w-full h-full flex flex-col" style={{ minHeight: '560px' }}>
+      <div className="flex justify-end gap-1 px-2 py-1 shrink-0 bg-muted/40 border-b">
+        <button onClick={() => setRotation(r => (r + 90) % 360)}
+          className="text-xs px-2 py-0.5 rounded bg-muted hover:bg-muted/80 text-muted-foreground">
+          ↻ Rotate
+        </button>
+      </div>
+      <div className="flex-1 overflow-auto">
+        <iframe
+          src={src}
+          title={title}
+          className="border-0"
+          style={{
+            display: "block",
+            width: rotated ? "100vh" : "100%",
+            height: rotated ? "100vw" : "100%",
+            minHeight: rotated ? undefined : "540px",
+            transform: rotation ? `rotate(${rotation}deg)` : undefined,
+            transformOrigin: "top left",
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+
 const statusConfig = {
   pending: { icon: Clock, label: "Pending", className: "bg-amber-100 text-amber-700" },
   processing: { icon: Loader2, label: "Processing", className: "bg-blue-100 text-blue-700" },
@@ -306,23 +336,7 @@ export default function DocumentDetail() {
                 ['jpg','jpeg','png','gif','webp'].includes(doc.file_type?.toLowerCase()) ? (
                   <img src={doc.file_url} alt={doc.title} className="max-w-full object-contain rounded" style={{ imageOrientation: 'from-image' }} />
                 ) : doc.file_type?.toLowerCase() === 'pdf' ? (
-                  <div className="w-full h-full relative overflow-hidden" style={{minHeight: '560px'}}>
-                    <iframe
-                      src={doc.file_url}
-                      title={doc.title}
-                      className="border-0"
-                      style={{
-                        display: "block",
-                        width: "141%",
-                        height: "141%",
-                        transform: "rotate(180deg) scale(0.707)",
-                        transformOrigin: "center center",
-                        position: "absolute",
-                        top: "-20.5%",
-                        left: "-20.5%",
-                      }}
-                    />
-                  </div>
+                  <PdfPreview src={doc.file_url} title={doc.title} />
                 ) : (
                   <div className="text-center p-6">
                     <FileText className="h-16 w-16 text-muted-foreground/40 mx-auto mb-3" />

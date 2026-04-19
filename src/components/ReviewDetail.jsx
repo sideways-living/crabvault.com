@@ -14,6 +14,37 @@ import FolderSelect from "./FolderSelect";
 import { toast } from "sonner";
 import { duplicateDocument } from "@/lib/duplicateDocument";
 
+// ─── PDF Preview with rotation toggle ────────────────────────────────────────
+function PdfPreview({ src, title }) {
+  const [rotation, setRotation] = useState(0);
+  const rotated = rotation === 90 || rotation === 270;
+  return (
+    <div className="w-full h-full flex flex-col">
+      <div className="flex justify-end gap-1 px-2 py-1 shrink-0 bg-muted/40 border-b">
+        <button onClick={() => setRotation(r => (r + 90) % 360)}
+          className="text-xs px-2 py-0.5 rounded bg-muted hover:bg-muted/80 text-muted-foreground">
+          ↻ Rotate
+        </button>
+      </div>
+      <div className="flex-1 overflow-auto">
+        <iframe
+          src={src}
+          title={title}
+          className="border-0"
+          style={{
+            display: "block",
+            width: rotated ? "100vh" : "100%",
+            height: rotated ? "100vw" : "100%",
+            minHeight: rotated ? undefined : "600px",
+            transform: rotation ? `rotate(${rotation}deg)` : undefined,
+            transformOrigin: "top left",
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+
 // ─── Document Preview ─────────────────────────────────────────────────────────
 function DocPreview({ doc }) {
   const type = (doc.file_type || "").toLowerCase();
@@ -32,25 +63,7 @@ function DocPreview({ doc }) {
     return <img src={doc.file_url} alt={doc.title} className="w-full h-full object-contain" style={{ imageOrientation: 'from-image' }} />;
   }
   if (isPdf) {
-    return (
-      <div className="w-full h-full overflow-hidden relative">
-        <iframe
-          src={doc.file_url}
-          title={doc.title}
-          className="border-0"
-          style={{
-            display: "block",
-            width: "141%",
-            height: "141%",
-            transform: "rotate(180deg) scale(0.707)",
-            transformOrigin: "center center",
-            position: "absolute",
-            top: "-20.5%",
-            left: "-20.5%",
-          }}
-        />
-      </div>
-    );
+    return <PdfPreview src={doc.file_url} title={doc.title} />;
   }
   return (
     <div className="flex flex-col items-center justify-center h-full gap-4 text-muted-foreground">
