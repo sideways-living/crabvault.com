@@ -224,9 +224,9 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
             {doc.file_url ? (
               <div style={{ transform: `rotate(${pdfRotation}deg)`, width: "100%", minHeight: "100%" }}>
                 {doc.file_type?.toLowerCase() === 'pdf' ? (
-                  <iframe src={doc.file_url} title={doc.title} style={{ width: "100%", height: "auto", border: "none" }} />
+                  <iframe src={doc.file_url} title={doc.title} style={{ width: "100%", height: "100%", border: "none" }} />
                 ) : ["jpg", "jpeg", "png", "gif", "webp"].includes(doc.file_type?.toLowerCase()) ? (
-                  <img src={doc.file_url} alt={doc.title} style={{ width: "100%", height: "auto", imageOrientation: 'from-image' }} />
+                  <img src={doc.file_url} alt={doc.title} style={{ width: "100%", height: "100%", objectFit: "contain", imageOrientation: 'from-image' }} />
                 ) : (
                   <div className="text-center text-muted-foreground">
                     <FileText className="h-16 w-16 opacity-30 mx-auto mb-2" />
