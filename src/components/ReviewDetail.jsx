@@ -79,7 +79,7 @@ export default function ReviewDetail({ doc, folders, categories, duplicates = []
   const ai = doc.ai_data || {};
   const isReceipt = !!ai.is_receipt;
   const [mode, setMode] = useState("review");
-  const [pdfRotation, setPdfRotation] = useState(0);
+  const [pdfRotation, setPdfRotation] = useState(180);
 
   const [title, setTitle] = useState(doc.title || "");
   const [folderId, setFolderId] = useState(doc.folder_id || "");
