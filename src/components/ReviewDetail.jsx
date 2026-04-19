@@ -16,7 +16,7 @@ import { duplicateDocument } from "@/lib/duplicateDocument";
 
 // ─── PDF Preview with rotation toggle ────────────────────────────────────────
 function PdfPreview({ src, title }) {
-  const [rotation, setRotation] = useState(0);
+  const [rotation, setRotation] = useState(180);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", width: "100%", height: "100%" }}>
