@@ -18,7 +18,7 @@ import { toast } from "sonner";
 import moment from "moment";
 
 function PdfPreview({ src, title }) {
-  const [rotation, setRotation] = useState(180);
+  const [rotation, setRotation] = useState(0);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", width: "100%", height: "100%" }}>
@@ -28,21 +28,24 @@ function PdfPreview({ src, title }) {
           ↻ Rotate
         </button>
       </div>
-      <div style={{ flex: 1, minHeight: 0, position: "relative" }}>
-        <iframe
-          key={rotation}
-          src={src}
-          title={title}
+      <div style={{ flex: "1 1 0", minHeight: 0, overflow: "hidden", position: "relative" }}>
+        <object
+          data={src}
+          type="application/pdf"
           style={{
             position: "absolute",
-            top: 0, left: 0,
+            inset: 0,
             width: "100%",
             height: "100%",
             border: "none",
-            transform: `rotate(${rotation}deg)`,
+            transform: rotation ? `rotate(${rotation}deg)` : "none",
             transformOrigin: "center center",
           }}
-        />
+        >
+          <a href={src} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-sm text-primary hover:underline p-4">
+            <ExternalLink className="h-4 w-4" /> Open PDF
+          </a>
+        </object>
       </div>
     </div>
   );
