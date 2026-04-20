@@ -331,14 +331,16 @@ export default function DocumentDetail() {
             <div className="px-4 py-3 border-b bg-slate-300">
               <h3 className="font-medium text-sm">Document</h3>
             </div>
-            <div className="flex-1 flex flex-col bg-muted/20" style={{ minHeight: 0 }}>
+            <div className="flex-1 flex flex-col bg-muted/20" style={{ minHeight: 0, overflow: "hidden" }}>
               {doc.file_url ? (
                 ['jpg','jpeg','png','gif','webp'].includes(doc.file_type?.toLowerCase()) ? (
                   <div className="flex-1 flex items-center justify-center p-2">
                     <img src={doc.file_url} alt={doc.title} className="max-w-full object-contain rounded" style={{ imageOrientation: 'from-image' }} />
                   </div>
                 ) : doc.file_type?.toLowerCase() === 'pdf' ? (
-                  <PdfPreview src={doc.file_url} title={doc.title} />
+                  <div style={{ display: "flex", flexDirection: "column", flex: "1 1 0", minHeight: 0 }}>
+                    <PdfPreview src={doc.file_url} title={doc.title} />
+                  </div>
                 ) : (
                   <div className="flex-1 flex items-center justify-center p-6">
                     <div className="text-center">
