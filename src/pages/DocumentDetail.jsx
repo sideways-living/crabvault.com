@@ -21,7 +21,7 @@ function PdfPreview({ src, title }) {
   const [rotation, setRotation] = useState(0);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", width: "100%", height: "100%" }}>
+    <>
       <div className="flex justify-end gap-1 px-2 py-1 bg-muted/40 border-b" style={{ flexShrink: 0 }}>
         <button onClick={() => setRotation(r => (r + 90) % 360)}
           className="text-xs px-2 py-0.5 rounded bg-muted hover:bg-muted/80 text-muted-foreground">
@@ -43,7 +43,7 @@ function PdfPreview({ src, title }) {
           }}
         />
       </div>
-    </div>
+    </>
   );
 }
 
@@ -331,25 +331,31 @@ export default function DocumentDetail() {
             <div className="px-4 py-3 border-b bg-slate-300">
               <h3 className="font-medium text-sm">Document</h3>
             </div>
-            <div className="flex-1 flex p-2 bg-muted/20" style={{ minHeight: 0 }}>
+            <div className="flex-1 flex flex-col bg-muted/20" style={{ minHeight: 0 }}>
               {doc.file_url ? (
                 ['jpg','jpeg','png','gif','webp'].includes(doc.file_type?.toLowerCase()) ? (
-                  <img src={doc.file_url} alt={doc.title} className="max-w-full object-contain rounded" style={{ imageOrientation: 'from-image' }} />
+                  <div className="flex-1 flex items-center justify-center p-2">
+                    <img src={doc.file_url} alt={doc.title} className="max-w-full object-contain rounded" style={{ imageOrientation: 'from-image' }} />
+                  </div>
                 ) : doc.file_type?.toLowerCase() === 'pdf' ? (
                   <PdfPreview src={doc.file_url} title={doc.title} />
                 ) : (
-                  <div className="text-center p-6">
-                    <FileText className="h-16 w-16 text-muted-foreground/40 mx-auto mb-3" />
-                    <p className="text-sm text-muted-foreground mb-3">{doc.original_filename}</p>
-                    <a href={doc.file_url} target="_blank" rel="noopener noreferrer">
-                      <Button variant="outline" size="sm"><ExternalLink className="h-4 w-4 mr-1" /> Open File</Button>
-                    </a>
+                  <div className="flex-1 flex items-center justify-center p-6">
+                    <div className="text-center">
+                      <FileText className="h-16 w-16 text-muted-foreground/40 mx-auto mb-3" />
+                      <p className="text-sm text-muted-foreground mb-3">{doc.original_filename}</p>
+                      <a href={doc.file_url} target="_blank" rel="noopener noreferrer">
+                        <Button variant="outline" size="sm"><ExternalLink className="h-4 w-4 mr-1" /> Open File</Button>
+                      </a>
+                    </div>
                   </div>
                 )
               ) : (
-                <div className="text-center p-6">
-                  <FileText className="h-16 w-16 text-muted-foreground/40 mx-auto mb-3" />
-                  <p className="text-sm text-muted-foreground/50 italic">No file available</p>
+                <div className="flex-1 flex items-center justify-center p-6">
+                  <div className="text-center">
+                    <FileText className="h-16 w-16 text-muted-foreground/40 mx-auto mb-3" />
+                    <p className="text-sm text-muted-foreground/50 italic">No file available</p>
+                  </div>
                 </div>
               )}
             </div>
