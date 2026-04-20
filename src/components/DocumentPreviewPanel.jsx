@@ -1,76 +1,121 @@
 import { useState, useEffect } from "react";
-import { FileText, ExternalLink } from "lucide-react";
+import { FileText, ExternalLink, RotateCw } from "lucide-react";
 
 export default function DocumentPreviewPanel({ doc }) {
   const isPdf = doc.file_type?.toLowerCase() === 'pdf';
   const isImage = ["jpg", "jpeg", "png", "gif", "webp"].includes(doc.file_type?.toLowerCase());
 
-  const [rotation, setRotation] = useState(isPdf ? 180 : 0);
+  // PDFs are stored upside down, so default to 180deg flip
+  const defaultRotation = isPdf ? 180 : 0;
+  const [rotation, setRotation] = useState(defaultRotation);
 
   useEffect(() => {
     setRotation(doc.file_type?.toLowerCase() === 'pdf' ? 180 : 0);
   }, [doc.id]);
 
-  const effectiveRotation = rotation;
+  const handleRotate = () => setRotation(r => (r + 90) % 360);
+
+  // For 90/270 we need to swap width/height so it fills the container
+  const is90or270 = rotation === 90 || rotation === 270;
+
+  const iframeStyle = is90or270
+    ? {
+        position: "absolute",
+        border: "none",
+        display: "block",
+        width: "100vh",   // swap axes
+        height: "100vw",
+        top: "50%",
+        left: "50%",
+        transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
+        transformOrigin: "center center",
+      }
+    : {
+        position: "absolute",
+        top: 0,
+        left: 0,
+        width: "100%",
+        height: "100%",
+        border: "none",
+        display: "block",
+        transform: `rotate(${rotation}deg)`,
+        transformOrigin: "center center",
+      };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%", background: "var(--card)", border: "1px solid var(--border)", borderRadius: "0.75rem", overflow: "hidden" }}>
-      {/* Header — always on top, never rotated */}
-      <div style={{ flexShrink: 0, borderBottom: "1px solid var(--border)", padding: "0.75rem 1rem", background: "hsl(var(--muted) / 0.4)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.5rem", zIndex: 2, position: "relative" }}>
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "0.75rem", overflow: "hidden" }}>
+
+      {/* Toolbar — isolated, never transformed */}
+      <div style={{
+        flexShrink: 0,
+        borderBottom: "1px solid hsl(var(--border))",
+        padding: "0.625rem 1rem",
+        background: "hsl(var(--muted) / 0.4)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: "0.5rem",
+      }}>
         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", minWidth: 0, flex: 1 }}>
-          <FileText style={{ height: 16, width: 16, flexShrink: 0, color: "hsl(var(--muted-foreground))" }} />
-          <span style={{ fontSize: "0.75rem", fontFamily: "var(--font-mono)", color: "hsl(var(--muted-foreground))", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          <FileText style={{ height: 14, width: 14, flexShrink: 0, color: "hsl(var(--muted-foreground))" }} />
+          <span style={{ fontSize: "0.7rem", fontFamily: "var(--font-mono)", color: "hsl(var(--muted-foreground))", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {doc.original_filename || doc.title}
           </span>
           {doc.file_type && (
-            <span style={{ fontSize: "0.75rem", textTransform: "uppercase", fontWeight: 600, background: "hsl(var(--muted))", padding: "0.125rem 0.375rem", borderRadius: "0.25rem", flexShrink: 0 }}>
+            <span style={{ fontSize: "0.65rem", textTransform: "uppercase", fontWeight: 700, background: "hsl(var(--muted))", padding: "0.1rem 0.35rem", borderRadius: "0.2rem", flexShrink: 0, color: "hsl(var(--foreground))" }}>
               {doc.file_type}
             </span>
           )}
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "0.25rem", flexShrink: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.375rem", flexShrink: 0 }}>
           <button
-            onClick={() => setRotation(r => (r + 90) % 360)}
-            style={{ fontSize: "0.75rem", padding: "0.25rem 0.5rem", borderRadius: "0.25rem", background: "hsl(var(--muted))", color: "hsl(var(--muted-foreground))", border: "none", cursor: "pointer" }}
+            onClick={handleRotate}
+            style={{ display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "0.7rem", padding: "0.25rem 0.5rem", borderRadius: "0.25rem", background: "hsl(var(--muted))", color: "hsl(var(--muted-foreground))", border: "none", cursor: "pointer" }}
           >
-            ↻ Rotate
+            <RotateCw style={{ height: 12, width: 12 }} />
+            Rotate
           </button>
           {doc.file_url && (
-            <a href={doc.file_url} target="_blank" rel="noopener noreferrer" style={{ color: "hsl(var(--muted-foreground))" }}>
-              <ExternalLink style={{ height: 16, width: 16 }} />
+            <a href={doc.file_url} target="_blank" rel="noopener noreferrer" style={{ color: "hsl(var(--muted-foreground))", display: "flex" }}>
+              <ExternalLink style={{ height: 14, width: 14 }} />
             </a>
           )}
         </div>
       </div>
 
-      {/* Preview Area */}
-      <div style={{ flex: 1, overflow: "hidden", background: "hsl(var(--muted) / 0.2)", position: "relative" }}>
+      {/* Preview area — completely separate from toolbar */}
+      <div style={{ flex: 1, position: "relative", overflow: "hidden", background: "hsl(var(--muted) / 0.15)" }}>
         {doc.file_url ? (
           isPdf ? (
             <iframe
               src={doc.file_url}
               title={doc.title}
-              style={{ width: "100%", height: "100%", border: "none", display: "block", transform: `rotate(${effectiveRotation}deg)`, transformOrigin: "center center" }}
+              style={iframeStyle}
             />
           ) : isImage ? (
             <img
               src={doc.file_url}
               alt={doc.title}
-              style={{ width: "100%", height: "100%", objectFit: "contain", transform: `rotate(${effectiveRotation}deg)`, transformOrigin: "center center", display: "block" }}
+              style={{
+                position: "absolute", top: "50%", left: "50%",
+                transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
+                maxWidth: "100%", maxHeight: "100%", objectFit: "contain", display: "block"
+              }}
             />
           ) : (
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", color: "hsl(var(--muted-foreground))" }}>
-              <FileText style={{ height: 64, width: 64, opacity: 0.3, marginBottom: 8 }} />
-              <p style={{ fontSize: "0.875rem" }}>{doc.original_filename}</p>
+              <FileText style={{ height: 48, width: 48, opacity: 0.25, marginBottom: 8 }} />
+              <p style={{ fontSize: "0.8rem" }}>{doc.original_filename}</p>
             </div>
           )
         ) : (
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", color: "hsl(var(--muted-foreground))" }}>
-            <FileText style={{ height: 80, width: 80, opacity: 0.2, marginBottom: 8 }} />
-            <p style={{ fontSize: "0.875rem" }}>No file available</p>
+            <FileText style={{ height: 64, width: 64, opacity: 0.15, marginBottom: 8 }} />
+            <p style={{ fontSize: "0.8rem" }}>No file available</p>
           </div>
         )}
       </div>
+
     </div>
   );
 }
