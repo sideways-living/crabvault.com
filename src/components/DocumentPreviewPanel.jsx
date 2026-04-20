@@ -90,7 +90,7 @@ export default function DocumentPreviewPanel({ doc }) {
         {doc.file_url ? (
           isPdf ? (
             <iframe
-              src={`${doc.file_url}#toolbar=0&navpanes=0&zoom=page-fit`}
+              src={`${doc.file_url}#toolbar=0&navpanes=0&zoom=150`}
               title={doc.title}
               style={iframeStyle}
             />
