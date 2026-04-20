@@ -5,15 +5,15 @@ export default function DocumentPreviewPanel({ doc }) {
   const isPdf = doc.file_type?.toLowerCase() === 'pdf';
   const isImage = ["jpg", "jpeg", "png", "gif", "webp"].includes(doc.file_type?.toLowerCase());
 
-  const [rotation, setRotation] = useState(0);
+  const defaultRotation = isPdf ? 180 : 0;
+  const [rotation, setRotation] = useState(defaultRotation);
 
   useEffect(() => {
-    setRotation(0);
+    setRotation(doc.file_type?.toLowerCase() === 'pdf' ? 180 : 0);
   }, [doc.id]);
 
   const handleRotate = () => setRotation(r => (r + 90) % 360);
 
-  // For 90/270 we need to swap width/height so it fills the container
   const is90or270 = rotation === 90 || rotation === 270;
 
   const iframeStyle = is90or270
@@ -21,7 +21,7 @@ export default function DocumentPreviewPanel({ doc }) {
         position: "absolute",
         border: "none",
         display: "block",
-        width: "100vh",   // swap axes
+        width: "100vh",
         height: "100vw",
         top: "50%",
         left: "50%",
@@ -81,8 +81,8 @@ export default function DocumentPreviewPanel({ doc }) {
         </div>
       </div>
 
-      {/* Preview area — completely separate from toolbar */}
-      <div style={{ flex: 1, position: "relative", overflow: "hidden", background: "hsl(var(--muted) / 0.15)" }}>
+      {/* Preview area — completely separate from toolbar, overflow:hidden clips rotated iframe */}
+      <div style={{ flex: 1, position: "relative", overflow: "hidden", background: "hsl(var(--muted) / 0.15)", isolation: "isolate" }}>
         {doc.file_url ? (
           isPdf ? (
             <iframe
