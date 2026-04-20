@@ -21,7 +21,7 @@ function PdfPreview({ src, title }) {
   const [rotation, setRotation] = useState(0);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", width: "100%", height: "100%" }}>
+    <div style={{ display: "flex", flexDirection: "column", flex: "1 1 0", minHeight: 0 }}>
       <div style={{ flexShrink: 0, borderBottom: "1px solid hsl(var(--border))", padding: "4px 8px", display: "flex", justifyContent: "flex-end", background: "hsl(var(--muted) / 0.4)" }}>
         <button onClick={() => setRotation(r => (r + 90) % 360)}
           className="text-xs px-2 py-0.5 rounded bg-muted hover:bg-muted/80 text-muted-foreground">
@@ -331,7 +331,7 @@ export default function DocumentDetail() {
             <div className="px-4 py-3 border-b bg-slate-300">
               <h3 className="font-medium text-sm">Document</h3>
             </div>
-            <div className="flex-1 flex flex-col bg-muted/20" style={{ minHeight: 0, overflow: "hidden" }}>
+            <div style={{ flex: "1 1 0", minHeight: 0, overflow: "hidden", display: "flex", flexDirection: "column" }}>
               {doc.file_url ? (
                 ['jpg','jpeg','png','gif','webp'].includes(doc.file_type?.toLowerCase()) ? (
                   <div className="flex-1 flex items-center justify-center p-2">
