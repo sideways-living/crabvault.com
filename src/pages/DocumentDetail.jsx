@@ -21,14 +21,14 @@ function PdfPreview({ src, title }) {
   const [rotation, setRotation] = useState(0);
 
   return (
-    <>
-      <div className="flex justify-end gap-1 px-2 py-1 bg-muted/40 border-b" style={{ flexShrink: 0 }}>
+    <div style={{ display: "flex", flexDirection: "column", width: "100%", height: "100%" }}>
+      <div style={{ flexShrink: 0, borderBottom: "1px solid hsl(var(--border))", padding: "4px 8px", display: "flex", justifyContent: "flex-end", background: "hsl(var(--muted) / 0.4)" }}>
         <button onClick={() => setRotation(r => (r + 90) % 360)}
           className="text-xs px-2 py-0.5 rounded bg-muted hover:bg-muted/80 text-muted-foreground">
           ↻ Rotate
         </button>
       </div>
-      <div style={{ flex: "1 1 0", minHeight: 0, overflow: "hidden", position: "relative" }}>
+      <div style={{ flex: 1, minHeight: 0, overflow: "hidden", position: "relative" }}>
         <iframe
           src={src}
           title={title}
@@ -43,7 +43,7 @@ function PdfPreview({ src, title }) {
           }}
         />
       </div>
-    </>
+    </div>
   );
 }
 
@@ -338,9 +338,7 @@ export default function DocumentDetail() {
                     <img src={doc.file_url} alt={doc.title} className="max-w-full object-contain rounded" style={{ imageOrientation: 'from-image' }} />
                   </div>
                 ) : doc.file_type?.toLowerCase() === 'pdf' ? (
-                  <div style={{ display: "flex", flexDirection: "column", flex: "1 1 0", minHeight: 0 }}>
-                    <PdfPreview src={doc.file_url} title={doc.title} />
-                  </div>
+                  <PdfPreview src={doc.file_url} title={doc.title} />
                 ) : (
                   <div className="flex-1 flex items-center justify-center p-6">
                     <div className="text-center">
