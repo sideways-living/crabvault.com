@@ -21,7 +21,7 @@ function PdfPreview({ src, title }) {
   const [rotation, setRotation] = useState(0);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", width: "100%", height: "100%" }}>
+    <div style={{ display: "flex", flexDirection: "column", width: "100%", minHeight: "100%", alignSelf: "stretch" }}>
       <div className="flex justify-end gap-1 px-2 py-1 bg-muted/40 border-b" style={{ flexShrink: 0 }}>
         <button onClick={() => setRotation(r => (r + 90) % 360)}
           className="text-xs px-2 py-0.5 rounded bg-muted hover:bg-muted/80 text-muted-foreground">
@@ -38,7 +38,7 @@ function PdfPreview({ src, title }) {
             width: "100%",
             height: "100%",
             border: "none",
-            transform: `rotate(${rotation}deg)`,
+            transform: rotation ? `rotate(${rotation}deg)` : undefined,
             transformOrigin: "center center",
           }}
         />
@@ -331,7 +331,7 @@ export default function DocumentDetail() {
             <div className="px-4 py-3 border-b bg-slate-300">
               <h3 className="font-medium text-sm">Document</h3>
             </div>
-            <div className="flex-1 flex items-stretch p-2 bg-muted/20">
+            <div className="flex-1 flex items-center justify-center p-2 bg-muted/20">
               {doc.file_url ? (
                 ['jpg','jpeg','png','gif','webp'].includes(doc.file_type?.toLowerCase()) ? (
                   <img src={doc.file_url} alt={doc.title} className="max-w-full object-contain rounded" style={{ imageOrientation: 'from-image' }} />
