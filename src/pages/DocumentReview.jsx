@@ -146,7 +146,7 @@ export default function DocumentReview() {
          </div>
 
          {/* Preview panel (40%) */}
-         <div className="flex-1" style={{ minWidth: 0, maxWidth: '40%' }}>
+         <div className="flex-1" style={{ minWidth: 0, maxWidth: '40%', height: '100%' }}>
            {selected && <DocumentPreviewPanel doc={selected} />}
          </div>
 

@@ -40,11 +40,15 @@ export default function DocumentPreviewPanel({ doc }) {
       };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%", background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "0.75rem", overflow: "hidden" }}>
+    <div style={{ position: "relative", height: "100%", background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "0.75rem", overflow: "hidden" }}>
 
-      {/* Toolbar — isolated, never transformed */}
+      {/* Toolbar — pinned to top with absolute positioning */}
       <div style={{
-        flexShrink: 0,
+        position: "absolute",
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 2,
         borderBottom: "1px solid hsl(var(--border))",
         padding: "0.625rem 1rem",
         background: "hsl(var(--muted) / 0.4)",
@@ -80,8 +84,8 @@ export default function DocumentPreviewPanel({ doc }) {
         </div>
       </div>
 
-      {/* Preview area — completely separate from toolbar, overflow:hidden clips rotated iframe */}
-      <div style={{ flex: 1, position: "relative", overflow: "hidden", background: "hsl(var(--muted) / 0.15)", isolation: "isolate" }}>
+      {/* Preview area — sits below the 45px toolbar */}
+      <div style={{ position: "absolute", top: "45px", left: 0, right: 0, bottom: 0, overflow: "hidden", background: "hsl(var(--muted) / 0.15)", isolation: "isolate" }}>
         {doc.file_url ? (
           isPdf ? (
             <iframe
