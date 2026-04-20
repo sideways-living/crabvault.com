@@ -11,8 +11,7 @@ export default function DocumentPreviewPanel({ doc }) {
   const isPdf = doc.file_type?.toLowerCase() === 'pdf';
   const isImage = ["jpg", "jpeg", "png", "gif", "webp"].includes(doc.file_type?.toLowerCase());
 
-  // PDFs start at 180 to correct upside-down rendering
-  const effectiveRotation = isPdf ? rotation + 180 : rotation;
+  const effectiveRotation = rotation;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", background: "var(--card)", border: "1px solid var(--border)", borderRadius: "0.75rem", overflow: "hidden" }}>
@@ -49,18 +48,9 @@ export default function DocumentPreviewPanel({ doc }) {
         {doc.file_url ? (
           isPdf ? (
             <iframe
-              key={`${doc.id}-${effectiveRotation}`}
               src={doc.file_url}
               title={doc.title}
-              style={{
-                position: "absolute",
-                border: "none",
-                transformOrigin: "center center",
-                ...(effectiveRotation % 180 === 0
-                  ? { width: "100%", height: "100%", top: 0, left: 0, transform: `rotate(${effectiveRotation}deg)` }
-                  : { width: "100%", height: "100%", top: 0, left: 0, transform: `rotate(${effectiveRotation}deg)` }
-                )
-              }}
+              style={{ width: "100%", height: "100%", border: "none", display: "block", transform: `rotate(${effectiveRotation}deg)`, transformOrigin: "center center" }}
             />
           ) : isImage ? (
             <img
