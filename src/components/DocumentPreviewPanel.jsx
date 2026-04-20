@@ -37,7 +37,7 @@ export default function DocumentPreviewPanel({ doc }) {
         border: "none",
         display: "block",
         transform: `rotate(${rotation}deg)`,
-        transformOrigin: "center center",
+        transformOrigin: "top center",
       };
 
   return (
