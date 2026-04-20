@@ -41,11 +41,13 @@ export default function DocumentPreviewPanel({ doc }) {
       <div className="flex-1 overflow-hidden bg-muted/20">
         {doc.file_url ? (
           doc.file_type?.toLowerCase() === 'pdf' ? (
-            <iframe
-              src={doc.file_url}
-              title={doc.title}
-              style={{ width: "100%", height: "100%", border: "none", transform: `rotate(${rotation + 180}deg)`, transformOrigin: "center" }}
-            />
+            <div style={{ width: "100%", height: "100%", overflow: "hidden", position: "relative" }}>
+              <iframe
+                src={doc.file_url}
+                title={doc.title}
+                style={{ width: "100%", height: "100%", border: "none", transform: `rotate(${rotation + 180}deg)`, transformOrigin: "center", position: "absolute", top: 0, left: 0 }}
+              />
+            </div>
 
           ) : ["jpg", "jpeg", "png", "gif", "webp"].includes(doc.file_type?.toLowerCase()) ? (
             <img
