@@ -18,7 +18,7 @@ import { toast } from "sonner";
 import moment from "moment";
 
 function PdfPreview({ src, title }) {
-  const [rotation, setRotation] = useState(180);
+  const [rotation, setRotation] = useState(0);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", width: "100%", minHeight: "100%", alignSelf: "stretch" }}>
