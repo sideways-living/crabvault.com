@@ -36,7 +36,7 @@ export default function DocumentPreviewPanel({ doc }) {
         height: "100%",
         border: "none",
         display: "block",
-        transform: `rotate(${rotation}deg)`,
+        transform: rotation === 180 ? "scale(-1, -1)" : rotation ? `rotate(${rotation}deg)` : undefined,
         transformOrigin: "center center",
       };
 
