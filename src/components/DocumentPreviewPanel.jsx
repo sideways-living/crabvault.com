@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { FileText, ExternalLink } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
 export default function DocumentPreviewPanel({ doc }) {
   const [rotation, setRotation] = useState(0);
@@ -9,62 +8,76 @@ export default function DocumentPreviewPanel({ doc }) {
     setRotation(0);
   }, [doc.id]);
 
+  const isPdf = doc.file_type?.toLowerCase() === 'pdf';
+  const isImage = ["jpg", "jpeg", "png", "gif", "webp"].includes(doc.file_type?.toLowerCase());
+
+  // PDFs start at 180 to correct upside-down rendering
+  const effectiveRotation = isPdf ? rotation + 180 : rotation;
+
   return (
-    <div className="flex flex-col h-full bg-card border rounded-xl overflow-hidden">
-      {/* Header */}
-      <div className="shrink-0 border-b px-4 py-3 bg-muted/40 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 min-w-0 flex-1">
-          <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
-          <span className="text-xs font-mono text-muted-foreground truncate">{doc.original_filename || doc.title}</span>
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", background: "var(--card)", border: "1px solid var(--border)", borderRadius: "0.75rem", overflow: "hidden" }}>
+      {/* Header — always on top, never rotated */}
+      <div style={{ flexShrink: 0, borderBottom: "1px solid var(--border)", padding: "0.75rem 1rem", background: "hsl(var(--muted) / 0.4)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.5rem", zIndex: 2, position: "relative" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", minWidth: 0, flex: 1 }}>
+          <FileText style={{ height: 16, width: 16, flexShrink: 0, color: "hsl(var(--muted-foreground))" }} />
+          <span style={{ fontSize: "0.75rem", fontFamily: "var(--font-mono)", color: "hsl(var(--muted-foreground))", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {doc.original_filename || doc.title}
+          </span>
           {doc.file_type && (
-            <span className="text-xs uppercase font-semibold bg-muted px-1.5 py-0.5 rounded shrink-0">
+            <span style={{ fontSize: "0.75rem", textTransform: "uppercase", fontWeight: 600, background: "hsl(var(--muted))", padding: "0.125rem 0.375rem", borderRadius: "0.25rem", flexShrink: 0 }}>
               {doc.file_type}
             </span>
           )}
         </div>
-        <div className="flex items-center gap-1 shrink-0">
-          <button 
+        <div style={{ display: "flex", alignItems: "center", gap: "0.25rem", flexShrink: 0 }}>
+          <button
             onClick={() => setRotation(r => (r + 90) % 360)}
-            className="text-xs px-2 py-1 rounded bg-muted hover:bg-muted/80 text-muted-foreground"
+            style={{ fontSize: "0.75rem", padding: "0.25rem 0.5rem", borderRadius: "0.25rem", background: "hsl(var(--muted))", color: "hsl(var(--muted-foreground))", border: "none", cursor: "pointer" }}
           >
             ↻ Rotate
           </button>
           {doc.file_url && (
-            <a href={doc.file_url} target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">
-              <ExternalLink className="h-4 w-4" />
+            <a href={doc.file_url} target="_blank" rel="noopener noreferrer" style={{ color: "hsl(var(--muted-foreground))" }}>
+              <ExternalLink style={{ height: 16, width: 16 }} />
             </a>
           )}
         </div>
       </div>
 
       {/* Preview Area */}
-      <div className="flex-1 overflow-hidden bg-muted/20">
+      <div style={{ flex: 1, overflow: "hidden", background: "hsl(var(--muted) / 0.2)", position: "relative" }}>
         {doc.file_url ? (
-          doc.file_type?.toLowerCase() === 'pdf' ? (
-            <div style={{ width: "100%", height: "100%", overflow: "hidden", position: "relative" }}>
-              <iframe
-                src={doc.file_url}
-                title={doc.title}
-                style={{ width: "100%", height: "100%", border: "none", transform: `rotate(${rotation + 180}deg)`, transformOrigin: "center", position: "absolute", top: 0, left: 0 }}
-              />
-            </div>
-
-          ) : ["jpg", "jpeg", "png", "gif", "webp"].includes(doc.file_type?.toLowerCase()) ? (
+          isPdf ? (
+            <iframe
+              key={`${doc.id}-${effectiveRotation}`}
+              src={doc.file_url}
+              title={doc.title}
+              style={{
+                position: "absolute",
+                border: "none",
+                transformOrigin: "center center",
+                ...(effectiveRotation % 180 === 0
+                  ? { width: "100%", height: "100%", top: 0, left: 0, transform: `rotate(${effectiveRotation}deg)` }
+                  : { width: "100%", height: "100%", top: 0, left: 0, transform: `rotate(${effectiveRotation}deg)` }
+                )
+              }}
+            />
+          ) : isImage ? (
             <img
               src={doc.file_url}
               alt={doc.title}
-              style={{ width: "100%", height: "100%", objectFit: "contain", transform: `rotate(${rotation}deg)`, transformOrigin: "center", display: "block" }}
+              style={{ width: "100%", height: "100%", objectFit: "contain", transform: `rotate(${effectiveRotation}deg)`, transformOrigin: "center center", display: "block" }}
             />
           ) : (
-            <div className="text-center text-muted-foreground">
-              <FileText className="h-16 w-16 opacity-30 mx-auto mb-2" />
-              <p className="text-sm">{doc.original_filename}</p>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", color: "hsl(var(--muted-foreground))" }}>
+              <FileText style={{ height: 64, width: 64, opacity: 0.3, marginBottom: 8 }} />
+              <p style={{ fontSize: "0.875rem" }}>{doc.original_filename}</p>
             </div>
           )
         ) : (
-          <div className="text-center text-muted-foreground">
-            <FileText className="h-20 w-20 opacity-20 mx-auto mb-2" />
-            <p className="text-sm">No file available</p>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", color: "hsl(var(--muted-foreground))" }}>
+            <FileText style={{ height: 80, width: 80, opacity: 0.2, marginBottom: 8 }} />
+            <p style={{ fontSize: "0.875rem" }}>No file available</p>
           </div>
         )}
       </div>
