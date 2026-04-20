@@ -21,7 +21,7 @@ function PdfPreview({ src, title }) {
   const [rotation, setRotation] = useState(0);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", flex: "1 1 0", minHeight: 0 }}>
+    <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
       <div style={{ flexShrink: 0, borderBottom: "1px solid hsl(var(--border))", padding: "4px 8px", display: "flex", justifyContent: "flex-end", background: "hsl(var(--muted) / 0.4)" }}>
         <button onClick={() => setRotation(r => (r + 90) % 360)}
           className="text-xs px-2 py-0.5 rounded bg-muted hover:bg-muted/80 text-muted-foreground">
@@ -326,9 +326,9 @@ export default function DocumentDetail() {
       <div className="flex gap-6 items-stretch">
 
         {/* Left: Document preview — full height */}
-        <div className="w-1/3 shrink-0">
-          <div className="bg-card rounded-xl border overflow-hidden flex flex-col" style={{minHeight: '600px', height: '100%'}}>
-            <div className="px-4 py-3 border-b bg-slate-300">
+        <div className="w-1/3 shrink-0" style={{ height: '800px' }}>
+          <div className="bg-card rounded-xl border overflow-hidden flex flex-col" style={{ height: '100%' }}>
+            <div className="px-4 py-3 border-b bg-slate-300" style={{ flexShrink: 0 }}>
               <h3 className="font-medium text-sm">Document</h3>
             </div>
             <div style={{ flex: "1 1 0", minHeight: 0, overflow: "hidden", display: "flex", flexDirection: "column" }}>
