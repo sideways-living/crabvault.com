@@ -331,7 +331,7 @@ export default function DocumentDetail() {
             <div className="px-4 py-3 border-b bg-slate-300">
               <h3 className="font-medium text-sm">Document</h3>
             </div>
-            <div className="flex-1 flex items-center justify-center p-2 bg-muted/20">
+            <div className="flex-1 flex items-stretch p-2 bg-muted/20">
               {doc.file_url ? (
                 ['jpg','jpeg','png','gif','webp'].includes(doc.file_type?.toLowerCase()) ? (
                   <img src={doc.file_url} alt={doc.title} className="max-w-full object-contain rounded" style={{ imageOrientation: 'from-image' }} />
