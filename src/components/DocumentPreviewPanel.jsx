@@ -5,10 +5,10 @@ export default function DocumentPreviewPanel({ doc }) {
   const isPdf = doc.file_type?.toLowerCase() === 'pdf';
   const isImage = ["jpg", "jpeg", "png", "gif", "webp"].includes(doc.file_type?.toLowerCase());
 
-  const [rotation, setRotation] = useState(0);
+  const [rotation, setRotation] = useState(isPdf ? 180 : 0);
 
   useEffect(() => {
-    setRotation(0);
+    setRotation(doc.file_type?.toLowerCase() === 'pdf' ? 180 : 0);
   }, [doc.id]);
 
   const handleRotate = () => setRotation(r => (r + 90) % 360);
