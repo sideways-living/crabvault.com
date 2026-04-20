@@ -2,14 +2,14 @@ import { useState, useEffect } from "react";
 import { FileText, ExternalLink } from "lucide-react";
 
 export default function DocumentPreviewPanel({ doc }) {
-  const [rotation, setRotation] = useState(0);
-
-  useEffect(() => {
-    setRotation(0);
-  }, [doc.id]);
-
   const isPdf = doc.file_type?.toLowerCase() === 'pdf';
   const isImage = ["jpg", "jpeg", "png", "gif", "webp"].includes(doc.file_type?.toLowerCase());
+
+  const [rotation, setRotation] = useState(isPdf ? 180 : 0);
+
+  useEffect(() => {
+    setRotation(doc.file_type?.toLowerCase() === 'pdf' ? 180 : 0);
+  }, [doc.id]);
 
   const effectiveRotation = rotation;
 
