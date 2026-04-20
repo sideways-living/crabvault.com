@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
 import { Loader2, CheckCircle2, ClipboardList, Copy } from "lucide-react";
 import ReviewDetail from "../components/ReviewDetail";
@@ -10,6 +10,11 @@ export default function DocumentReview() {
   const [categories, setCategories] = useState([]);
   const [selected, setSelected] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [actionBar, setActionBar] = useState(null);
+
+  const handleRenderActionBar = useCallback((content) => {
+    setActionBar(content);
+  }, []);
 
   const getDuplicates = (doc, allDocs) => {
     return allDocs.filter(d => {
@@ -87,7 +92,8 @@ export default function DocumentReview() {
         <h1 className="text-2xl font-semibold tracking-tight">Review Queue</h1>
         <span className="bg-primary text-primary-foreground text-xs font-bold px-2 py-0.5 rounded-full">{queue.length}</span>
       </div>
-      <div className="flex gap-4 h-[calc(100vh-160px)]">
+      <div className="flex flex-col gap-3" style={{ height: 'calc(100vh - 160px)' }}>
+      <div className="flex gap-4 flex-1 min-h-0">
          {/* Queue list */}
          <div className="w-64 shrink-0 flex flex-col gap-1 overflow-y-auto">
            {queue.map(doc => {
@@ -146,7 +152,7 @@ export default function DocumentReview() {
          </div>
 
          {/* Preview panel (40%) */}
-         <div className="flex-1" style={{ minWidth: 0, maxWidth: '40%', height: '100%' }}>
+         <div className="flex-1" style={{ minWidth: 0, maxWidth: '40%' }}>
            {selected && <DocumentPreviewPanel doc={selected} />}
          </div>
 
@@ -161,10 +167,19 @@ export default function DocumentReview() {
               duplicates={getDuplicates(selected, queue)}
               onConfirmed={handleConfirmed}
               onFolderCreated={handleFolderCreated}
+              onRenderActionBar={handleRenderActionBar}
             />
            )}
          </div>
        </div>
+
+       {/* Full-width action bar spanning all 3 columns */}
+       {actionBar && (
+         <div className="shrink-0 border-t bg-muted/20 px-4 py-3 rounded-xl border">
+           {actionBar}
+         </div>
+       )}
+      </div>
     </div>
   );
 }
