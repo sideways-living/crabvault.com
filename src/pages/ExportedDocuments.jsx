@@ -28,12 +28,23 @@ export default function ExportedDocuments() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Reset badge on view
     localStorage.setItem('exportedLastViewed', new Date().toISOString());
     window.dispatchEvent(new Event('exportedViewed'));
 
-    base44.entities.Document.filter({ synced_to_vault: true, is_deleted: false }, '-updated_date', 200)
-      .then(d => { setDocs(d); setLoading(false); });
+    async function fetchAll() {
+      let all = [];
+      let skip = 0;
+      const pageSize = 500;
+      while (true) {
+        const page = await base44.entities.Document.filter({ synced_to_vault: true, is_deleted: false }, '-updated_date', pageSize, skip);
+        all = all.concat(page);
+        if (page.length < pageSize) break;
+        skip += pageSize;
+      }
+      setDocs(all);
+      setLoading(false);
+    }
+    fetchAll();
   }, []);
 
   if (loading) {
