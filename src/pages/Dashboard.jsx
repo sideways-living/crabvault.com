@@ -17,13 +17,26 @@ export default function Dashboard() {
   const [stats, setStats] = useState(null);
   const [assigningPaths, setAssigningPaths] = useState(false);
 
+  const fetchAllDocs = async () => {
+    let all = [];
+    let skip = 0;
+    const pageSize = 500;
+    while (true) {
+      const page = await base44.entities.Document.filter({ is_deleted: false }, "-created_date", pageSize, skip);
+      all = all.concat(page);
+      if (page.length < pageSize) break;
+      skip += pageSize;
+    }
+    return all;
+  };
+
   const loadData = async (retries = 3) => {
     try {
       const [docs, flds, cats] = await Promise.all([
-        base44.entities.Document.filter({ is_deleted: false }, "-created_date", 200),
-      base44.entities.Folder.list(),
-      base44.entities.Category.list(),
-    ]);
+        fetchAllDocs(),
+        base44.entities.Folder.list(),
+        base44.entities.Category.list(),
+      ]);
     setDocuments(docs);
     setFolders(flds);
     setCategories(cats);
