@@ -229,6 +229,8 @@ async function poll() {
     } catch (err) {
       console.error(`❌  Failed to sync "${doc.title || doc.id}":`, err.message);
     }
+    // Small delay between syncs to avoid rate limiting
+    await new Promise(resolve => setTimeout(resolve, 300));
   }
   await sendHeartbeat(null, 0);
 }
