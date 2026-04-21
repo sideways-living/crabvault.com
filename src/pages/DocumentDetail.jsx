@@ -56,7 +56,7 @@ function PdfPreview({ src, title }) {
         </button>
       </div>
       <iframe
-        src={src}
+        src={`${src}#toolbar=0&navpanes=0`}
         title={title}
         style={iframeStyle}
       />
