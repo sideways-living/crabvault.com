@@ -18,7 +18,34 @@ import { toast } from "sonner";
 import moment from "moment";
 
 function PdfPreview({ src, title }) {
-  const [rotation, setRotation] = useState(0);
+  const [rotation, setRotation] = useState(180);
+
+  const is90or270 = rotation === 90 || rotation === 270;
+
+  const iframeStyle = is90or270
+    ? {
+        position: "absolute",
+        border: "none",
+        display: "block",
+        width: "100vh",
+        height: "100vw",
+        top: "50%",
+        left: "50%",
+        transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
+        transformOrigin: "center center",
+      }
+    : {
+        position: "absolute",
+        top: "33px",
+        left: 0,
+        right: 0,
+        bottom: 0,
+        width: "100%",
+        height: "calc(100% - 33px)",
+        border: "none",
+        transform: rotation === 180 ? "scale(-1, -1)" : rotation ? `rotate(${rotation}deg)` : undefined,
+        transformOrigin: "center center",
+      };
 
   return (
     <div style={{ position: "relative", width: "100%", height: "100%" }}>
@@ -31,18 +58,7 @@ function PdfPreview({ src, title }) {
       <iframe
         src={src}
         title={title}
-        style={{
-          position: "absolute",
-          top: "33px",
-          left: 0,
-          right: 0,
-          bottom: 0,
-          width: "100%",
-          height: "calc(100% - 33px)",
-          border: "none",
-          transform: rotation ? `rotate(${rotation}deg)` : undefined,
-          transformOrigin: "center center",
-        }}
+        style={iframeStyle}
       />
     </div>
   );
