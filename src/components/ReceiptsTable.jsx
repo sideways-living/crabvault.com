@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
-import { ExternalLink, Search, Loader2, Receipt, AlertTriangle } from "lucide-react";
+import { ExternalLink, Search, Loader2, Receipt, AlertTriangle, ChevronUp, ChevronDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Link } from "react-router-dom";
 
@@ -69,6 +69,24 @@ export default function ReceiptsTable() {
   const [search, setSearch] = useState("");
   const [expanded, setExpanded] = useState(null);
   const [incompleteOnly, setIncompleteOnly] = useState(false);
+  const [sortCol, setSortCol] = useState("transaction_date");
+  const [sortDir, setSortDir] = useState("desc");
+
+  const handleSort = (col) => {
+    if (sortCol === col) {
+      setSortDir(d => d === "asc" ? "desc" : "asc");
+    } else {
+      setSortCol(col);
+      setSortDir("asc");
+    }
+  };
+
+  const SortIcon = ({ col }) => {
+    if (sortCol !== col) return <ChevronUp className="h-3 w-3 opacity-20" />;
+    return sortDir === "asc"
+      ? <ChevronUp className="h-3 w-3 text-primary" />
+      : <ChevronDown className="h-3 w-3 text-primary" />;
+  };
 
   useEffect(() => {
     Promise.all([
@@ -100,18 +118,38 @@ export default function ReceiptsTable() {
   const filtered = useMemo(() => {
     let base = incompleteOnly ? rows.filter(r => missingFields(r).length > 0) : rows;
     const q = search.toLowerCase().trim();
-    if (!q) return base;
-    return base.filter(r => {
-      const fields = [
-        r.store_brand, r.store_location, r.transaction_date, r.transaction_time,
-        r.transaction_type, r.tender_type, r.receipt_number, r.last_four_digits,
-        r.amount != null ? String(r.amount) : "",
-        r.doc?.title, r.doc?.original_filename,
-        ...(r.items || []).map(i => i.name),
-      ].filter(Boolean).map(s => s.toLowerCase());
-      return fields.some(f => f.includes(q));
+    if (q) {
+      base = base.filter(r => {
+        const fields = [
+          r.store_brand, r.store_location, r.transaction_date, r.transaction_time,
+          r.transaction_type, r.tender_type, r.receipt_number, r.last_four_digits,
+          r.amount != null ? String(r.amount) : "",
+          r.doc?.title, r.doc?.original_filename,
+          ...(r.items || []).map(i => i.name),
+        ].filter(Boolean).map(s => s.toLowerCase());
+        return fields.some(f => f.includes(q));
+      });
+    }
+
+    base = [...base].sort((a, b) => {
+      let aVal = a[sortCol] ?? "";
+      let bVal = b[sortCol] ?? "";
+      // Numeric columns
+      if (sortCol === "amount" || sortCol === "subtotal" || sortCol === "tax_amount") {
+        aVal = aVal ?? -Infinity;
+        bVal = bVal ?? -Infinity;
+        return sortDir === "asc" ? aVal - bVal : bVal - aVal;
+      }
+      // String comparison
+      aVal = String(aVal).toLowerCase();
+      bVal = String(bVal).toLowerCase();
+      if (aVal < bVal) return sortDir === "asc" ? -1 : 1;
+      if (aVal > bVal) return sortDir === "asc" ? 1 : -1;
+      return 0;
     });
-  }, [rows, search, incompleteOnly]);
+
+    return base;
+  }, [rows, search, incompleteOnly, sortCol, sortDir]);
 
   if (loading) {
     return <div className="flex justify-center py-12"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>;
@@ -164,15 +202,28 @@ export default function ReceiptsTable() {
           <table className="w-full text-sm">
             <thead className="bg-muted/50 text-xs text-muted-foreground uppercase tracking-wide">
               <tr>
-                <th className="text-left px-3 py-2.5 font-medium">Date</th>
-                <th className="text-left px-3 py-2.5 font-medium">Store</th>
-                <th className="text-left px-3 py-2.5 font-medium">Location</th>
-                <th className="text-left px-3 py-2.5 font-medium">Type</th>
-                <th className="text-left px-3 py-2.5 font-medium">Payment</th>
-                <th className="text-right px-3 py-2.5 font-medium">Subtotal</th>
-                <th className="text-right px-3 py-2.5 font-medium">Tax</th>
-                <th className="text-right px-3 py-2.5 font-medium">Total</th>
-                <th className="text-left px-3 py-2.5 font-medium">Receipt #</th>
+                {[
+                  { col: "transaction_date", label: "Date", align: "left" },
+                  { col: "store_brand", label: "Store", align: "left" },
+                  { col: "store_location", label: "Location", align: "left" },
+                  { col: "transaction_type", label: "Type", align: "left" },
+                  { col: "tender_type", label: "Payment", align: "left" },
+                  { col: "subtotal", label: "Subtotal", align: "right" },
+                  { col: "tax_amount", label: "Tax", align: "right" },
+                  { col: "amount", label: "Total", align: "right" },
+                  { col: "receipt_number", label: "Receipt #", align: "left" },
+                ].map(({ col, label, align }) => (
+                  <th
+                    key={col}
+                    className={`px-3 py-2.5 font-medium cursor-pointer select-none hover:text-foreground transition-colors ${align === "right" ? "text-right" : "text-left"}`}
+                    onClick={() => handleSort(col)}
+                  >
+                    <span className={`inline-flex items-center gap-1 ${align === "right" ? "flex-row-reverse" : ""}`}>
+                      {label}
+                      <SortIcon col={col} />
+                    </span>
+                  </th>
+                ))}
                 <th className="text-center px-3 py-2.5 font-medium">Doc</th>
               </tr>
             </thead>
