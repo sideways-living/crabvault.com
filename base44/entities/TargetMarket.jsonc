@@ -1,0 +1,25 @@
+{
+  "name": "TargetMarket",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "title": "Market Name"
+    },
+    "description": {
+      "type": "string",
+      "title": "Description"
+    },
+    "industry": {
+      "type": "string",
+      "title": "Industry / Sector"
+    },
+    "notes": {
+      "type": "string",
+      "title": "Notes"
+    }
+  },
+  "required": [
+    "name"
+  ]
+}

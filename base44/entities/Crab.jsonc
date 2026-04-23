@@ -1,0 +1,89 @@
+{
+  "name": "Crab",
+  "type": "object",
+  "properties": {
+    "full_name": {
+      "type": "string",
+      "title": "Full Name"
+    },
+    "aliases": {
+      "type": "array",
+      "title": "Known Aliases",
+      "items": {
+        "type": "string"
+      }
+    },
+    "date_of_birth": {
+      "type": "string",
+      "format": "date",
+      "title": "Date of Birth"
+    },
+    "photo_url": {
+      "type": "string",
+      "title": "Photo URL"
+    },
+    "phone": {
+      "type": "string",
+      "title": "Phone Number"
+    },
+    "email": {
+      "type": "string",
+      "title": "Email Address"
+    },
+    "address": {
+      "type": "string",
+      "title": "Address"
+    },
+    "id_numbers": {
+      "type": "array",
+      "title": "ID Numbers / References",
+      "items": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "value": {
+            "type": "string",
+            "title": "Value"
+          }
+        }
+      }
+    },
+    "emergency_summary": {
+      "type": "string",
+      "title": "Emergency Summary (quick facts)"
+    },
+    "notes": {
+      "type": "string",
+      "title": "Notes"
+    },
+    "status": {
+      "type": "string",
+      "title": "Status",
+      "enum": [
+        "active",
+        "inactive",
+        "banned",
+        "watch"
+      ],
+      "default": "active"
+    },
+    "tags": {
+      "type": "array",
+      "title": "Tags",
+      "items": {
+        "type": "string"
+      }
+    },
+    "is_deleted": {
+      "type": "boolean",
+      "title": "Is Deleted",
+      "default": false
+    }
+  },
+  "required": [
+    "full_name"
+  ]
+}

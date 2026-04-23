@@ -1,0 +1,114 @@
+import { useState, useEffect } from "react";
+import { base44 } from "@/api/base44Client";
+import { Link } from "react-router-dom";
+import { Plus, Search, User, Tag } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+
+const STATUS_COLORS = {
+  active: "bg-emerald-100 text-emerald-700",
+  inactive: "bg-gray-100 text-gray-600",
+  banned: "bg-red-100 text-red-700",
+  watch: "bg-amber-100 text-amber-700",
+};
+
+export default function CrabsPage() {
+  const [crabs, setCrabs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    base44.entities.Crab.filter({ is_deleted: false }, "full_name", 500)
+      .then(setCrabs)
+      .finally(() => setLoading(false));
+  }, []);
+
+  const filtered = crabs.filter(c => {
+    const q = search.toLowerCase();
+    if (!q) return true;
+    return (
+      c.full_name?.toLowerCase().includes(q) ||
+      c.email?.toLowerCase().includes(q) ||
+      c.phone?.includes(q) ||
+      (c.aliases || []).some(a => a.toLowerCase().includes(q)) ||
+      (c.tags || []).some(t => t.toLowerCase().includes(q))
+    );
+  });
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Crabs</h1>
+          <p className="text-sm text-muted-foreground mt-1">{crabs.length} profile{crabs.length !== 1 ? "s" : ""}</p>
+        </div>
+        <Link to="/crabs/new">
+          <Button className="gap-2"><Plus className="h-4 w-4" /> New Crab</Button>
+        </Link>
+      </div>
+
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="Search name, alias, email, phone, tag…"
+          className="pl-9"
+        />
+      </div>
+
+      {loading ? (
+        <div className="flex justify-center py-16">
+          <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="text-center py-16 text-muted-foreground">
+          <User className="h-10 w-10 mx-auto mb-3 opacity-30" />
+          <p className="text-sm">{search ? "No crabs match your search" : "No crabs yet — add your first profile"}</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filtered.map(crab => (
+            <Link key={crab.id} to={`/crabs/${crab.id}`}>
+              <div className="bg-card border rounded-xl p-5 hover:shadow-md transition-shadow cursor-pointer h-full">
+                <div className="flex items-start gap-4">
+                  {crab.photo_url ? (
+                    <img src={crab.photo_url} alt={crab.full_name} className="w-12 h-12 rounded-full object-cover shrink-0" />
+                  ) : (
+                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                      <span className="text-primary font-semibold text-lg">{crab.full_name?.[0]?.toUpperCase()}</span>
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="font-semibold text-sm truncate">{crab.full_name}</h3>
+                      <span className={`text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded ${STATUS_COLORS[crab.status] || ""}`}>
+                        {crab.status}
+                      </span>
+                    </div>
+                    {(crab.aliases || []).length > 0 && (
+                      <p className="text-xs text-muted-foreground mt-0.5 truncate">aka {crab.aliases.join(", ")}</p>
+                    )}
+                    {crab.email && <p className="text-xs text-muted-foreground mt-1 truncate">{crab.email}</p>}
+                    {crab.phone && <p className="text-xs text-muted-foreground truncate">{crab.phone}</p>}
+                    {(crab.tags || []).length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {crab.tags.slice(0, 3).map(t => (
+                          <span key={t} className="text-[10px] bg-secondary px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                            <Tag className="h-2.5 w-2.5" />{t}
+                          </span>
+                        ))}
+                        {crab.tags.length > 3 && <span className="text-[10px] text-muted-foreground">+{crab.tags.length - 3}</span>}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}

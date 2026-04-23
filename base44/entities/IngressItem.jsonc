@@ -1,0 +1,50 @@
+{
+  "name": "IngressItem",
+  "type": "object",
+  "properties": {
+    "filename": {
+      "type": "string",
+      "title": "Filename"
+    },
+    "source_path": {
+      "type": "string",
+      "title": "Source Path"
+    },
+    "file_size": {
+      "type": "number",
+      "title": "File Size (bytes)"
+    },
+    "file_type": {
+      "type": "string",
+      "title": "File Type"
+    },
+    "detected_at": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Detected At"
+    },
+    "status": {
+      "type": "string",
+      "title": "Status",
+      "enum": [
+        "detected",
+        "uploading",
+        "uploaded",
+        "deleted_from_ingress",
+        "failed"
+      ],
+      "default": "detected"
+    },
+    "document_id": {
+      "type": "string",
+      "title": "Resulting Document ID"
+    },
+    "error": {
+      "type": "string",
+      "title": "Error (if any)"
+    }
+  },
+  "required": [
+    "filename"
+  ]
+}

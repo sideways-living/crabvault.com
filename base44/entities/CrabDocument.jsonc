@@ -1,0 +1,123 @@
+{
+  "name": "CrabDocument",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "title": "Document Title"
+    },
+    "file_url": {
+      "type": "string",
+      "title": "File URL"
+    },
+    "original_filename": {
+      "type": "string",
+      "title": "Original Filename"
+    },
+    "file_type": {
+      "type": "string",
+      "title": "File Type",
+      "enum": [
+        "pdf",
+        "docx",
+        "xlsx",
+        "jpg",
+        "png",
+        "heic",
+        "txt",
+        "other"
+      ]
+    },
+    "file_size": {
+      "type": "number",
+      "title": "File Size (bytes)"
+    },
+    "crab_ids": {
+      "type": "array",
+      "title": "Linked Crab IDs",
+      "items": {
+        "type": "string"
+      }
+    },
+    "market_ids": {
+      "type": "array",
+      "title": "Linked Market IDs",
+      "items": {
+        "type": "string"
+      }
+    },
+    "document_date": {
+      "type": "string",
+      "format": "date",
+      "title": "Document Date"
+    },
+    "category": {
+      "type": "string",
+      "title": "Category",
+      "enum": [
+        "correspondence",
+        "evidence",
+        "receipt",
+        "id",
+        "legal",
+        "medical",
+        "financial",
+        "other"
+      ],
+      "default": "other"
+    },
+    "summary": {
+      "type": "string",
+      "title": "AI Summary"
+    },
+    "tags": {
+      "type": "array",
+      "title": "Tags",
+      "items": {
+        "type": "string"
+      }
+    },
+    "processing_status": {
+      "type": "string",
+      "title": "Processing Status",
+      "enum": [
+        "pending",
+        "processing",
+        "needs_review",
+        "completed",
+        "failed"
+      ],
+      "default": "pending"
+    },
+    "vault_path": {
+      "type": "string",
+      "title": "Vault Path"
+    },
+    "source_path": {
+      "type": "string",
+      "title": "Source Path (ingress)"
+    },
+    "ingress_deleted": {
+      "type": "boolean",
+      "title": "Ingress File Deleted",
+      "default": false
+    },
+    "synced_to_vault": {
+      "type": "boolean",
+      "title": "Synced to Vault",
+      "default": false
+    },
+    "notes": {
+      "type": "string",
+      "title": "Notes"
+    },
+    "is_deleted": {
+      "type": "boolean",
+      "title": "Is Deleted",
+      "default": false
+    }
+  },
+  "required": [
+    "title"
+  ]
+}

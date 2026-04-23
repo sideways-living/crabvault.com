@@ -1,0 +1,44 @@
+{
+  "name": "CrabMarketActivity",
+  "type": "object",
+  "properties": {
+    "crab_id": {
+      "type": "string",
+      "title": "Crab ID"
+    },
+    "market_id": {
+      "type": "string",
+      "title": "Target Market ID"
+    },
+    "rating": {
+      "type": "number",
+      "title": "Activity Rating (1-5)",
+      "minimum": 1,
+      "maximum": 5
+    },
+    "status": {
+      "type": "string",
+      "title": "Status in Market",
+      "enum": [
+        "active",
+        "banned",
+        "flagged",
+        "inactive"
+      ],
+      "default": "active"
+    },
+    "notes": {
+      "type": "string",
+      "title": "Notes"
+    },
+    "last_activity_date": {
+      "type": "string",
+      "format": "date",
+      "title": "Last Activity Date"
+    }
+  },
+  "required": [
+    "crab_id",
+    "market_id"
+  ]
+}
