@@ -53,8 +53,10 @@ const DEFAULT_FIRST_NAME = process.env.CRAB_DEFAULT_FIRST_NAME || '';
 const DEFAULT_MIDDLE     = process.env.CRAB_DEFAULT_MIDDLE_NAME || '';
 const DEFAULT_CRAB_ID    = process.env.CRAB_DEFAULT_ID || '';
 const MOVE_TO        = process.env.CRAB_MOVE_AFTER_UPLOAD || '';
-const POLL_INTERVAL  = parseInt(process.env.POLL_INTERVAL_MS || '5000', 10);
-const CATEGORY       = process.env.CRAB_DEFAULT_CATEGORY || 'other';
+const POLL_INTERVAL       = parseInt(process.env.POLL_INTERVAL_MS || '5000', 10);
+const CATEGORY            = process.env.CRAB_DEFAULT_CATEGORY || 'other';
+const HEARTBEAT_URL       = process.env.CRAB_HEARTBEAT_URL || '';
+const HEARTBEAT_INTERVAL  = parseInt(process.env.HEARTBEAT_INTERVAL_MS || '60000', 10);
 
 const SUPPORTED = ['.pdf', '.docx', '.xlsx', '.txt', '.jpg', '.jpeg', '.png', '.heic'];
 
@@ -257,5 +259,47 @@ if (DEFAULT_SURNAME) console.log(`👤  Default crab: ${DEFAULT_SURNAME}, ${DEFA
 else console.log(`📁  Subfolder mode: drop files into SURNAME_Firstname/ subfolders`);
 console.log();
 
+async function sendHeartbeat() {
+  if (!HEARTBEAT_URL) return;
+  const url = new URL(HEARTBEAT_URL);
+  const transport = url.protocol === 'https:' ? https : http;
+  const body = JSON.stringify({
+    watcher_type: 'ingest_crab',
+    version: '1.0.0',
+    details: {
+      folder: WATCH_FOLDER,
+      files_processed: uploadedFiles.size,
+    },
+  });
+  return new Promise((resolve) => {
+    const req = transport.request({
+      hostname: url.hostname,
+      port: url.port || (url.protocol === 'https:' ? 443 : 80),
+      path: url.pathname,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': body.length,
+        'x-api-key': API_KEY,
+      },
+    }, res => {
+      res.on('data', () => {});
+      res.on('end', () => {
+        if (res.statusCode === 200) console.log('💓  Heartbeat sent');
+        else console.warn(`⚠️  Heartbeat failed: HTTP ${res.statusCode}`);
+        resolve();
+      });
+    });
+    req.on('error', (err) => { console.warn('⚠️  Heartbeat error:', err.message); resolve(); });
+    req.write(body);
+    req.end();
+  });
+}
+
 setInterval(poll, POLL_INTERVAL);
 poll();
+
+if (HEARTBEAT_URL) {
+  sendHeartbeat();
+  setInterval(sendHeartbeat, HEARTBEAT_INTERVAL);
+}
