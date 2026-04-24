@@ -105,10 +105,10 @@ async function fetchPendingVaultDocs() {
   return apiRequest(`${BASE_URL}/getPendingVaultDocs`);
 }
 
-async function markSynced(documentId, vaultFilePath) {
+async function markSynced(documentId, vaultFilePath, source) {
   return apiRequest(`${BASE_URL}/markDocumentSynced`, {
     method: 'POST',
-    body: JSON.stringify({ documentId, vaultFilePath }),
+    body: JSON.stringify({ documentId, vaultFilePath, source }),
   });
 }
 
@@ -194,7 +194,7 @@ async function syncDocument(doc) {
 
   // Mark synced in the app
   const relVaultPath = path.relative(VAULT_PATH, destPath);
-  await markSynced(doc.id, relVaultPath);
+  await markSynced(doc.id, relVaultPath, doc.source);
 
   if (doc.needs_move) {
     console.log(`📦  Moved: ${doc.old_vault_path} → ${relVaultPath}`);

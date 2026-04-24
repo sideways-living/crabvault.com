@@ -10,9 +10,10 @@ Deno.serve(async (req) => {
   const base44 = createClientFromRequest(req);
   const db = base44.asServiceRole;
 
-  const [docs, folders] = await Promise.all([
+  const [docs, folders, crabDocs] = await Promise.all([
     db.entities.Document.filter({ processing_status: 'completed' }),
     db.entities.Folder.list(),
+    db.entities.CrabDocument.filter({ processing_status: 'completed' }),
   ]);
 
   const folderMap = Object.fromEntries(folders.map(f => [f.id, f]));
@@ -29,15 +30,16 @@ Deno.serve(async (req) => {
 
   const documents = [];
 
+  // Regular Documents
   for (const d of docs) {
     if (d.is_deleted || !d.file_url) continue;
 
     const currentFolderPath = d.folder_id ? getFolderPath(d.folder_id) : '';
 
     if (!d.synced_to_vault) {
-      // Not yet synced — normal pending
       documents.push({
         id: d.id,
+        source: 'document',
         title: d.title,
         original_filename: d.original_filename,
         file_url: d.file_url,
@@ -47,18 +49,16 @@ Deno.serve(async (req) => {
         old_vault_path: null,
       });
     } else if (d.vault_path) {
-      // Already synced — check if folder has changed
-      // Normalize vault_path slashes, strip leading slash, extract directory
       const normalizedVaultPath = d.vault_path.replace(/\\/g, '/').replace(/^\//, '');
       const vaultParts = normalizedVaultPath.split('/');
       const vaultDirParts = vaultParts.slice(0, -1);
       const vaultDir = vaultDirParts.length ? '/' + vaultDirParts.join('/') : '';
-
       const normalizedCurrentDir = currentFolderPath.replace(/\/+$/, '');
 
       if (vaultDir !== normalizedCurrentDir) {
         documents.push({
           id: d.id,
+          source: 'document',
           title: d.title,
           original_filename: d.original_filename,
           file_url: d.file_url,
@@ -69,6 +69,27 @@ Deno.serve(async (req) => {
         });
       }
     }
+  }
+
+  // CrabDocuments — vault_path is already the full relative path (e.g. /documents/SMITH John/file.pdf)
+  for (const d of crabDocs) {
+    if (d.is_deleted || !d.file_url || d.synced_to_vault) continue;
+
+    // Use vault_path as folder_path (strip filename to get directory)
+    const vp = (d.vault_path || '').replace(/\\/g, '/');
+    const folderPath = vp.includes('/') ? vp.substring(0, vp.lastIndexOf('/')) : '';
+
+    documents.push({
+      id: d.id,
+      source: 'crab_document',
+      title: d.title,
+      original_filename: d.original_filename,
+      file_url: d.file_url,
+      file_type: d.file_type,
+      folder_path: folderPath,
+      needs_move: false,
+      old_vault_path: null,
+    });
   }
 
   return Response.json({ documents });

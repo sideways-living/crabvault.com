@@ -6,7 +6,7 @@ Deno.serve(async (req) => {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { documentId, vaultFilePath } = await req.json();
+  const { documentId, vaultFilePath, source } = await req.json();
   if (!documentId) {
     return Response.json({ error: 'documentId required' }, { status: 400 });
   }
@@ -14,7 +14,9 @@ Deno.serve(async (req) => {
   const base44 = createClientFromRequest(req);
   const db = base44.asServiceRole;
 
-  await db.entities.Document.update(documentId, {
+  const entity = source === 'crab_document' ? db.entities.CrabDocument : db.entities.Document;
+
+  await entity.update(documentId, {
     synced_to_vault: true,
     vault_path: vaultFilePath || undefined,
   });
