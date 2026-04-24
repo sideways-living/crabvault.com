@@ -1,7 +1,54 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { Activity, AlertCircle, CheckCircle2, Clock, Copy, Loader2 } from "lucide-react";
+import { Activity, AlertCircle, AlertTriangle, CheckCircle2, Clock, Copy, Loader2, WifiOff } from "lucide-react";
 import { toast } from "sonner";
+
+const WATCHER_CONFIG = [
+  {
+    type: "ingest",
+    label: "File Ingest Watcher",
+    script: "watch.js",
+    envPrefix: "INGEST",
+    heartbeatVar: "HEARTBEAT_URL",
+    keyVar: "HEARTBEAT_KEY",
+    fixes: [
+      "Make sure watch.js is running: node watch.js",
+      "Check HEARTBEAT_URL is set in your watcher/.env",
+      "Check HEARTBEAT_KEY matches your INGEST_API_KEY secret",
+      "Ensure your machine can reach the internet",
+    ],
+  },
+  {
+    type: "ingest_crab",
+    label: "Crab Ingest Watcher",
+    script: "watch-crab.js",
+    envPrefix: "CRAB",
+    heartbeatVar: "CRAB_HEARTBEAT_URL",
+    keyVar: "INGEST_API_KEY",
+    fixes: [
+      "Make sure watch-crab.js is running: node watch-crab.js",
+      "Check CRAB_HEARTBEAT_URL is set in your watcher/.env",
+      "Check INGEST_API_KEY matches your app secret",
+      "Ensure your machine can reach the internet",
+    ],
+  },
+  {
+    type: "sync",
+    label: "Vault Sync Watcher",
+    script: "sync-to-vault.js",
+    envPrefix: "SYNC",
+    heartbeatVar: "HEARTBEAT_URL",
+    keyVar: "HEARTBEAT_KEY",
+    fixes: [
+      "Make sure sync-to-vault.js is running: node sync-to-vault.js",
+      "Check HEARTBEAT_URL is set in your watcher/.env",
+      "Check VAULT_PATH is set and the Cryptomator vault is mounted",
+      "Ensure your machine can reach the internet",
+    ],
+  },
+];
+
+const STALE_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes
 
 export default function WatcherStatus() {
   const [statuses, setStatuses] = useState([]);
@@ -15,34 +62,28 @@ export default function WatcherStatus() {
 
   const loadStatuses = async () => {
     try {
-      const data = await base44.entities.WatcherStatus.list('-last_heartbeat', 10);
+      const data = await base44.entities.WatcherStatus.list('-last_heartbeat', 20);
       setStatuses(data);
-    } catch (err) {
-      // silently ignore polling errors to avoid crashing the page
+    } catch {
+      // silently ignore polling errors
     } finally {
       setLoading(false);
     }
   };
 
   const isRunning = (status) => {
-    if (status.status !== 'running') return false;
-    const lastHeartbeat = new Date(status.last_heartbeat);
-    const now = new Date();
-    const ageMs = now - lastHeartbeat;
-    return ageMs < 5 * 60 * 1000; // running if heartbeat < 5 min ago
+    if (!status || status.status !== 'running') return false;
+    return (new Date() - new Date(status.last_heartbeat)) < STALE_THRESHOLD_MS;
   };
 
   const formatTime = (isoString) => {
-    const date = new Date(isoString);
-    const now = new Date();
-    const diffMs = now - date;
-    const diffMins = Math.round(diffMs / 60000);
-    
+    if (!isoString) return 'never';
+    const diffMins = Math.round((new Date() - new Date(isoString)) / 60000);
     if (diffMins < 1) return 'just now';
     if (diffMins < 60) return `${diffMins}m ago`;
     const diffHours = Math.round(diffMins / 60);
     if (diffHours < 24) return `${diffHours}h ago`;
-    return date.toLocaleString();
+    return new Date(isoString).toLocaleString();
   };
 
   const copyToClipboard = (text) => {
@@ -66,70 +107,99 @@ export default function WatcherStatus() {
       </div>
 
       <div className="grid gap-4">
-        {statuses.length === 0 ? (
-          <div className="bg-card border rounded-lg p-8 text-center flex flex-col items-center gap-3">
-            <AlertCircle className="h-8 w-8 text-amber-500" />
-            <p className="font-medium">No watchers connected</p>
-            <p className="text-sm text-muted-foreground">Run your watcher scripts to see their status here</p>
-          </div>
-        ) : (
-          statuses.map(status => {
-            const running = isRunning(status);
-            const displayName = status.watcher_type === 'ingest' ? 'File Ingest Watcher' : 'Vault Sync Watcher';
-            return (
-              <div key={status.id} className="bg-card border rounded-lg p-5 space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    {running ? (
-                      <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-                    ) : (
-                      <AlertCircle className="h-5 w-5 text-muted-foreground" />
-                    )}
-                    <div>
-                      <p className="font-semibold">{displayName}</p>
-                      <p className={`text-sm ${running ? 'text-emerald-600' : 'text-muted-foreground'}`}>
-                        {running ? 'Running' : 'Offline'}
-                      </p>
-                    </div>
-                  </div>
-                  {status.version && (
-                    <span className="text-xs bg-muted px-2 py-1 rounded-full text-muted-foreground">
-                      v{status.version}
-                    </span>
-                  )}
-                </div>
+        {WATCHER_CONFIG.map(config => {
+          const status = statuses.find(s => s.watcher_type === config.type);
+          const running = isRunning(status);
+          const missing = !status;
+          const stale = status && !running;
 
+          return (
+            <div
+              key={config.type}
+              className={`bg-card border rounded-lg p-5 space-y-4 ${stale || missing ? 'border-amber-300' : ''}`}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  {running ? (
+                    <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                  ) : missing ? (
+                    <WifiOff className="h-5 w-5 text-amber-500" />
+                  ) : (
+                    <AlertTriangle className="h-5 w-5 text-amber-500" />
+                  )}
+                  <div>
+                    <p className="font-semibold">{config.label}</p>
+                    <p className={`text-sm ${running ? 'text-emerald-600' : 'text-amber-600'}`}>
+                      {running ? 'Running' : missing ? 'Never connected' : 'Offline / Stale'}
+                    </p>
+                  </div>
+                </div>
+                {status?.version && (
+                  <span className="text-xs bg-muted px-2 py-1 rounded-full text-muted-foreground">
+                    v{status.version}
+                  </span>
+                )}
+              </div>
+
+              {/* Details */}
+              {status && (
                 <div className="space-y-2 text-sm">
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <Clock className="h-4 w-4" />
                     <span>Last heartbeat: <strong>{formatTime(status.last_heartbeat)}</strong></span>
                   </div>
-                  {status.details && (
-                    <>
-                      {status.details.folder && (
-                        <div className="text-xs bg-muted rounded p-2 font-mono text-foreground">
-                          📁 {status.details.folder}
-                        </div>
-                      )}
-                      {status.details.vault && (
-                        <div className="text-xs bg-muted rounded p-2 font-mono text-foreground">
-                          🔐 {status.details.vault}
-                        </div>
-                      )}
-                      {status.details.files_processed && (
-                        <div className="text-xs text-muted-foreground">
-                          ✓ {status.details.files_processed} files processed
-                        </div>
-                      )}
-                    </>
+                  {status.details?.folder && (
+                    <div className="text-xs bg-muted rounded p-2 font-mono text-foreground">
+                      📁 {status.details.folder}
+                    </div>
+                  )}
+                  {status.details?.vault && (
+                    <div className="text-xs bg-muted rounded p-2 font-mono text-foreground">
+                      🔐 {status.details.vault}
+                    </div>
+                  )}
+                  {status.details?.files_processed > 0 && (
+                    <div className="text-xs text-muted-foreground">
+                      ✓ {status.details.files_processed} files processed
+                    </div>
                   )}
                 </div>
-              </div>
-            );
-          })
-        )}
+              )}
+
+              {/* Alert banner for offline / missing */}
+              {(missing || stale) && (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 space-y-2">
+                  <div className="flex items-center gap-2 text-amber-800 font-medium text-sm">
+                    <AlertCircle className="h-4 w-4 shrink-0" />
+                    {missing
+                      ? `${config.label} has never sent a heartbeat.`
+                      : `${config.label} stopped responding — last seen ${formatTime(status.last_heartbeat)}.`}
+                  </div>
+                  <p className="text-xs text-amber-700 font-semibold mt-1">How to fix:</p>
+                  <ul className="space-y-1">
+                    {config.fixes.map((fix, i) => (
+                      <li key={i} className="text-xs text-amber-700 flex items-start gap-1.5">
+                        <span className="mt-0.5 shrink-0">•</span>
+                        {fix.includes(':') ? (
+                          <>
+                            {fix.split(':')[0]}:&nbsp;
+                            <code className="bg-white px-1 rounded border border-amber-200 font-mono">
+                              {fix.split(':').slice(1).join(':').trim()}
+                            </code>
+                          </>
+                        ) : fix}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
 
+      {/* Config reference */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-5 space-y-3">
         <div className="flex gap-2">
           <Activity className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />
@@ -139,8 +209,9 @@ export default function WatcherStatus() {
             {[
               { label: 'INGEST_URL', value: `${window.location.origin}/api/functions/ingestDocument` },
               { label: 'HEARTBEAT_URL', value: `${window.location.origin}/api/functions/watcherHeartbeat` },
+              { label: 'CRAB_INGEST_URL', value: `${window.location.origin}/api/functions/ingestCrabDocument` },
+              { label: 'CRAB_HEARTBEAT_URL', value: `${window.location.origin}/api/functions/watcherHeartbeat` },
               { label: 'INGEST_API_KEY', value: '(your INGEST_API_KEY secret value)' },
-              { label: 'HEARTBEAT_KEY', value: '(same as INGEST_API_KEY)' },
             ].map(({ label, value }) => (
               <div key={label} className="flex items-center gap-2">
                 <div className="bg-white rounded px-3 py-2 font-mono text-xs text-foreground border border-blue-200 flex-1 overflow-auto">
@@ -155,7 +226,7 @@ export default function WatcherStatus() {
                 </button>
               </div>
             ))}
-            <p className="text-blue-700 text-xs">The watcher sends a heartbeat every 60s. If status shows Offline, check your .env has HEARTBEAT_URL set and restart the watcher.</p>
+            <p className="text-blue-700 text-xs">Watchers send a heartbeat every 60s. A watcher is considered offline if no heartbeat is received for 5 minutes.</p>
           </div>
         </div>
       </div>
