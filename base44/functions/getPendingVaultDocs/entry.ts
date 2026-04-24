@@ -13,7 +13,7 @@ Deno.serve(async (req) => {
   const [docs, folders, crabDocs] = await Promise.all([
     db.entities.Document.filter({ processing_status: 'completed' }),
     db.entities.Folder.list(),
-    db.entities.CrabDocument.filter({ processing_status: 'completed' }),
+    db.entities.CrabDocument.filter({ synced_to_vault: false }),
   ]);
 
   const folderMap = Object.fromEntries(folders.map(f => [f.id, f]));
