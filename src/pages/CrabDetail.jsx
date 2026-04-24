@@ -27,9 +27,13 @@ export default function CrabDetail() {
   const creating = isNew(id);
 
   const [crab, setCrab] = useState({
-    full_name: "", aliases: [], date_of_birth: "", photo_url: "",
-    phone: "", email: "", address: "", id_numbers: [],
-    emergency_summary: "", notes: "", status: "active", tags: [],
+    first_name: "", middle_name: "", surname: "", full_name: "",
+    aliases: [], date_of_birth: "", photo_url: "",
+    phone: "", email: "",
+    address1: "", address2: "", suburb: "", state: "", postcode: "", country: "Australia",
+    mailing_same_as_residential: true,
+    mailing_address1: "", mailing_address2: "", mailing_suburb: "", mailing_state: "", mailing_postcode: "", mailing_country: "Australia",
+    id_numbers: [], emergency_summary: "", notes: "", status: "active", tags: [],
   });
   const [documents, setDocuments] = useState([]);
   const [markets, setMarkets] = useState([]);
@@ -55,16 +59,22 @@ export default function CrabDetail() {
     });
   }, [id]);
 
+  const set = (field) => (e) => setCrab(c => ({ ...c, [field]: e.target.value }));
+
+  const computedFullName = [crab.first_name, crab.middle_name, crab.surname].filter(Boolean).join(" ");
+
   const handleSave = async () => {
-    if (!crab.full_name.trim()) { toast.error("Full name is required"); return; }
+    if (!crab.surname?.trim()) { toast.error("Surname is required"); return; }
     setSaving(true);
+    // auto-compute full_name before saving
+    const saveData = { ...crab, full_name: computedFullName };
     try {
       if (creating) {
-        const created = await base44.entities.Crab.create(crab);
+        const created = await base44.entities.Crab.create(saveData);
         toast.success("Crab profile created");
         navigate(`/crabs/${created.id}`);
       } else {
-        await base44.entities.Crab.update(id, crab);
+        await base44.entities.Crab.update(id, saveData);
         toast.success("Profile saved");
       }
     } catch (e) {
@@ -74,7 +84,7 @@ export default function CrabDetail() {
   };
 
   const handleDelete = async () => {
-    if (!confirm(`Delete profile for ${crab.full_name}? This cannot be undone.`)) return;
+    if (!confirm(`Delete profile for ${computedFullName || crab.full_name}? This cannot be undone.`)) return;
     await base44.entities.Crab.update(id, { is_deleted: true });
     toast.success("Profile deleted");
     navigate("/crabs");
@@ -110,7 +120,7 @@ export default function CrabDetail() {
       <div className="flex items-center gap-4">
         <Link to="/crabs"><Button variant="ghost" size="icon"><ArrowLeft className="h-4 w-4" /></Button></Link>
         <div className="flex-1">
-          <h1 className="text-xl font-semibold">{creating ? "New Crab Profile" : crab.full_name}</h1>
+          <h1 className="text-xl font-semibold">{creating ? "New Crab Profile" : (computedFullName || crab.full_name)}</h1>
           {!creating && <p className="text-xs text-muted-foreground">ID: {id}</p>}
         </div>
         <div className="flex gap-2">
@@ -133,14 +143,24 @@ export default function CrabDetail() {
           {/* Basic info */}
           <div className="bg-card border rounded-xl p-5 space-y-4">
             <h2 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground">Profile</h2>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="col-span-2">
-                <Label className="text-xs">Full Name *</Label>
-                <Input className="mt-1" value={crab.full_name} onChange={e => setCrab(c => ({ ...c, full_name: e.target.value }))} />
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <Label className="text-xs">First Name</Label>
+                <Input className="mt-1" value={crab.first_name || ""} onChange={set("first_name")} />
               </div>
               <div>
+                <Label className="text-xs">Middle Name</Label>
+                <Input className="mt-1" value={crab.middle_name || ""} onChange={set("middle_name")} />
+              </div>
+              <div>
+                <Label className="text-xs">Surname *</Label>
+                <Input className="mt-1" value={crab.surname || ""} onChange={set("surname")} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
                 <Label className="text-xs">Date of Birth</Label>
-                <Input type="date" className="mt-1" value={crab.date_of_birth || ""} onChange={e => setCrab(c => ({ ...c, date_of_birth: e.target.value }))} />
+                <Input type="date" className="mt-1" value={crab.date_of_birth || ""} onChange={set("date_of_birth")} />
               </div>
               <div>
                 <Label className="text-xs">Status</Label>
@@ -156,21 +176,95 @@ export default function CrabDetail() {
               </div>
               <div>
                 <Label className="text-xs">Phone</Label>
-                <Input className="mt-1" value={crab.phone || ""} onChange={e => setCrab(c => ({ ...c, phone: e.target.value }))} />
+                <Input className="mt-1" value={crab.phone || ""} onChange={set("phone")} />
               </div>
               <div>
                 <Label className="text-xs">Email</Label>
-                <Input className="mt-1" value={crab.email || ""} onChange={e => setCrab(c => ({ ...c, email: e.target.value }))} />
-              </div>
-              <div className="col-span-2">
-                <Label className="text-xs">Address</Label>
-                <Input className="mt-1" value={crab.address || ""} onChange={e => setCrab(c => ({ ...c, address: e.target.value }))} />
+                <Input className="mt-1" value={crab.email || ""} onChange={set("email")} />
               </div>
               <div className="col-span-2">
                 <Label className="text-xs">Photo URL</Label>
-                <Input className="mt-1" value={crab.photo_url || ""} onChange={e => setCrab(c => ({ ...c, photo_url: e.target.value }))} />
+                <Input className="mt-1" value={crab.photo_url || ""} onChange={set("photo_url")} />
               </div>
             </div>
+          </div>
+
+          {/* Residential Address */}
+          <div className="bg-card border rounded-xl p-5 space-y-4">
+            <h2 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground">Residential Address</h2>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="col-span-2">
+                <Label className="text-xs">Address Line 1</Label>
+                <Input className="mt-1" value={crab.address1 || ""} onChange={set("address1")} placeholder="Street number and name" />
+              </div>
+              <div className="col-span-2">
+                <Label className="text-xs">Address Line 2</Label>
+                <Input className="mt-1" value={crab.address2 || ""} onChange={set("address2")} placeholder="Unit, apartment, floor…" />
+              </div>
+              <div>
+                <Label className="text-xs">Suburb</Label>
+                <Input className="mt-1" value={crab.suburb || ""} onChange={set("suburb")} />
+              </div>
+              <div>
+                <Label className="text-xs">State</Label>
+                <Input className="mt-1" value={crab.state || ""} onChange={set("state")} />
+              </div>
+              <div>
+                <Label className="text-xs">Postcode</Label>
+                <Input className="mt-1" value={crab.postcode || ""} onChange={set("postcode")} />
+              </div>
+              <div>
+                <Label className="text-xs">Country</Label>
+                <Input className="mt-1" value={crab.country || "Australia"} onChange={set("country")} />
+              </div>
+            </div>
+          </div>
+
+          {/* Mailing Address */}
+          <div className="bg-card border rounded-xl p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground">Mailing Address</h2>
+              <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={crab.mailing_same_as_residential ?? true}
+                  onChange={e => setCrab(c => ({ ...c, mailing_same_as_residential: e.target.checked }))}
+                  className="rounded"
+                />
+                Same as residential
+              </label>
+            </div>
+            {!(crab.mailing_same_as_residential ?? true) && (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="col-span-2">
+                  <Label className="text-xs">Address Line 1</Label>
+                  <Input className="mt-1" value={crab.mailing_address1 || ""} onChange={set("mailing_address1")} placeholder="Street number and name" />
+                </div>
+                <div className="col-span-2">
+                  <Label className="text-xs">Address Line 2</Label>
+                  <Input className="mt-1" value={crab.mailing_address2 || ""} onChange={set("mailing_address2")} placeholder="Unit, PO Box, locked bag…" />
+                </div>
+                <div>
+                  <Label className="text-xs">Suburb</Label>
+                  <Input className="mt-1" value={crab.mailing_suburb || ""} onChange={set("mailing_suburb")} />
+                </div>
+                <div>
+                  <Label className="text-xs">State</Label>
+                  <Input className="mt-1" value={crab.mailing_state || ""} onChange={set("mailing_state")} />
+                </div>
+                <div>
+                  <Label className="text-xs">Postcode</Label>
+                  <Input className="mt-1" value={crab.mailing_postcode || ""} onChange={set("mailing_postcode")} />
+                </div>
+                <div>
+                  <Label className="text-xs">Country</Label>
+                  <Input className="mt-1" value={crab.mailing_country || "Australia"} onChange={set("mailing_country")} />
+                </div>
+              </div>
+            )}
+            {(crab.mailing_same_as_residential ?? true) && (
+              <p className="text-xs text-muted-foreground italic">Using residential address for mail</p>
+            )}
           </div>
 
           {/* Aliases */}

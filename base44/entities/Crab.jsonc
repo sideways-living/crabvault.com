@@ -2,9 +2,21 @@
   "name": "Crab",
   "type": "object",
   "properties": {
+    "first_name": {
+      "type": "string",
+      "title": "First Name"
+    },
+    "middle_name": {
+      "type": "string",
+      "title": "Middle Name"
+    },
+    "surname": {
+      "type": "string",
+      "title": "Surname"
+    },
     "full_name": {
       "type": "string",
-      "title": "Full Name"
+      "title": "Full Name (computed / display)"
     },
     "aliases": {
       "type": "array",
@@ -30,9 +42,60 @@
       "type": "string",
       "title": "Email Address"
     },
-    "address": {
+    "address1": {
       "type": "string",
-      "title": "Address"
+      "title": "Address Line 1"
+    },
+    "address2": {
+      "type": "string",
+      "title": "Address Line 2"
+    },
+    "suburb": {
+      "type": "string",
+      "title": "Suburb"
+    },
+    "state": {
+      "type": "string",
+      "title": "State"
+    },
+    "postcode": {
+      "type": "string",
+      "title": "Postcode"
+    },
+    "country": {
+      "type": "string",
+      "title": "Country",
+      "default": "Australia"
+    },
+    "mailing_same_as_residential": {
+      "type": "boolean",
+      "title": "Mailing Address Same as Residential",
+      "default": true
+    },
+    "mailing_address1": {
+      "type": "string",
+      "title": "Mailing Address Line 1"
+    },
+    "mailing_address2": {
+      "type": "string",
+      "title": "Mailing Address Line 2"
+    },
+    "mailing_suburb": {
+      "type": "string",
+      "title": "Mailing Suburb"
+    },
+    "mailing_state": {
+      "type": "string",
+      "title": "Mailing State"
+    },
+    "mailing_postcode": {
+      "type": "string",
+      "title": "Mailing Postcode"
+    },
+    "mailing_country": {
+      "type": "string",
+      "title": "Mailing Country",
+      "default": "Australia"
     },
     "id_numbers": {
       "type": "array",
@@ -84,6 +147,6 @@
     }
   },
   "required": [
-    "full_name"
+    "surname"
   ]
 }
