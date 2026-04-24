@@ -33,12 +33,16 @@ export default function CrabDocumentsPage() {
   const [uploadOpen, setUploadOpen] = useState(false);
 
   const load = () => {
+    setLoading(true);
     Promise.all([
       base44.entities.CrabDocument.filter({ is_deleted: false }, "-created_date", 500),
       base44.entities.Crab.filter({ is_deleted: false }, "full_name", 500),
     ]).then(([docs, crbs]) => {
       setDocuments(docs);
       setCrabs(crbs);
+    }).catch(err => {
+      console.error("Failed to load documents:", err);
+    }).finally(() => {
       setLoading(false);
     });
   };
