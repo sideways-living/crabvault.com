@@ -24,8 +24,10 @@
  *   4. node watch-crab.js
  *
  * File naming convention (auto-parsed if CRAB_DEFAULT_SURNAME is not set):
- *   Drop files into subfolders named as:  SURNAME_Firstname_Middlename/
- *   e.g.  /drop/SMITH_John_Michael/document.pdf
+ *   Drop files into subfolders named as:  "Firstname SURNAME" or "Firstname Middle SURNAME"
+ *   e.g.  /drop/John SMITH/document.pdf
+ *         /drop/John Michael SMITH/document.pdf
+ *   The last word is always treated as the surname.
  *   The watcher will parse the folder name and create the profile automatically.
  *
  * Or just drop flat files and set CRAB_DEFAULT_SURNAME for a single-crab watch folder.
@@ -98,16 +100,23 @@ process.on('SIGINT', () => process.exit());
 process.on('SIGTERM', () => process.exit());
 
 /**
- * Parse crab identity from a subfolder name: SURNAME_Firstname_Middlename
+ * Parse crab identity from a subfolder name: "Firstname Middlename SURNAME"
+ * The last word is always treated as the surname (uppercased or not).
+ * Middle name is optional.
+ * Examples:
+ *   "John SMITH"          → { firstName: "John",  middleName: "",      surname: "Smith" }
+ *   "John Michael SMITH"  → { firstName: "John",  middleName: "Michael", surname: "Smith" }
  * Returns { surname, firstName, middleName }
  */
 function parseCrabFolder(folderName) {
-  const parts = folderName.split('_');
-  return {
-    surname:    (parts[0] || '').trim(),
-    firstName:  (parts[1] || '').trim(),
-    middleName: (parts[2] || '').trim(),
-  };
+  const parts = folderName.trim().split(/\s+/);
+  if (parts.length === 1) {
+    return { surname: parts[0], firstName: '', middleName: '' };
+  }
+  const surname    = parts[parts.length - 1];
+  const firstName  = parts[0];
+  const middleName = parts.length > 2 ? parts.slice(1, -1).join(' ') : '';
+  return { surname, firstName, middleName };
 }
 
 async function uploadFile(filePath, filename, crabInfo) {
@@ -256,7 +265,7 @@ console.log(`🦀  CrabVault Watcher started`);
 console.log(`👀  Watching: ${WATCH_FOLDER}`);
 console.log(`📤  Ingesting to: ${INGEST_URL}`);
 if (DEFAULT_SURNAME) console.log(`👤  Default crab: ${DEFAULT_SURNAME}, ${DEFAULT_FIRST_NAME}`);
-else console.log(`📁  Subfolder mode: drop files into SURNAME_Firstname/ subfolders`);
+else console.log(`📁  Subfolder mode: drop files into "Firstname SURNAME" or "Firstname Middle SURNAME" subfolders`);
 console.log();
 
 async function sendHeartbeat() {
