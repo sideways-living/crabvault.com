@@ -24,11 +24,17 @@
  *   4. node watch-crab.js
  *
  * File naming convention (auto-parsed if CRAB_DEFAULT_SURNAME is not set):
- *   Drop files into subfolders named as:  "Firstname SURNAME" or "Firstname Middle SURNAME"
- *   e.g.  /drop/John SMITH/document.pdf
- *         /drop/John Michael SMITH/document.pdf
- *   The last word is always treated as the surname.
- *   The watcher will parse the folder name and create the profile automatically.
+ *   Option A — Subfolder per crab (folder name parsed):
+ *     /drop/John SMITH/document.pdf
+ *     /drop/John Michael SMITH/document.pdf
+ *
+ *   Option B — Flat files with crab name embedded in filename (separator " - "):
+ *     /drop/John SMITH - document.pdf
+ *     /drop/John Michael SMITH - document.pdf
+ *     /drop/SMITH John - document.pdf
+ *     /drop/SMITH, John Michael - document.pdf
+ *
+ *   In both cases, the last word of the name portion is treated as the surname.
  *
  * Or just drop flat files and set CRAB_DEFAULT_SURNAME for a single-crab watch folder.
  */
@@ -100,16 +106,27 @@ process.on('SIGINT', () => process.exit());
 process.on('SIGTERM', () => process.exit());
 
 /**
- * Parse crab identity from a subfolder name: "Firstname Middlename SURNAME"
+ * Parse crab identity from a name string: "Firstname [Middle] SURNAME"
  * The last word is always treated as the surname (uppercased or not).
  * Middle name is optional.
  * Examples:
- *   "John SMITH"          → { firstName: "John",  middleName: "",      surname: "Smith" }
+ *   "John SMITH"          → { firstName: "John",  middleName: "",        surname: "Smith" }
  *   "John Michael SMITH"  → { firstName: "John",  middleName: "Michael", surname: "Smith" }
  * Returns { surname, firstName, middleName }
  */
-function parseCrabFolder(folderName) {
-  const parts = folderName.trim().split(/\s+/);
+function parseCrabName(name) {
+  // Handle "SURNAME, Firstname [Middle]" format (comma-separated)
+  if (name.includes(',')) {
+    const [surnamePart, restPart] = name.split(',').map(s => s.trim());
+    const restParts = restPart ? restPart.split(/\s+/) : [];
+    return {
+      surname: surnamePart,
+      firstName: restParts[0] || '',
+      middleName: restParts.slice(1).join(' '),
+    };
+  }
+
+  const parts = name.trim().split(/\s+/);
   if (parts.length === 1) {
     return { surname: parts[0], firstName: '', middleName: '' };
   }
@@ -117,6 +134,34 @@ function parseCrabFolder(folderName) {
   const firstName  = parts[0];
   const middleName = parts.length > 2 ? parts.slice(1, -1).join(' ') : '';
   return { surname, firstName, middleName };
+}
+
+// Keep alias for subfolder parsing
+const parseCrabFolder = (folderName) => parseCrabName(folderName);
+
+/**
+ * Try to parse crab identity from a filename.
+ * Expects the format: "<Name> - <rest of filename>.<ext>"
+ * The name portion is everything before the first " - " separator.
+ * Returns { surname, firstName, middleName } or null if no separator found.
+ *
+ * Examples:
+ *   "John SMITH - statement.pdf"         → { firstName: "John", middleName: "", surname: "SMITH" }
+ *   "John Michael SMITH - id scan.jpg"   → { firstName: "John", middleName: "Michael", surname: "SMITH" }
+ *   "SMITH John - letter.pdf"            → { firstName: "John", middleName: "", surname: "SMITH" }  ← last word = surname
+ *   "SMITH, John Michael - docs.pdf"     → { firstName: "John", middleName: "Michael", surname: "SMITH" }
+ */
+function parseCrabFromFilename(filename) {
+  // Strip extension
+  const base = filename.replace(/\.[^/.]+$/, '');
+  // Require " - " separator
+  const sepIdx = base.indexOf(' - ');
+  if (sepIdx === -1) return null;
+
+  const namePart = base.slice(0, sepIdx).trim();
+  if (!namePart) return null;
+
+  return parseCrabName(namePart);
 }
 
 async function uploadFile(filePath, filename, crabInfo) {
@@ -227,25 +272,40 @@ async function poll() {
       }
 
     } else if (stat.isFile()) {
-      // Flat mode — must have a default crab configured
-      if (!DEFAULT_SURNAME && !DEFAULT_CRAB_ID) continue;
       const filename = entry;
       if (uploadedFiles.has(filename)) continue;
       const ext = path.extname(filename).toLowerCase();
       if (!SUPPORTED.includes(ext)) { uploadedFiles.add(filename); continue; }
 
-      const filePath = entryPath; // entryPath is the full path for flat files
+      // Resolve crab identity: default env vars → filename parsing → skip
+      let crabInfo = null;
+      if (DEFAULT_CRAB_ID || DEFAULT_SURNAME) {
+        crabInfo = {
+          surname: DEFAULT_SURNAME,
+          firstName: DEFAULT_FIRST_NAME,
+          middleName: DEFAULT_MIDDLE,
+          crabId: DEFAULT_CRAB_ID,
+        };
+      } else {
+        // Try to parse crab name from filename: "John SMITH - description.pdf"
+        const parsed = parseCrabFromFilename(filename);
+        if (parsed && parsed.surname) {
+          crabInfo = parsed;
+          console.log(`🔍  Parsed from filename: ${parsed.firstName} ${parsed.surname}`);
+        }
+      }
+
+      if (!crabInfo || (!crabInfo.surname && !crabInfo.crabId)) {
+        console.log(`⚠️  Skipping "${filename}" — no crab identity (set defaults or use "Name SURNAME - title.ext" format)`);
+        continue;
+      }
+
+      const filePath = entryPath;
       uploadedFiles.add(filename); saveLog();
       console.log(`📄  Detected: ${filename}`);
-      const crabInfo = {
-        surname: DEFAULT_SURNAME,
-        firstName: DEFAULT_FIRST_NAME,
-        middleName: DEFAULT_MIDDLE,
-        crabId: DEFAULT_CRAB_ID,
-      };
       try {
         const result = await uploadFile(filePath, filename, crabInfo);
-        console.log(`✅  Uploaded: ${filename} → doc:${result.document_id} crab:${result.crab_id}`);
+        console.log(`✅  Uploaded: ${filename} → doc:${result.document_id} crab:${result.crab_id} ${result.is_new_crab ? '(new profile)' : ''}`);
         // Securely delete from unencrypted watch folder immediately after confirmed upload
         try {
           fs.unlinkSync(filePath);
@@ -264,8 +324,9 @@ async function poll() {
 console.log(`🦀  CrabVault Watcher started`);
 console.log(`👀  Watching: ${WATCH_FOLDER}`);
 console.log(`📤  Ingesting to: ${INGEST_URL}`);
-if (DEFAULT_SURNAME) console.log(`👤  Default crab: ${DEFAULT_SURNAME}, ${DEFAULT_FIRST_NAME}`);
-else console.log(`📁  Subfolder mode: drop files into "Firstname SURNAME" or "Firstname Middle SURNAME" subfolders`);
+if (DEFAULT_CRAB_ID) console.log(`👤  Default crab ID: ${DEFAULT_CRAB_ID}`);
+else if (DEFAULT_SURNAME) console.log(`👤  Default crab: ${DEFAULT_FIRST_NAME} ${DEFAULT_SURNAME}`);
+else console.log(`📁  Auto-detect mode: use subfolders ("John SMITH/") or filenames ("John SMITH - document.pdf"`);
 console.log();
 
 async function sendHeartbeat() {
