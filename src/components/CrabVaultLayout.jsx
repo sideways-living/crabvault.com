@@ -1,5 +1,5 @@
 import { Link, useLocation, Outlet } from "react-router-dom";
-import { LayoutDashboard, Users, FileText, Building2, Shield } from "lucide-react";
+import { LayoutDashboard, Users, FileText, Building2, Shield, Inbox } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV = [
@@ -7,6 +7,7 @@ const NAV = [
   { to: "/crabs", label: "Crabs", icon: Users },
   { to: "/crab-documents", label: "Documents", icon: FileText },
   { to: "/markets", label: "Markets", icon: Building2 },
+  { to: "/ingress", label: "Ingress Queue", icon: Inbox },
 ];
 
 export default function CrabVaultLayout() {
