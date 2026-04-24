@@ -2,8 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Download, ExternalLink, FileText, Loader2, User } from "lucide-react";
+import { ArrowLeft, Download, ExternalLink, FileText, Loader2, User, GitBranch } from "lucide-react";
 
 const IMAGE_TYPES = ["jpg", "jpeg", "png", "heic", "webp", "gif"];
 const PDF_TYPES = ["pdf"];
@@ -82,13 +81,27 @@ export default function CrabDocumentDetail() {
   const [crabs, setCrabs] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const [versions, setVersions] = useState([]);
+
   useEffect(() => {
     Promise.all([
       base44.entities.CrabDocument.filter({ id }),
       base44.entities.Crab.list("full_name", 500),
-    ]).then(([docs, crbs]) => {
-      setDoc(docs[0] || null);
+    ]).then(async ([docs, crbs]) => {
+      const d = docs[0] || null;
+      setDoc(d);
       setCrabs(crbs);
+
+      // Load version history if this doc has a filename
+      if (d?.original_filename) {
+        const allVersions = await base44.entities.CrabDocument.list("-version", 50);
+        const history = allVersions.filter(v =>
+          v.original_filename === d.original_filename &&
+          (v.crab_ids || []).some(cid => (d.crab_ids || []).includes(cid)) &&
+          !v.is_deleted
+        );
+        setVersions(history.sort((a, b) => (b.version || 1) - (a.version || 1)));
+      }
     }).finally(() => setLoading(false));
   }, [id]);
 
@@ -120,7 +133,15 @@ export default function CrabDocumentDetail() {
           <Button variant="ghost" size="icon" className="mt-0.5"><ArrowLeft className="h-4 w-4" /></Button>
         </Link>
         <div className="flex-1 min-w-0">
-          <h1 className="text-xl font-semibold tracking-tight truncate">{doc.title}</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl font-semibold tracking-tight truncate">{doc.title}</h1>
+            {doc.version > 1 && (
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 shrink-0">v{doc.version}</span>
+            )}
+            {doc.is_latest_version === false && (
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200 shrink-0">outdated</span>
+            )}
+          </div>
           {doc.original_filename && (
             <p className="text-xs font-mono text-muted-foreground mt-0.5 truncate">{doc.original_filename}</p>
           )}
@@ -204,6 +225,29 @@ export default function CrabDocumentDetail() {
                 {doc.summary ? "Summary" : "Notes"}
               </h3>
               <p className="text-sm text-muted-foreground leading-relaxed">{doc.summary || doc.notes}</p>
+            </div>
+          )}
+
+          {/* Version history */}
+          {versions.length > 1 && (
+            <div className="rounded-xl border p-4 space-y-3">
+              <h3 className="text-xs font-semibold uppercase text-muted-foreground tracking-wider flex items-center gap-1.5">
+                <GitBranch className="h-3.5 w-3.5" /> Version History
+              </h3>
+              <div className="space-y-1.5">
+                {versions.map(v => (
+                  <Link
+                    key={v.id}
+                    to={`/crab-documents/${v.id}`}
+                    className={`flex items-center justify-between text-sm px-2 py-1.5 rounded-lg transition-colors ${v.id === id ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted text-muted-foreground hover:text-foreground"}`}
+                  >
+                    <span>v{v.version || 1}</span>
+                    <span className="text-[10px]">
+                      {v.is_latest_version ? <span className="text-emerald-600 font-semibold">latest</span> : new Date(v.created_date).toLocaleDateString()}
+                    </span>
+                  </Link>
+                ))}
+              </div>
             </div>
           )}
         </div>

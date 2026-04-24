@@ -116,6 +116,24 @@
       "type": "boolean",
       "title": "Is Deleted",
       "default": false
+    },
+    "version": {
+      "type": "number",
+      "title": "Version Number",
+      "default": 1
+    },
+    "previous_version_id": {
+      "type": "string",
+      "title": "Previous Version Document ID"
+    },
+    "is_latest_version": {
+      "type": "boolean",
+      "title": "Is Latest Version",
+      "default": true
+    },
+    "version_notes": {
+      "type": "string",
+      "title": "Version Notes"
     }
   },
   "required": [

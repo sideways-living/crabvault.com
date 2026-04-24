@@ -165,16 +165,42 @@ Deno.serve(async (req) => {
       : crabName;
     const vaultPath = `/documents/${folderName}/${filename}`;
 
-    // Dedup: skip if same filename already exists for this crab
+    // Check for existing versions of this filename for this crab
     const existingDocs = await db.entities.CrabDocument.filter({ original_filename: filename });
     const active = existingDocs.filter(d => !d.is_deleted && (d.crab_ids || []).includes(crabId));
+
+    let newVersion = 1;
+    let previousVersionId = null;
+
     if (active.length > 0) {
-      console.log(`⚠️  Duplicate: ${filename} already exists for crab ${crabId}`);
-      return Response.json({ success: true, document_id: active[0].id, crab_id: crabId, duplicate: true });
+      // Sort by version descending to find the latest
+      active.sort((a, b) => (b.version || 1) - (a.version || 1));
+      const latest = active[0];
+
+      // Check file size — if identical size, treat as true duplicate and skip
+      if (latest.file_size === (file.size || 0)) {
+        console.log(`⚠️  True duplicate (same size): ${filename} already exists for crab ${crabId}`);
+        return Response.json({ success: true, document_id: latest.id, crab_id: crabId, duplicate: true });
+      }
+
+      // Different content — create a new version
+      newVersion = (latest.version || 1) + 1;
+      previousVersionId = latest.id;
+
+      // Mark the old version as no longer latest
+      await db.entities.CrabDocument.update(latest.id, { is_latest_version: false });
+
+      console.log(`🔄  New version v${newVersion} of: ${filename} for crab ${crabId}`);
     }
 
+    const baseTitle = filename.replace(/\.[^/.]+$/, '');
+    const versionedTitle = newVersion > 1 ? `${baseTitle} (v${newVersion})` : baseTitle;
+    const versionedVaultPath = newVersion > 1
+      ? vaultPath.replace(/(\.[^/.]+)$/, ` (v${newVersion})$1`)
+      : vaultPath;
+
     const doc = await db.entities.CrabDocument.create({
-      title: filename.replace(/\.[^/.]+$/, ''),
+      title: versionedTitle,
       file_url,
       original_filename: filename,
       file_type: fileType,
@@ -182,19 +208,24 @@ Deno.serve(async (req) => {
       crab_ids: [crabId],
       category,
       processing_status: 'pending',
-      vault_path: vaultPath,
+      vault_path: versionedVaultPath,
       ingress_deleted: false,
       synced_to_vault: false,
+      version: newVersion,
+      previous_version_id: previousVersionId,
+      is_latest_version: true,
     });
 
-    console.log(`✅  CrabDocument created: ${doc.id} → ${vaultPath}`);
+    console.log(`✅  CrabDocument v${newVersion} created: ${doc.id} → ${versionedVaultPath}`);
     return Response.json({
       success: true,
       document_id: doc.id,
       crab_id: crabId,
       crab_name: crabName,
-      vault_path: vaultPath,
+      vault_path: versionedVaultPath,
       is_new_crab: isNew,
+      version: newVersion,
+      is_new_version: newVersion > 1,
     });
 
   } catch (error) {
