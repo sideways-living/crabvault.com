@@ -12,6 +12,7 @@ import CrabDetail from './pages/CrabDetail';
 import CrabDocumentsPage from './pages/CrabDocumentsPage';
 import MarketsPage from './pages/MarketsPage';
 import CrabIngressPage from './pages/CrabIngressPage';
+import CrabDocumentDetail from './pages/CrabDocumentDetail';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -44,6 +45,7 @@ const AuthenticatedApp = () => {
         <Route path="/crabs" element={<CrabsPage />} />
         <Route path="/crabs/:id" element={<CrabDetail />} />
         <Route path="/crab-documents" element={<CrabDocumentsPage />} />
+        <Route path="/crab-documents/:id" element={<CrabDocumentDetail />} />
         <Route path="/markets" element={<MarketsPage />} />
         <Route path="/ingress" element={<CrabIngressPage />} />
         <Route path="*" element={<PageNotFound />} />
