@@ -60,7 +60,7 @@ const CATEGORY            = process.env.CRAB_DEFAULT_CATEGORY || 'other';
 const HEARTBEAT_URL       = process.env.CRAB_HEARTBEAT_URL || '';
 const HEARTBEAT_INTERVAL  = parseInt(process.env.HEARTBEAT_INTERVAL_MS || '60000', 10);
 
-const SUPPORTED = ['.pdf', '.docx', '.xlsx', '.txt', '.jpg', '.jpeg', '.png', '.heic'];
+const SUPPORTED = ['.pdf', '.docx', '.xlsx', '.txt', '.jpg', '.jpeg', '.png', '.heic', '.psd'];
 
 if (!WATCH_FOLDER || !INGEST_URL || !API_KEY) {
   console.error('❌  Missing required env vars: CRAB_WATCH_FOLDER, CRAB_INGEST_URL, INGEST_API_KEY');

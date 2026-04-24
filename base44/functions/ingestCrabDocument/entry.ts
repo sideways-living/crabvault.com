@@ -51,7 +51,7 @@ Deno.serve(async (req) => {
 
     // Upload file to storage
     const ext = filename.split('.').pop()?.toLowerCase() || 'other';
-    const fileType = ['pdf', 'docx', 'xlsx', 'jpg', 'jpeg', 'png', 'heic', 'txt'].includes(ext) ? ext : 'other';
+    const fileType = ['pdf', 'docx', 'xlsx', 'jpg', 'jpeg', 'png', 'heic', 'txt', 'psd'].includes(ext) ? ext : 'other';
     const { file_url } = await db.integrations.Core.UploadFile({ file });
 
     let crabId = existingCrabId;
