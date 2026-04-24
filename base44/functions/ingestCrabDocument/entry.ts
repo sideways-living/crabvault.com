@@ -22,6 +22,98 @@ function buildFullName(first, middle, surname) {
   return parts.join(' ');
 }
 
+function normStr(s) {
+  return (s || '').trim().toLowerCase();
+}
+
+/**
+ * Find-or-create a Crab profile by name.
+ * Searches for existing profiles matching surname + firstName + middleName.
+ * If multiple exist (race duplicates), merges them into the oldest and cleans up.
+ * Returns { crabId, crabName, isNew }
+ */
+async function findOrCreateCrab(db, { firstName, middleName, surname }) {
+  const fullName = buildFullName(firstName, middleName, surname);
+
+  // Search by surname (most selective field available)
+  const matches = await db.entities.Crab.filter({ surname: surname, is_deleted: false });
+
+  // Filter to exact name match
+  const exact = matches.filter(c =>
+    normStr(c.first_name) === normStr(firstName) &&
+    normStr(c.middle_name) === normStr(middleName) &&
+    normStr(c.surname) === normStr(surname)
+  );
+
+  if (exact.length === 0) {
+    // No existing profile — create one
+    const newCrab = await db.entities.Crab.create({
+      first_name: firstName,
+      middle_name: middleName,
+      surname: surname,
+      full_name: fullName,
+      status: 'active',
+      aliases: [],
+      tags: [],
+      id_numbers: [],
+      mailing_same_as_residential: true,
+      is_deleted: false,
+    });
+    console.log(`✅  Created new Crab profile: ${fullName} (${newCrab.id})`);
+    return { crabId: newCrab.id, crabName: fullName, isNew: true };
+  }
+
+  // Sort by created_date ascending — keep the oldest
+  exact.sort((a, b) => new Date(a.created_date) - new Date(b.created_date));
+  const keeper = exact[0];
+
+  if (exact.length > 1) {
+    // Race duplicates found — merge all into the oldest profile
+    console.log(`⚠️  Found ${exact.length} duplicate profiles for ${fullName}, merging into ${keeper.id}`);
+
+    const duplicateIds = exact.slice(1).map(c => c.id);
+
+    // Merge non-empty fields from duplicates into keeper (don't overwrite existing data)
+    const mergedData = {};
+    const mergeFields = ['phone', 'email', 'address1', 'address2', 'suburb', 'state', 'postcode',
+      'date_of_birth', 'photo_url', 'emergency_summary', 'notes'];
+
+    for (const dup of exact.slice(1)) {
+      for (const field of mergeFields) {
+        if (!keeper[field] && !mergedData[field] && dup[field]) {
+          mergedData[field] = dup[field];
+        }
+      }
+      // Merge arrays
+      if (dup.aliases?.length) mergedData.aliases = [...new Set([...(keeper.aliases || []), ...(mergedData.aliases || []), ...dup.aliases])];
+      if (dup.tags?.length) mergedData.tags = [...new Set([...(keeper.tags || []), ...(mergedData.tags || []), ...dup.tags])];
+      if (dup.id_numbers?.length) mergedData.id_numbers = [...(keeper.id_numbers || []), ...(mergedData.id_numbers || []), ...dup.id_numbers];
+    }
+
+    if (Object.keys(mergedData).length > 0) {
+      await db.entities.Crab.update(keeper.id, mergedData);
+    }
+
+    // Re-point all documents from duplicates to the keeper
+    for (const dupId of duplicateIds) {
+      const dupDocs = await db.entities.CrabDocument.filter({ crab_ids: [dupId] });
+      for (const doc of dupDocs) {
+        if (!doc.is_deleted) {
+          const newIds = [...new Set([...(doc.crab_ids || []).filter(id => id !== dupId), keeper.id])];
+          await db.entities.CrabDocument.update(doc.id, { crab_ids: newIds });
+          console.log(`📎  Reassigned doc ${doc.id} from ${dupId} → ${keeper.id}`);
+        }
+      }
+      // Delete the duplicate profile
+      await db.entities.Crab.delete(dupId);
+      console.log(`🗑️   Deleted duplicate Crab profile: ${dupId}`);
+    }
+  }
+
+  console.log(`✅  Using existing Crab profile: ${fullName} (${keeper.id})`);
+  return { crabId: keeper.id, crabName: keeper.full_name || fullName, isNew: false };
+}
+
 Deno.serve(async (req) => {
   try {
     // API key auth
@@ -49,37 +141,22 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const db = base44.asServiceRole;
 
-    // Upload file to storage
+    // Upload file to storage (do this early so we don't hold the lock)
     const ext = filename.split('.').pop()?.toLowerCase() || 'other';
     const fileType = ['pdf', 'docx', 'xlsx', 'jpg', 'jpeg', 'png', 'heic', 'txt', 'psd'].includes(ext) ? ext : 'other';
     const { file_url } = await db.integrations.Core.UploadFile({ file });
 
-    let crabId = existingCrabId;
-    let crabName;
-    let isNew = false;
+    let crabId, crabName, isNew;
 
-    if (!crabId) {
-      // Create new Crab profile
-      const fullName = buildFullName(firstName, middleName, surname);
-      const newCrab = await db.entities.Crab.create({
-        first_name: firstName,
-        middle_name: middleName,
-        surname: surname,
-        full_name: fullName,
-        status: 'active',
-        aliases: [],
-        tags: [],
-        id_numbers: [],
-        mailing_same_as_residential: true,
-        is_deleted: false,
-      });
-      crabId = newCrab.id;
-      crabName = fullName;
-      isNew = true;
-      console.log(`✅  Created new Crab profile: ${fullName} (${crabId})`);
-    } else {
-      const existing = await db.entities.Crab.filter({ id: crabId }, 'full_name', 1);
+    if (existingCrabId) {
+      // Explicit crab_id provided — use directly
+      const existing = await db.entities.Crab.filter({ id: existingCrabId });
+      crabId = existingCrabId;
       crabName = existing[0]?.full_name || surname;
+      isNew = false;
+    } else {
+      // Find-or-create with dedup/merge logic
+      ({ crabId, crabName, isNew } = await findOrCreateCrab(db, { firstName, middleName, surname }));
     }
 
     // Build vault path: /documents/SURNAME Firstname/filename
@@ -88,9 +165,9 @@ Deno.serve(async (req) => {
       : crabName;
     const vaultPath = `/documents/${folderName}/${filename}`;
 
-    // Dedup: skip if same file already pending for this crab
-    const existing = await db.entities.CrabDocument.filter({ original_filename: filename });
-    const active = existing.filter(d => !d.is_deleted && (d.crab_ids || []).includes(crabId));
+    // Dedup: skip if same filename already exists for this crab
+    const existingDocs = await db.entities.CrabDocument.filter({ original_filename: filename });
+    const active = existingDocs.filter(d => !d.is_deleted && (d.crab_ids || []).includes(crabId));
     if (active.length > 0) {
       console.log(`⚠️  Duplicate: ${filename} already exists for crab ${crabId}`);
       return Response.json({ success: true, document_id: active[0].id, crab_id: crabId, duplicate: true });
