@@ -202,10 +202,12 @@ async function poll() {
         try {
           const result = await uploadFile(filePath, filename, crabInfo);
           console.log(`✅  Uploaded: ${filename} → doc:${result.document_id} crab:${result.crab_id} ${result.is_new_crab ? '(new profile)' : ''}`);
-          if (MOVE_TO) {
-            const dest = path.join(MOVE_TO, entry, filename);
-            fs.mkdirSync(path.join(MOVE_TO, entry), { recursive: true });
-            fs.renameSync(filePath, dest);
+          // Securely delete from unencrypted watch folder immediately after confirmed upload
+          try {
+            fs.unlinkSync(filePath);
+            console.log(`🗑️   Deleted from watch folder: ${filePath}`);
+          } catch (delErr) {
+            console.error(`⚠️  SECURITY WARNING: Could not delete ${filePath} — delete it manually!`, delErr.message);
           }
         } catch (err) {
           console.error(`❌  Failed ${filename}:`, err.message);
@@ -221,6 +223,7 @@ async function poll() {
       const ext = path.extname(filename).toLowerCase();
       if (!SUPPORTED.includes(ext)) { uploadedFiles.add(filename); continue; }
 
+      const filePath = entryPath; // entryPath is the full path for flat files
       uploadedFiles.add(filename); saveLog();
       console.log(`📄  Detected: ${filename}`);
       const crabInfo = {
@@ -232,10 +235,12 @@ async function poll() {
       try {
         const result = await uploadFile(filePath, filename, crabInfo);
         console.log(`✅  Uploaded: ${filename} → doc:${result.document_id} crab:${result.crab_id}`);
-        if (MOVE_TO) {
-          const dest = path.join(MOVE_TO, filename);
-          fs.mkdirSync(MOVE_TO, { recursive: true });
-          fs.renameSync(filePath, dest);
+        // Securely delete from unencrypted watch folder immediately after confirmed upload
+        try {
+          fs.unlinkSync(filePath);
+          console.log(`🗑️   Deleted from watch folder: ${filePath}`);
+        } catch (delErr) {
+          console.error(`⚠️  SECURITY WARNING: Could not delete ${filePath} — delete it manually!`, delErr.message);
         }
       } catch (err) {
         console.error(`❌  Failed ${filename}:`, err.message);
