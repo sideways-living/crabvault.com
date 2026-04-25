@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -91,6 +91,7 @@ function MetaRow({ label, value }) {
 
 export default function CrabDocumentDetail() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [doc, setDoc] = useState(null);
   const [crabs, setCrabs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -220,6 +221,7 @@ export default function CrabDocumentDetail() {
     setDirty(false);
     toast.success("Changes saved");
     setSaving(false);
+    navigate("/crab-documents");
   };
 
   if (loading) {
