@@ -13,6 +13,7 @@ const DEFAULT_CATEGORIES = [
   "Debit Card",
   "Document",
   "Drivers Licence",
+  "Medical Certificate",
   "Medicare Card",
   "Mugshot",
   "Notice of Assessment",
