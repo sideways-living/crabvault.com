@@ -7,6 +7,12 @@ const AVAILABLE_MODULES = [
     description: "Banking accounts, cards & login",
     color: "bg-red-100 text-red-700 border-red-200",
   },
+  {
+    key: "yellowbank",
+    label: "YellowBank",
+    description: "Banking accounts, cards & login",
+    color: "bg-yellow-100 text-yellow-700 border-yellow-200",
+  },
 ];
 
 export { AVAILABLE_MODULES };

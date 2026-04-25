@@ -10,7 +10,8 @@
       "type": "string",
       "title": "Module Type",
       "enum": [
-        "redbank"
+        "redbank",
+        "yellowbank"
       ],
       "default": "redbank"
     },
@@ -66,6 +67,46 @@
     "redbank_joint_accounts": {
       "type": "number",
       "title": "Number of Joint Accounts"
+    },
+    "yellowbank_client_number": {
+      "type": "string",
+      "title": "YellowBank Client Number"
+    },
+    "yellowbank_password": {
+      "type": "string",
+      "title": "YellowBank Password"
+    },
+    "yellowbank_app_pin": {
+      "type": "string",
+      "title": "YellowBank App PIN"
+    },
+    "yellowbank_telephone_pin": {
+      "type": "string",
+      "title": "YellowBank Telephone PIN"
+    },
+    "yellowbank_security_q1": {
+      "type": "string",
+      "title": "Security Question 1"
+    },
+    "yellowbank_security_a1": {
+      "type": "string",
+      "title": "Security Answer 1"
+    },
+    "yellowbank_security_q2": {
+      "type": "string",
+      "title": "Security Question 2"
+    },
+    "yellowbank_security_a2": {
+      "type": "string",
+      "title": "Security Answer 2"
+    },
+    "yellowbank_last_branch": {
+      "type": "string",
+      "title": "Last Branch Visited"
+    },
+    "yellowbank_last_branch_purpose": {
+      "type": "string",
+      "title": "Last Branch Purpose"
     },
     "notes": {
       "type": "string",

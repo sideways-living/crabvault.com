@@ -10,6 +10,7 @@ import {
   Phone, Mail, MapPin, User, AlertTriangle, Loader2
 } from "lucide-react";
 import RedBankModule from "@/components/modules/RedBankModule";
+import YellowBankModule from "@/components/modules/YellowBankModule";
 import ModuleSelector from "@/components/modules/ModuleSelector";
 import { toast } from "sonner";
 
@@ -364,6 +365,15 @@ export default function CrabDetail() {
                 <h2 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground">RedBank Module</h2>
               </div>
               <RedBankModule crabId={id} />
+            </div>
+          )}
+          {!creating && enabledModules.includes("yellowbank") && (
+            <div className="bg-card border rounded-xl p-5 space-y-4">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold px-2 py-0.5 rounded bg-yellow-100 text-yellow-700 border border-yellow-200">YellowBank</span>
+                <h2 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground">YellowBank Module</h2>
+              </div>
+              <YellowBankModule crabId={id} />
             </div>
           )}
         </div>
