@@ -22,7 +22,7 @@ function accountLabel(acc) {
 
 export default function RedBankCardForm({ initial, onSave, onCancel, accounts = [] }) {
   const [form, setForm] = useState(
-    initial || { card_number: "", expiry: "", ccv: "", linked_account_id: "" }
+    initial || { card_number: "", expiry: "", ccv: "", pin: "", linked_account_id: "" }
   );
   const [saving, setSaving] = useState(false);
 
@@ -63,6 +63,16 @@ export default function RedBankCardForm({ initial, onSave, onCancel, accounts = 
             value={form.ccv}
             onChange={e => setForm(f => ({ ...f, ccv: e.target.value.replace(/\D/g, "").slice(0, 4) }))}
             maxLength={4}
+          />
+        </div>
+        <div>
+          <Label className="text-xs">PIN</Label>
+          <Input
+            className="mt-1 font-mono"
+            placeholder="4-6 digits"
+            value={form.pin || ""}
+            onChange={e => setForm(f => ({ ...f, pin: e.target.value.replace(/\D/g, "").slice(0, 6) }))}
+            maxLength={6}
           />
         </div>
         {accounts.length > 0 && (

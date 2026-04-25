@@ -377,6 +377,7 @@ export default function RedBankModule({ crabId }) {
                           <span>{card.card_number || "—"}</span>
                           <span className="text-xs text-muted-foreground font-sans">Exp: {card.expiry}</span>
                           <span className="text-xs text-muted-foreground font-sans">CCV: {card.ccv}</span>
+                          {card.pin && <span className="text-xs text-muted-foreground font-sans">PIN: {card.pin}</span>}
                         </div>
                         <div className="flex gap-1">
                           <button onClick={() => setEditingCard(card)} className="text-muted-foreground hover:text-foreground p-1"><Pencil className="h-3.5 w-3.5" /></button>
