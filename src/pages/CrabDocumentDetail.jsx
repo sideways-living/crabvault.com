@@ -20,7 +20,9 @@ const DEFAULT_CATEGORIES = [
   "Pay Slip",
   "Photo Card",
   "Questionnaire",
+  "Residential Lease",
   "Signature",
+  "Tenant Report",
   "Utility Bill",
   "Work Licence",
 ];
