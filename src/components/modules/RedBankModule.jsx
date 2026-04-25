@@ -320,6 +320,30 @@ export default function RedBankModule({ crabId }) {
                         {acc.bsb_address ? `, ${acc.bsb_address}` : ""}
                       </div>
                     )}
+                    {/* Linked cards — Choice accounts only */}
+                    {acc.account_type?.toLowerCase() === "choice" && cards.length > 0 && (
+                      <div className="pl-5 pt-1">
+                        <Label className="text-xs flex items-center gap-1 text-muted-foreground"><Link2 className="h-3 w-3" /> Linked Cards</Label>
+                        <div className="flex flex-wrap gap-1.5 mt-1">
+                          {cards.map(card => {
+                            const linked = card.linked_account_id === acc.id;
+                            return (
+                              <button
+                                key={card.id}
+                                onClick={() => handleCardAccountLink(card, linked ? "" : acc.id)}
+                                className={`text-[10px] px-2 py-0.5 rounded-full border font-mono transition-colors ${
+                                  linked
+                                    ? "bg-primary text-primary-foreground border-primary"
+                                    : "bg-muted text-muted-foreground border-border hover:border-primary"
+                                }`}
+                              >
+                                •••• {card.card_number?.slice(-4) || "????"}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
 
                   </div>
                   <div className="flex gap-1 shrink-0 ml-2">
