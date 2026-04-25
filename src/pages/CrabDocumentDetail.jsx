@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Download, ExternalLink, FileText, Loader2, User, GitBranch, Plus, Save } from "lucide-react";
+import { ArrowLeft, Download, ExternalLink, FileText, Loader2, User, GitBranch, Plus, Save, Cpu } from "lucide-react";
 import { toast } from "sonner";
 
 const DEFAULT_CATEGORIES = [
@@ -96,6 +96,7 @@ export default function CrabDocumentDetail() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
+  const [processing, setProcessing] = useState(false);
   const [editTitle, setEditTitle] = useState("");
   const [editNotes, setEditNotes] = useState("");
   const [editDocDate, setEditDocDate] = useState("");
@@ -163,6 +164,23 @@ export default function CrabDocumentDetail() {
 
   const allCategories = [...new Set([...DEFAULT_CATEGORIES, ...customCategories, ...(doc?.category && !DEFAULT_CATEGORIES.includes(doc.category) ? [doc.category] : [])])].sort();
 
+  const handleProcess = async () => {
+    setProcessing(true);
+    await base44.functions.invoke("processCrabDocument", { document_id: doc.id });
+    // Reload doc to pick up AI-updated fields
+    const [docs] = await Promise.all([base44.entities.CrabDocument.filter({ id })]);
+    const d = docs[0];
+    if (d) {
+      setDoc(d);
+      setEditTitle(d.title || "");
+      setEditNotes(d.notes || "");
+      setEditDocDate(d.document_date || (d.created_date ? d.created_date.slice(0, 10) : ""));
+    }
+    setDirty(false);
+    toast.success("Document processed — please review the AI suggestions");
+    setProcessing(false);
+  };
+
   const handleSave = async () => {
     setSaving(true);
     await base44.entities.CrabDocument.update(doc.id, {
@@ -220,6 +238,10 @@ export default function CrabDocumentDetail() {
           )}
         </div>
         <div className="flex gap-2 shrink-0 items-center">
+          <Button size="sm" variant="outline" onClick={handleProcess} disabled={processing || saving} className="gap-1.5">
+            {processing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Cpu className="h-3.5 w-3.5" />}
+            {processing ? "Processing…" : "Process"}
+          </Button>
           <Button size="sm" onClick={handleSave} disabled={saving || !dirty} className="gap-1.5">
             {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
             Save
