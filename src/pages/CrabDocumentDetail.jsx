@@ -2,7 +2,9 @@ import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft, Download, ExternalLink, FileText, Loader2, User, GitBranch } from "lucide-react";
+import { toast } from "sonner";
 
 const IMAGE_TYPES = ["jpg", "jpeg", "png", "heic", "webp", "gif"];
 const PDF_TYPES = ["pdf"];
@@ -107,6 +109,12 @@ export default function CrabDocumentDetail() {
 
   const linkedCrabs = (doc?.crab_ids || []).map(cid => crabs.find(c => c.id === cid)).filter(Boolean);
 
+  const handleStatusChange = async (newStatus) => {
+    await base44.entities.CrabDocument.update(doc.id, { processing_status: newStatus });
+    setDoc(d => ({ ...d, processing_status: newStatus }));
+    toast.success("Status updated");
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center py-24">
@@ -190,7 +198,21 @@ export default function CrabDocumentDetail() {
                   </span>
                 </div>
               )}
-              <MetaRow label="Status" value={doc.processing_status} />
+              <div className="flex gap-3 items-center">
+                <span className="text-xs text-muted-foreground w-28 shrink-0">Status</span>
+                <Select value={doc.processing_status} onValueChange={handleStatusChange}>
+                  <SelectTrigger className="h-7 text-xs w-36">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="processing">Processing</SelectItem>
+                    <SelectItem value="needs_review">Needs Review</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="failed">Failed</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <MetaRow label="File Type" value={doc.file_type?.toUpperCase()} />
               <MetaRow label="Document Date" value={doc.document_date} />
               <MetaRow label="File Size" value={doc.file_size ? `${(doc.file_size / 1024).toFixed(1)} KB` : null} />
