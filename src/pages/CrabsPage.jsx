@@ -1,10 +1,9 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Link } from "react-router-dom";
-import { Plus, Search, User, Tag } from "lucide-react";
+import { Plus, Search, User, Tag, Phone, Mail, MapPin, FileText } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 
 const STATUS_COLORS = {
   active: "bg-emerald-100 text-emerald-700",
@@ -13,15 +12,33 @@ const STATUS_COLORS = {
   watch: "bg-amber-100 text-amber-700",
 };
 
+function buildAddress(crab) {
+  const parts = [crab.address1, crab.address2, crab.suburb, crab.state, crab.postcode].filter(Boolean);
+  return parts.join(", ");
+}
+
 export default function CrabsPage() {
   const [crabs, setCrabs] = useState([]);
+  const [docsByCrab, setDocsByCrab] = useState({});
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
 
   useEffect(() => {
-    base44.entities.Crab.filter({ is_deleted: false }, "full_name", 500)
-      .then(setCrabs)
-      .finally(() => setLoading(false));
+    Promise.all([
+      base44.entities.Crab.filter({ is_deleted: false }, "full_name", 500),
+      base44.entities.CrabDocument.list("-updated_date", 500),
+    ]).then(([crbs, docs]) => {
+      setCrabs(crbs);
+      // Build map: crabId → up to 2 most recent docs (not deleted)
+      const map = {};
+      docs.filter(d => !d.is_deleted).forEach(doc => {
+        (doc.crab_ids || []).forEach(cid => {
+          if (!map[cid]) map[cid] = [];
+          if (map[cid].length < 2) map[cid].push(doc);
+        });
+      });
+      setDocsByCrab(map);
+    }).finally(() => setLoading(false));
   }, []);
 
   const filtered = crabs.filter(c => {
@@ -68,45 +85,85 @@ export default function CrabsPage() {
           <p className="text-sm">{search ? "No crabs match your search" : "No crabs yet — add your first profile"}</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filtered.map(crab => (
-            <Link key={crab.id} to={`/crabs/${crab.id}`}>
-              <div className="bg-card border rounded-xl p-5 hover:shadow-md transition-shadow cursor-pointer h-full">
-                <div className="flex items-start gap-4">
-                  {crab.photo_url ? (
-                    <img src={crab.photo_url} alt={crab.full_name} className="w-12 h-12 rounded-full object-cover shrink-0" />
-                  ) : (
-                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                      <span className="text-primary font-semibold text-lg">{crab.full_name?.[0]?.toUpperCase()}</span>
-                    </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="font-semibold text-sm truncate">{crab.full_name}</h3>
-                      <span className={`text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded ${STATUS_COLORS[crab.status] || ""}`}>
-                        {crab.status}
-                      </span>
-                    </div>
-                    {(crab.aliases || []).length > 0 && (
-                      <p className="text-xs text-muted-foreground mt-0.5 truncate">aka {crab.aliases.join(", ")}</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {filtered.map(crab => {
+            const address = buildAddress(crab);
+            const recentDocs = docsByCrab[crab.id] || [];
+            return (
+              <Link key={crab.id} to={`/crabs/${crab.id}`}>
+                <div className="bg-card border rounded-xl p-5 hover:shadow-md transition-shadow cursor-pointer h-full flex flex-col gap-4">
+                  {/* Header */}
+                  <div className="flex items-start gap-4">
+                    {crab.photo_url ? (
+                      <img src={crab.photo_url} alt={crab.full_name} className="w-14 h-14 rounded-full object-cover shrink-0" />
+                    ) : (
+                      <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                        <span className="text-primary font-semibold text-xl">{crab.full_name?.[0]?.toUpperCase()}</span>
+                      </div>
                     )}
-                    {crab.email && <p className="text-xs text-muted-foreground mt-1 truncate">{crab.email}</p>}
-                    {crab.phone && <p className="text-xs text-muted-foreground truncate">{crab.phone}</p>}
-                    {(crab.tags || []).length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-2">
-                        {crab.tags.slice(0, 3).map(t => (
-                          <span key={t} className="text-[10px] bg-secondary px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
-                            <Tag className="h-2.5 w-2.5" />{t}
-                          </span>
-                        ))}
-                        {crab.tags.length > 3 && <span className="text-[10px] text-muted-foreground">+{crab.tags.length - 3}</span>}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="font-semibold truncate">{crab.full_name}</h3>
+                        <span className={`text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded shrink-0 ${STATUS_COLORS[crab.status] || ""}`}>
+                          {crab.status}
+                        </span>
+                      </div>
+                      {(crab.aliases || []).length > 0 && (
+                        <p className="text-xs text-muted-foreground mt-0.5 truncate">aka {crab.aliases.join(", ")}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Contact details */}
+                  <div className="space-y-1.5">
+                    {crab.phone && (
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <Phone className="h-3.5 w-3.5 shrink-0" />
+                        <span className="truncate">{crab.phone}</span>
+                      </div>
+                    )}
+                    {crab.email && (
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <Mail className="h-3.5 w-3.5 shrink-0" />
+                        <span className="truncate">{crab.email}</span>
+                      </div>
+                    )}
+                    {address && (
+                      <div className="flex items-start gap-2 text-xs text-muted-foreground">
+                        <MapPin className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                        <span className="line-clamp-2">{address}</span>
                       </div>
                     )}
                   </div>
+
+                  {/* Tags */}
+                  {(crab.tags || []).length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {crab.tags.slice(0, 4).map(t => (
+                        <span key={t} className="text-[10px] bg-secondary px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                          <Tag className="h-2.5 w-2.5" />{t}
+                        </span>
+                      ))}
+                      {crab.tags.length > 4 && <span className="text-[10px] text-muted-foreground">+{crab.tags.length - 4}</span>}
+                    </div>
+                  )}
+
+                  {/* Recent documents */}
+                  {recentDocs.length > 0 && (
+                    <div className="border-t pt-3 space-y-1.5">
+                      <p className="text-[10px] font-semibold uppercase text-muted-foreground tracking-wide">Recent Documents</p>
+                      {recentDocs.map(doc => (
+                        <div key={doc.id} className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <FileText className="h-3.5 w-3.5 shrink-0 text-primary/60" />
+                          <span className="truncate">{doc.title}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              </div>
-            </Link>
-          ))}
+              </Link>
+            );
+          })}
         </div>
       )}
     </div>
