@@ -4,7 +4,8 @@ import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Download, ExternalLink, FileText, Loader2, User, GitBranch, Plus } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { ArrowLeft, Download, ExternalLink, FileText, Loader2, User, GitBranch, Plus, Save } from "lucide-react";
 import { toast } from "sonner";
 
 const DEFAULT_CATEGORIES = [
@@ -93,6 +94,11 @@ export default function CrabDocumentDetail() {
   const [doc, setDoc] = useState(null);
   const [crabs, setCrabs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [dirty, setDirty] = useState(false);
+  const [editTitle, setEditTitle] = useState("");
+  const [editNotes, setEditNotes] = useState("");
+  const [editDocDate, setEditDocDate] = useState("");
 
   const [versions, setVersions] = useState([]);
 
@@ -103,6 +109,9 @@ export default function CrabDocumentDetail() {
     ]).then(async ([docs, crbs]) => {
       const d = docs[0] || null;
       setDoc(d);
+      setEditTitle(d?.title || "");
+      setEditNotes(d?.notes || "");
+      setEditDocDate(d?.document_date || "");
       setCrabs(crbs);
 
       // Load version history if this doc has a filename
@@ -152,6 +161,19 @@ export default function CrabDocumentDetail() {
 
   const allCategories = [...new Set([...DEFAULT_CATEGORIES, ...customCategories, ...(doc?.category && !DEFAULT_CATEGORIES.includes(doc.category) ? [doc.category] : [])])].sort();
 
+  const handleSave = async () => {
+    setSaving(true);
+    await base44.entities.CrabDocument.update(doc.id, {
+      title: editTitle.trim() || doc.title,
+      notes: editNotes,
+      document_date: editDocDate,
+    });
+    setDoc(d => ({ ...d, title: editTitle.trim() || d.title, notes: editNotes, document_date: editDocDate }));
+    setDirty(false);
+    toast.success("Changes saved");
+    setSaving(false);
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center py-24">
@@ -179,7 +201,11 @@ export default function CrabDocumentDetail() {
         </Link>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <h1 className="text-xl font-semibold tracking-tight truncate">{doc.title}</h1>
+            <Input
+              className="text-xl font-semibold h-auto py-0.5 px-1.5 border-transparent hover:border-input focus:border-input bg-transparent"
+              value={editTitle}
+              onChange={e => { setEditTitle(e.target.value); setDirty(true); }}
+            />
             {doc.version > 1 && (
               <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 shrink-0">v{doc.version}</span>
             )}
@@ -191,13 +217,21 @@ export default function CrabDocumentDetail() {
             <p className="text-xs font-mono text-muted-foreground mt-0.5 truncate">{doc.original_filename}</p>
           )}
         </div>
-        {doc.file_url && (
-          <a href={doc.file_url} target="_blank" rel="noopener noreferrer">
-            <Button variant="outline" size="sm" className="gap-2 shrink-0">
-              <ExternalLink className="h-3.5 w-3.5" /> Open
+        <div className="flex gap-2 shrink-0 items-center">
+          {dirty && (
+            <Button size="sm" onClick={handleSave} disabled={saving} className="gap-1.5">
+              {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+              Save
             </Button>
-          </a>
-        )}
+          )}
+          {doc.file_url && (
+            <a href={doc.file_url} target="_blank" rel="noopener noreferrer">
+              <Button variant="outline" size="sm" className="gap-2">
+                <ExternalLink className="h-3.5 w-3.5" /> Open
+              </Button>
+            </a>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -280,7 +314,15 @@ export default function CrabDocumentDetail() {
                 </Select>
               </div>
               <MetaRow label="File Type" value={doc.file_type?.toUpperCase()} />
-              <MetaRow label="Document Date" value={doc.document_date} />
+              <div className="flex gap-3 items-center">
+                <span className="text-xs text-muted-foreground w-28 shrink-0">Document Date</span>
+                <Input
+                  type="date"
+                  className="h-7 text-xs w-36"
+                  value={editDocDate}
+                  onChange={e => { setEditDocDate(e.target.value); setDirty(true); }}
+                />
+              </div>
               <MetaRow label="File Size" value={doc.file_size ? `${(doc.file_size / 1024).toFixed(1)} KB` : null} />
               <MetaRow label="Vault Path" value={doc.vault_path} />
               {doc.synced_to_vault !== undefined && (
@@ -307,14 +349,16 @@ export default function CrabDocumentDetail() {
           )}
 
           {/* Notes / Summary */}
-          {(doc.notes || doc.summary) && (
-            <div className="rounded-xl border p-4 space-y-2">
-              <h3 className="text-xs font-semibold uppercase text-muted-foreground tracking-wider">
-                {doc.summary ? "Summary" : "Notes"}
-              </h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">{doc.summary || doc.notes}</p>
-            </div>
-          )}
+          <div className="rounded-xl border p-4 space-y-2">
+            <h3 className="text-xs font-semibold uppercase text-muted-foreground tracking-wider">Notes</h3>
+            {doc.summary && <p className="text-xs text-muted-foreground italic border-b pb-2 mb-2">{doc.summary}</p>}
+            <textarea
+              className="w-full text-sm border rounded-lg px-3 py-2 bg-background resize-none focus-visible:ring-1 focus-visible:ring-ring outline-none min-h-[80px]"
+              placeholder="Add notes…"
+              value={editNotes}
+              onChange={e => { setEditNotes(e.target.value); setDirty(true); }}
+            />
+          </div>
 
           {/* Version history */}
           {versions.length > 1 && (
