@@ -3,6 +3,8 @@ import { base44 } from "@/api/base44Client";
 import { Link } from "react-router-dom";
 import { Users, FileText, Building2, AlertTriangle, Clock, CheckCircle2, ArrowRight } from "lucide-react";
 
+// eslint-disable-next-line no-unused-vars
+
 export default function CrabVaultDashboard() {
   const [stats, setStats] = useState(null);
   const [recentCrabs, setRecentCrabs] = useState([]);
