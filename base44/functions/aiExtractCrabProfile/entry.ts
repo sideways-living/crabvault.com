@@ -10,15 +10,13 @@ Deno.serve(async (req) => {
     if (!crab_id) return Response.json({ error: 'crab_id required' }, { status: 400 });
 
     // Fetch the crab profile and their documents
-    const [crabs, allDocs] = await Promise.all([
+    const [crabs, linkedDocs] = await Promise.all([
       base44.asServiceRole.entities.Crab.filter({ id: crab_id }, "full_name", 1),
-      base44.asServiceRole.entities.CrabDocument.filter({ is_deleted: false }, "-created_date", 500),
+      base44.asServiceRole.entities.CrabDocument.filter({ crab_ids: crab_id, is_deleted: false }, "-created_date", 50),
     ]);
 
     const crab = crabs[0];
     if (!crab) return Response.json({ error: 'Crab not found' }, { status: 404 });
-
-    const linkedDocs = allDocs.filter(d => (d.crab_ids || []).includes(crab_id));
     if (linkedDocs.length === 0) {
       return Response.json({ error: 'No documents linked to this profile' }, { status: 400 });
     }
