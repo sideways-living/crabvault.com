@@ -39,6 +39,13 @@
       "type": "string",
       "title": "Account Number"
     },
+    "linked_card_ids": {
+      "type": "array",
+      "title": "Linked Card IDs",
+      "items": {
+        "type": "string"
+      }
+    },
     "sort_order": {
       "type": "number",
       "title": "Sort Order",

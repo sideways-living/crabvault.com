@@ -42,10 +42,9 @@
       "title": "Added to Digital Wallet",
       "default": false
     },
-    "linked_card": {
-      "type": "boolean",
-      "title": "Linked Card",
-      "default": false
+    "linked_account_id": {
+      "type": "string",
+      "title": "Linked Account ID"
     },
     "sort_order": {
       "type": "number",

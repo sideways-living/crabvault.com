@@ -50,6 +50,19 @@
       "type": "string",
       "title": "RedBank Password"
     },
+    "telephone_access_code": {
+      "type": "string",
+      "title": "Telephone Access Code (3 digits)"
+    },
+    "has_joint_accounts": {
+      "type": "boolean",
+      "title": "Has Joint Accounts",
+      "default": false
+    },
+    "redbank_joint_holder_name": {
+      "type": "string",
+      "title": "Joint Account Holder Name"
+    },
     "redbank_joint_accounts": {
       "type": "number",
       "title": "Number of Joint Accounts"

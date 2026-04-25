@@ -3,10 +3,11 @@ import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Plus, Pencil, Trash2, CreditCard, Landmark, Smartphone,
-  WalletCards, Lock, Link2, BadgeCheck, KeyRound, Users, Hash
+  WalletCards, Lock, Link2, KeyRound, Users, Hash, Phone, BadgeCheck
 } from "lucide-react";
 import { toast } from "sonner";
 import RedBankAccountForm from "./RedBankAccountForm";
@@ -17,7 +18,6 @@ const CARD_FEATURE_DEFS = [
   { key: "is_physical", label: "Physical Card", icon: CreditCard, tip: "A physical plastic/metal card has been issued" },
   { key: "pin_set", label: "PIN Set", icon: Lock, tip: "A PIN has been set for this card" },
   { key: "digital_wallet", label: "Digital Wallet", icon: WalletCards, tip: "Card has been added to Apple Pay, Google Pay, or similar" },
-  { key: "linked_card", label: "Linked Card", icon: Link2, tip: "This card is linked to another account or person" },
 ];
 
 function AccountSummary(accounts) {
@@ -30,18 +30,27 @@ function AccountSummary(accounts) {
   return Object.entries(counts).map(([t, n]) => `${n} × ${t}`).join(", ");
 }
 
+function cardLabel(card) {
+  if (!card) return "None";
+  const masked = card.card_number ? card.card_number.slice(-4) : "????";
+  return `•••• ${masked}${card.expiry ? ` (${card.expiry})` : ""}`;
+}
+
+function accountLabel(acc) {
+  if (!acc) return "None";
+  return `${acc.bank || ""}${acc.account_type ? ` – ${acc.account_type}` : ""} ${acc.account_number || ""}`.trim();
+}
+
 export default function RedBankModule({ crabId }) {
   const [module, setModule] = useState(null);
   const [accounts, setAccounts] = useState([]);
   const [cards, setCards] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // login section state
   const [loginEdit, setLoginEdit] = useState({});
   const [loginDirty, setLoginDirty] = useState(false);
   const [savingLogin, setSavingLogin] = useState(false);
 
-  // account / card form state
   const [addingAccount, setAddingAccount] = useState(false);
   const [editingAccount, setEditingAccount] = useState(null);
   const [addingCard, setAddingCard] = useState(false);
@@ -58,8 +67,14 @@ export default function RedBankModule({ crabId }) {
     setLoginEdit(mod ? {
       redbank_customer_number: mod.redbank_customer_number || "",
       redbank_password: mod.redbank_password || "",
+      telephone_access_code: mod.telephone_access_code || "",
+      has_joint_accounts: mod.has_joint_accounts || false,
+      redbank_joint_holder_name: mod.redbank_joint_holder_name || "",
       redbank_joint_accounts: mod.redbank_joint_accounts || "",
-    } : { redbank_customer_number: "", redbank_password: "", redbank_joint_accounts: "" });
+    } : {
+      redbank_customer_number: "", redbank_password: "", telephone_access_code: "",
+      has_joint_accounts: false, redbank_joint_holder_name: "", redbank_joint_accounts: "",
+    });
     setAccounts(accs);
     setCards(cds);
     setLoading(false);
@@ -67,7 +82,6 @@ export default function RedBankModule({ crabId }) {
 
   useEffect(() => { load(); }, [crabId]);
 
-  // Ensure module exists before saving anything
   const ensureModule = async () => {
     if (module) return module;
     const created = await base44.entities.CrabModule.create({ crab_id: crabId, module_type: "redbank" });
@@ -81,7 +95,10 @@ export default function RedBankModule({ crabId }) {
     await base44.entities.CrabModule.update(mod.id, {
       redbank_customer_number: loginEdit.redbank_customer_number,
       redbank_password: loginEdit.redbank_password,
-      redbank_joint_accounts: Number(loginEdit.redbank_joint_accounts) || 0,
+      telephone_access_code: loginEdit.telephone_access_code,
+      has_joint_accounts: loginEdit.has_joint_accounts,
+      redbank_joint_holder_name: loginEdit.has_joint_accounts ? loginEdit.redbank_joint_holder_name : "",
+      redbank_joint_accounts: loginEdit.has_joint_accounts ? (Number(loginEdit.redbank_joint_accounts) || 0) : 0,
     });
     toast.success("Login details saved");
     setLoginDirty(false);
@@ -105,6 +122,9 @@ export default function RedBankModule({ crabId }) {
 
   const handleDeleteAccount = async (acc) => {
     if (!confirm(`Delete account ${acc.account_type || ""} ${acc.account_number}?`)) return;
+    // Unlink any cards pointing to this account
+    const linkedCards = cards.filter(c => c.linked_account_id === acc.id);
+    await Promise.all(linkedCards.map(c => base44.entities.RedBankCard.update(c.id, { linked_account_id: "" })));
     await base44.entities.RedBankAccount.delete(acc.id);
     toast.success("Account deleted");
     load();
@@ -112,21 +132,54 @@ export default function RedBankModule({ crabId }) {
 
   const handleSaveCard = async (form) => {
     const mod = await ensureModule();
+    let savedCard;
     if (editingCard) {
       await base44.entities.RedBankCard.update(editingCard.id, form);
+      savedCard = { ...editingCard, ...form };
       toast.success("Card updated");
       setEditingCard(null);
     } else {
-      await base44.entities.RedBankCard.create({ ...form, module_id: mod.id, crab_id: crabId });
+      savedCard = await base44.entities.RedBankCard.create({ ...form, module_id: mod.id, crab_id: crabId });
       toast.success("Card added");
       setAddingCard(false);
     }
+    // Sync linked_card_ids on the account side
+    await syncAccountCardLinks(savedCard, form.linked_account_id, editingCard?.linked_account_id);
     load();
+  };
+
+  // Keep account.linked_card_ids in sync when a card's linked_account_id changes
+  const syncAccountCardLinks = async (card, newAccountId, oldAccountId) => {
+    if (oldAccountId && oldAccountId !== newAccountId) {
+      const oldAcc = accounts.find(a => a.id === oldAccountId);
+      if (oldAcc) {
+        const updated = (oldAcc.linked_card_ids || []).filter(id => id !== card.id);
+        await base44.entities.RedBankAccount.update(oldAcc.id, { linked_card_ids: updated });
+      }
+    }
+    if (newAccountId) {
+      const newAcc = accounts.find(a => a.id === newAccountId);
+      if (newAcc) {
+        const existing = newAcc.linked_card_ids || [];
+        if (!existing.includes(card.id)) {
+          await base44.entities.RedBankAccount.update(newAcc.id, { linked_card_ids: [...existing, card.id] });
+        }
+      }
+    }
   };
 
   const handleDeleteCard = async (card) => {
     const masked = card.card_number ? "•••• " + card.card_number.slice(-4) : "this card";
     if (!confirm(`Delete ${masked}?`)) return;
+    // Remove from linked account
+    if (card.linked_account_id) {
+      const acc = accounts.find(a => a.id === card.linked_account_id);
+      if (acc) {
+        await base44.entities.RedBankAccount.update(acc.id, {
+          linked_card_ids: (acc.linked_card_ids || []).filter(id => id !== card.id)
+        });
+      }
+    }
     await base44.entities.RedBankCard.delete(card.id);
     toast.success("Card deleted");
     load();
@@ -138,9 +191,35 @@ export default function RedBankModule({ crabId }) {
     setCards(cs => cs.map(c => c.id === card.id ? updated : c));
   };
 
+  // Link a card to an account (or unlink)
+  const handleCardAccountLink = async (card, newAccountId) => {
+    const oldAccountId = card.linked_account_id || "";
+    await base44.entities.RedBankCard.update(card.id, { linked_account_id: newAccountId || "" });
+    await syncAccountCardLinks({ id: card.id }, newAccountId, oldAccountId);
+    load();
+  };
+
+  // Link a card to an account from the account side (add/remove)
+  const handleAccountCardLink = async (acc, cardId, add) => {
+    const existing = acc.linked_card_ids || [];
+    const updated = add ? [...existing, cardId] : existing.filter(id => id !== cardId);
+    await base44.entities.RedBankAccount.update(acc.id, { linked_card_ids: updated });
+    // Sync card side
+    if (add) {
+      await base44.entities.RedBankCard.update(cardId, { linked_account_id: acc.id });
+    } else {
+      const card = cards.find(c => c.id === cardId);
+      if (card?.linked_account_id === acc.id) {
+        await base44.entities.RedBankCard.update(cardId, { linked_account_id: "" });
+      }
+    }
+    load();
+  };
+
   if (loading) return <div className="flex justify-center py-6"><div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
 
   const summary = AccountSummary(accounts);
+  const L = (field) => (e) => { setLoginEdit(l => ({ ...l, [field]: e.target.value })); setLoginDirty(true); };
 
   return (
     <TooltipProvider>
@@ -155,22 +234,52 @@ export default function RedBankModule({ crabId }) {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label className="text-xs flex items-center gap-1"><Hash className="h-3 w-3" /> Customer Number</Label>
-              <Input className="mt-1 font-mono" value={loginEdit.redbank_customer_number}
-                onChange={e => { setLoginEdit(l => ({ ...l, redbank_customer_number: e.target.value })); setLoginDirty(true); }} />
+              <Input className="mt-1 font-mono" value={loginEdit.redbank_customer_number} onChange={L("redbank_customer_number")} />
             </div>
             <div>
               <Label className="text-xs flex items-center gap-1"><Lock className="h-3 w-3" /> Password</Label>
-              <Input className="mt-1 font-mono" value={loginEdit.redbank_password}
-                onChange={e => { setLoginEdit(l => ({ ...l, redbank_password: e.target.value })); setLoginDirty(true); }} />
+              <Input className="mt-1 font-mono" value={loginEdit.redbank_password} onChange={L("redbank_password")} />
             </div>
             <div>
-              <Label className="text-xs flex items-center gap-1"><Users className="h-3 w-3" /> Joint Accounts</Label>
-              <Input type="number" min={0} className="mt-1" value={loginEdit.redbank_joint_accounts}
-                onChange={e => { setLoginEdit(l => ({ ...l, redbank_joint_accounts: e.target.value })); setLoginDirty(true); }} />
+              <Label className="text-xs flex items-center gap-1"><Phone className="h-3 w-3" /> Telephone Access Code</Label>
+              <Input
+                className="mt-1 font-mono"
+                placeholder="3 digits"
+                maxLength={3}
+                value={loginEdit.telephone_access_code}
+                onChange={e => { setLoginEdit(l => ({ ...l, telephone_access_code: e.target.value.replace(/\D/g, "").slice(0, 3) })); setLoginDirty(true); }}
+              />
             </div>
             <div>
               <Label className="text-xs flex items-center gap-1"><BadgeCheck className="h-3 w-3" /> Account Summary</Label>
               <p className="mt-2 text-sm text-muted-foreground">{summary || <span className="italic">No accounts yet</span>}</p>
+            </div>
+
+            {/* Joint Accounts — full width */}
+            <div className="col-span-2 space-y-2">
+              <Label className="text-xs flex items-center gap-1"><Users className="h-3 w-3" /> Joint Accounts</Label>
+              <Select
+                value={loginEdit.has_joint_accounts ? "yes" : "no"}
+                onValueChange={v => { setLoginEdit(l => ({ ...l, has_joint_accounts: v === "yes" })); setLoginDirty(true); }}
+              >
+                <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="no">No</SelectItem>
+                  <SelectItem value="yes">Yes</SelectItem>
+                </SelectContent>
+              </Select>
+              {loginEdit.has_joint_accounts && (
+                <div className="grid grid-cols-2 gap-3 pt-1">
+                  <div>
+                    <Label className="text-xs">Joint Holder Name</Label>
+                    <Input className="mt-1" value={loginEdit.redbank_joint_holder_name} onChange={L("redbank_joint_holder_name")} placeholder="Full name" />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Number of Joint Accounts</Label>
+                    <Input type="number" min={1} className="mt-1" value={loginEdit.redbank_joint_accounts} onChange={L("redbank_joint_accounts")} />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
           {loginDirty && (
@@ -180,7 +289,7 @@ export default function RedBankModule({ crabId }) {
           )}
         </div>
 
-        {/* Accounts */}
+        {/* Accounts & Cards */}
         <div className="bg-card border rounded-xl p-5 space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -198,7 +307,7 @@ export default function RedBankModule({ crabId }) {
           </div>
 
           {addingAccount && (
-            <RedBankAccountForm onSave={handleSaveAccount} onCancel={() => setAddingAccount(false)} />
+            <RedBankAccountForm onSave={handleSaveAccount} onCancel={() => setAddingAccount(false)} cards={cards} />
           )}
 
           {accounts.length === 0 && !addingAccount && (
@@ -208,10 +317,10 @@ export default function RedBankModule({ crabId }) {
           {accounts.map(acc => (
             <div key={acc.id}>
               {editingAccount?.id === acc.id ? (
-                <RedBankAccountForm initial={acc} onSave={handleSaveAccount} onCancel={() => setEditingAccount(null)} />
+                <RedBankAccountForm initial={acc} onSave={handleSaveAccount} onCancel={() => setEditingAccount(null)} cards={cards} />
               ) : (
                 <div className="flex items-start justify-between p-3 bg-muted/40 rounded-lg">
-                  <div className="space-y-0.5">
+                  <div className="space-y-1 flex-1">
                     <div className="flex items-center gap-2 text-sm font-medium">
                       <Landmark className="h-3.5 w-3.5 text-muted-foreground" />
                       <span>{acc.bank}</span>
@@ -226,6 +335,30 @@ export default function RedBankModule({ crabId }) {
                         {acc.bsb_address ? `, ${acc.bsb_address}` : ""}
                       </div>
                     )}
+                    {/* Linked cards selector */}
+                    {cards.length > 0 && (
+                      <div className="pl-5 pt-1">
+                        <Label className="text-xs flex items-center gap-1 text-muted-foreground"><Link2 className="h-3 w-3" /> Linked Cards</Label>
+                        <div className="flex flex-wrap gap-1.5 mt-1">
+                          {cards.map(card => {
+                            const linked = (acc.linked_card_ids || []).includes(card.id);
+                            return (
+                              <button
+                                key={card.id}
+                                onClick={() => handleAccountCardLink(acc, card.id, !linked)}
+                                className={`text-[10px] px-2 py-0.5 rounded-full border font-mono transition-colors ${
+                                  linked
+                                    ? "bg-primary text-primary-foreground border-primary"
+                                    : "bg-muted text-muted-foreground border-border hover:border-primary"
+                                }`}
+                              >
+                                •••• {card.card_number?.slice(-4) || "????"}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
                   </div>
                   <div className="flex gap-1 shrink-0 ml-2">
                     <button onClick={() => setEditingAccount(acc)} className="text-muted-foreground hover:text-foreground p-1"><Pencil className="h-3.5 w-3.5" /></button>
@@ -236,7 +369,7 @@ export default function RedBankModule({ crabId }) {
             </div>
           ))}
 
-          {/* Cards (shown after accounts) */}
+          {/* Cards section */}
           {(cards.length > 0 || addingCard) && (
             <div className="border-t pt-4 space-y-3">
               <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-1">
@@ -244,13 +377,13 @@ export default function RedBankModule({ crabId }) {
               </p>
 
               {addingCard && (
-                <RedBankCardForm onSave={handleSaveCard} onCancel={() => setAddingCard(false)} />
+                <RedBankCardForm onSave={handleSaveCard} onCancel={() => setAddingCard(false)} accounts={accounts} />
               )}
 
               {cards.map(card => (
                 <div key={card.id}>
                   {editingCard?.id === card.id ? (
-                    <RedBankCardForm initial={card} onSave={handleSaveCard} onCancel={() => setEditingCard(null)} />
+                    <RedBankCardForm initial={card} onSave={handleSaveCard} onCancel={() => setEditingCard(null)} accounts={accounts} />
                   ) : (
                     <div className="p-3 bg-muted/40 rounded-lg space-y-2">
                       <div className="flex items-center justify-between">
@@ -271,12 +404,7 @@ export default function RedBankModule({ crabId }) {
                           <Tooltip key={key}>
                             <TooltipTrigger asChild>
                               <label className="flex items-center gap-1.5 cursor-pointer select-none">
-                                <input
-                                  type="checkbox"
-                                  checked={!!card[key]}
-                                  onChange={() => toggleCardFeature(card, key)}
-                                  className="rounded"
-                                />
+                                <input type="checkbox" checked={!!card[key]} onChange={() => toggleCardFeature(card, key)} className="rounded" />
                                 <Icon className="h-3.5 w-3.5 text-muted-foreground" />
                                 <span className="text-xs text-muted-foreground">{label}</span>
                               </label>
@@ -285,6 +413,26 @@ export default function RedBankModule({ crabId }) {
                           </Tooltip>
                         ))}
                       </div>
+                      {/* Linked account selector */}
+                      {accounts.length > 0 && (
+                        <div className="pl-1">
+                          <Label className="text-xs flex items-center gap-1 text-muted-foreground mb-1"><Link2 className="h-3 w-3" /> Linked Account</Label>
+                          <Select
+                            value={card.linked_account_id || "__none__"}
+                            onValueChange={v => handleCardAccountLink(card, v === "__none__" ? "" : v)}
+                          >
+                            <SelectTrigger className="h-7 text-xs">
+                              <SelectValue placeholder="No account linked" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="__none__">None</SelectItem>
+                              {accounts.map(acc => (
+                                <SelectItem key={acc.id} value={acc.id}>{accountLabel(acc)}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -292,7 +440,6 @@ export default function RedBankModule({ crabId }) {
             </div>
           )}
 
-          {/* Add buttons at bottom if already have items */}
           {(accounts.length > 0 || cards.length > 0) && !addingAccount && !addingCard && (
             <div className="flex gap-2 pt-1 border-t">
               <Button size="sm" variant="ghost" className="gap-1 text-xs text-muted-foreground" onClick={() => setAddingAccount(true)}>

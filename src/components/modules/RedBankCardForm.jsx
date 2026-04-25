@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
 
 function formatCardNumber(raw) {
@@ -15,9 +16,13 @@ function formatExpiry(raw) {
   return digits;
 }
 
-export default function RedBankCardForm({ initial, onSave, onCancel }) {
+function accountLabel(acc) {
+  return `${acc.bank || ""}${acc.account_type ? ` – ${acc.account_type}` : ""} ${acc.account_number || ""}`.trim();
+}
+
+export default function RedBankCardForm({ initial, onSave, onCancel, accounts = [] }) {
   const [form, setForm] = useState(
-    initial || { card_number: "", expiry: "", ccv: "" }
+    initial || { card_number: "", expiry: "", ccv: "", linked_account_id: "" }
   );
   const [saving, setSaving] = useState(false);
 
@@ -60,6 +65,23 @@ export default function RedBankCardForm({ initial, onSave, onCancel }) {
             maxLength={4}
           />
         </div>
+        {accounts.length > 0 && (
+          <div className="col-span-3">
+            <Label className="text-xs">Linked Account</Label>
+            <Select
+              value={form.linked_account_id || "__none__"}
+              onValueChange={v => setForm(f => ({ ...f, linked_account_id: v === "__none__" ? "" : v }))}
+            >
+              <SelectTrigger className="mt-1"><SelectValue placeholder="None" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">None</SelectItem>
+                {accounts.map(acc => (
+                  <SelectItem key={acc.id} value={acc.id}>{accountLabel(acc)}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
       </div>
       <div className="flex gap-2">
         <Button size="sm" onClick={handleSave} disabled={saving} className="gap-1">
