@@ -3,8 +3,19 @@ import { useParams, Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Download, ExternalLink, FileText, Loader2, User, GitBranch } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { ArrowLeft, Download, ExternalLink, FileText, Loader2, User, GitBranch, Plus } from "lucide-react";
 import { toast } from "sonner";
+
+const DEFAULT_CATEGORIES = [
+  "Credit Card",
+  "Debit Card",
+  "Drivers Licence",
+  "Medicare Card",
+  "Notice of Assessment",
+  "Passport",
+  "Utility Bill",
+];
 
 const IMAGE_TYPES = ["jpg", "jpeg", "png", "heic", "webp", "gif"];
 const PDF_TYPES = ["pdf"];
@@ -109,11 +120,37 @@ export default function CrabDocumentDetail() {
 
   const linkedCrabs = (doc?.crab_ids || []).map(cid => crabs.find(c => c.id === cid)).filter(Boolean);
 
+  const [addingCategory, setAddingCategory] = useState(false);
+  const [newCategory, setNewCategory] = useState("");
+  const [customCategories, setCustomCategories] = useState([]);
+
   const handleStatusChange = async (newStatus) => {
     await base44.entities.CrabDocument.update(doc.id, { processing_status: newStatus });
     setDoc(d => ({ ...d, processing_status: newStatus }));
     toast.success("Status updated");
   };
+
+  const handleCategoryChange = async (value) => {
+    if (value === "__add__") return;
+    await base44.entities.CrabDocument.update(doc.id, { category: value });
+    setDoc(d => ({ ...d, category: value }));
+    toast.success("Category updated");
+  };
+
+  const handleAddCategory = async () => {
+    const trimmed = newCategory.trim();
+    if (!trimmed) return;
+    if (!customCategories.includes(trimmed)) {
+      setCustomCategories(c => [...c, trimmed].sort());
+    }
+    await base44.entities.CrabDocument.update(doc.id, { category: trimmed });
+    setDoc(d => ({ ...d, category: trimmed }));
+    toast.success("Category updated");
+    setNewCategory("");
+    setAddingCategory(false);
+  };
+
+  const allCategories = [...new Set([...DEFAULT_CATEGORIES, ...customCategories, ...(doc?.category && !DEFAULT_CATEGORIES.includes(doc.category) ? [doc.category] : [])])].sort();
 
   if (loading) {
     return (
@@ -190,14 +227,42 @@ export default function CrabDocumentDetail() {
           <div className="rounded-xl border p-4 space-y-3">
             <h3 className="text-xs font-semibold uppercase text-muted-foreground tracking-wider">Details</h3>
             <div className="space-y-2.5">
-              {doc.category && (
-                <div className="flex gap-3">
-                  <span className="text-xs text-muted-foreground w-28 shrink-0 pt-0.5">Category</span>
-                  <span className={`text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded border ${CATEGORY_COLORS[doc.category] || ""}`}>
-                    {doc.category}
-                  </span>
+              <div className="flex gap-3 items-start">
+                <span className="text-xs text-muted-foreground w-28 shrink-0 pt-1.5">Category</span>
+                <div className="flex-1 space-y-2">
+                  <Select value={doc.category || "__none__"} onValueChange={handleCategoryChange}>
+                    <SelectTrigger className="h-7 text-xs w-full">
+                      <SelectValue placeholder="Select category…" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none__">— None —</SelectItem>
+                      {allCategories.map(cat => (
+                        <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                      ))}
+                      <div
+                        className="flex items-center gap-1.5 px-2 py-1.5 text-xs text-primary cursor-pointer hover:bg-accent rounded-sm"
+                        onMouseDown={e => { e.preventDefault(); setAddingCategory(true); }}
+                      >
+                        <Plus className="h-3 w-3" /> Add category
+                      </div>
+                    </SelectContent>
+                  </Select>
+                  {addingCategory && (
+                    <div className="flex gap-1.5">
+                      <Input
+                        autoFocus
+                        className="h-7 text-xs"
+                        placeholder="New category…"
+                        value={newCategory}
+                        onChange={e => setNewCategory(e.target.value)}
+                        onKeyDown={e => { if (e.key === "Enter") handleAddCategory(); if (e.key === "Escape") setAddingCategory(false); }}
+                      />
+                      <Button size="sm" className="h-7 text-xs px-2" onClick={handleAddCategory}>Add</Button>
+                      <Button size="sm" variant="ghost" className="h-7 text-xs px-2" onClick={() => { setAddingCategory(false); setNewCategory(""); }}>✕</Button>
+                    </div>
+                  )}
                 </div>
-              )}
+              </div>
               <div className="flex gap-3 items-center">
                 <span className="text-xs text-muted-foreground w-28 shrink-0">Status</span>
                 <Select value={doc.processing_status} onValueChange={handleStatusChange}>
@@ -205,6 +270,7 @@ export default function CrabDocumentDetail() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="not_processed">Not Processed</SelectItem>
                     <SelectItem value="pending">Pending</SelectItem>
                     <SelectItem value="processing">Processing</SelectItem>
                     <SelectItem value="needs_review">Needs Review</SelectItem>
