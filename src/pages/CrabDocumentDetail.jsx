@@ -242,7 +242,7 @@ export default function CrabDocumentDetail() {
             {processing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Cpu className="h-3.5 w-3.5" />}
             {processing ? "Processing…" : "Process"}
           </Button>
-          <Button size="sm" onClick={handleSave} disabled={saving || !dirty} className="gap-1.5">
+          <Button size="sm" onClick={handleSave} disabled={saving} className="gap-1.5">
             {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
             Save
           </Button>
