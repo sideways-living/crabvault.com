@@ -5,6 +5,11 @@ import { Plus, Search, User, Tag, Phone, Mail, MapPin, FileText } from "lucide-r
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
+const MODULE_STYLES = {
+  redbank: { label: "RedBank", color: "bg-red-100 text-red-700 border-red-200" },
+  yellowbank: { label: "YellowBank", color: "bg-yellow-100 text-yellow-700 border-yellow-200" },
+};
+
 const STATUS_COLORS = {
   active: "bg-emerald-100 text-emerald-700",
   inactive: "bg-gray-100 text-gray-600",
@@ -20,6 +25,7 @@ function buildAddress(crab) {
 export default function CrabsPage() {
   const [crabs, setCrabs] = useState([]);
   const [docsByCrab, setDocsByCrab] = useState({});
+  const [modulesByCrab, setModulesByCrab] = useState({});
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
 
@@ -27,7 +33,8 @@ export default function CrabsPage() {
     Promise.all([
       base44.entities.Crab.filter({ is_deleted: false }, "full_name", 500),
       base44.entities.CrabDocument.list("-updated_date", 500),
-    ]).then(([crbs, docs]) => {
+      base44.entities.CrabModule.list("created_date", 1000),
+    ]).then(([crbs, docs, mods]) => {
       setCrabs(crbs);
       // Build map: crabId → up to 2 most recent docs (not deleted)
       const map = {};
@@ -38,6 +45,13 @@ export default function CrabsPage() {
         });
       });
       setDocsByCrab(map);
+      // Build map: crabId → array of module_types
+      const modMap = {};
+      mods.forEach(m => {
+        if (!modMap[m.crab_id]) modMap[m.crab_id] = [];
+        modMap[m.crab_id].push(m.module_type);
+      });
+      setModulesByCrab(modMap);
     }).finally(() => setLoading(false));
   }, []);
 
@@ -89,6 +103,7 @@ export default function CrabsPage() {
           {filtered.map(crab => {
             const address = buildAddress(crab);
             const recentDocs = docsByCrab[crab.id] || [];
+            const crabModules = modulesByCrab[crab.id] || [];
             return (
               <Link key={crab.id} to={`/crabs/${crab.id}`}>
                 <div className="bg-card border rounded-xl p-5 hover:shadow-md transition-shadow cursor-pointer h-full flex flex-col gap-4">
@@ -135,6 +150,21 @@ export default function CrabsPage() {
                       </div>
                     )}
                   </div>
+
+                  {/* Modules */}
+                  {crabModules.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {crabModules.map(mod => {
+                        const style = MODULE_STYLES[mod];
+                        if (!style) return null;
+                        return (
+                          <span key={mod} className={`text-[10px] font-semibold px-1.5 py-0.5 rounded border ${style.color}`}>
+                            {style.label}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  )}
 
                   {/* Tags */}
                   {(crab.tags || []).length > 0 && (
