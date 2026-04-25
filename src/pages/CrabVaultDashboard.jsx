@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Link } from "react-router-dom";
-import { Users, FileText, Building2, AlertTriangle, Clock, CheckCircle2, ArrowRight } from "lucide-react";
+import { Users, FileText, Building2, AlertTriangle, Clock, CheckCircle2, ArrowRight, Settings } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 // eslint-disable-next-line no-unused-vars
 
@@ -10,6 +12,7 @@ export default function CrabVaultDashboard() {
   const [recentCrabs, setRecentCrabs] = useState([]);
   const [pendingDocs, setPendingDocs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -44,11 +47,35 @@ export default function CrabVaultDashboard() {
     watch: "bg-amber-100 text-amber-700",
   };
 
+  const handleUpdateVaultPaths = async () => {
+    setUpdating(true);
+    try {
+      const result = await base44.functions.invoke('updateCrabDocumentVaultPaths', {});
+      toast.success(`Updated ${result.data.updated} document vault path(s)`);
+    } catch (error) {
+      toast.error('Failed to update vault paths');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">CrabVault</h1>
-        <p className="text-sm text-muted-foreground mt-1">Intelligence overview</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">CrabVault</h1>
+          <p className="text-sm text-muted-foreground mt-1">Intelligence overview</p>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleUpdateVaultPaths}
+          disabled={updating}
+          className="gap-2"
+        >
+          <Settings className="h-4 w-4" />
+          {updating ? "Updating..." : "Update Vault Paths"}
+        </Button>
       </div>
 
       {/* Stats */}
