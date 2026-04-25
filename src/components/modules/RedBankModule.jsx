@@ -38,7 +38,7 @@ function cardLabel(card) {
 
 function accountLabel(acc) {
   if (!acc) return "None";
-  return `${acc.bank || ""}${acc.account_type ? ` – ${acc.account_type}` : ""} ${acc.account_number || ""}`.trim();
+  return `${acc.account_type || "Account"} ${acc.account_number || ""}`.trim();
 }
 
 export default function RedBankModule({ crabId }) {

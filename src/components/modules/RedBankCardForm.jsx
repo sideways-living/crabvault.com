@@ -17,7 +17,7 @@ function formatExpiry(raw) {
 }
 
 function accountLabel(acc) {
-  return `${acc.bank || ""}${acc.account_type ? ` – ${acc.account_type}` : ""} ${acc.account_number || ""}`.trim();
+  return `${acc.account_type || "Account"} ${acc.account_number || ""}`.trim();
 }
 
 export default function RedBankCardForm({ initial, onSave, onCancel, accounts = [] }) {
