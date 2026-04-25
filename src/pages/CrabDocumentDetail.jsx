@@ -176,7 +176,7 @@ export default function CrabDocumentDetail() {
       setEditNotes(d.notes || "");
       setEditDocDate(d.document_date || (d.created_date ? d.created_date.slice(0, 10) : ""));
     }
-    setDirty(false);
+    setDirty(true);
     toast.success("Document processed — please review the AI suggestions");
     setProcessing(false);
   };
