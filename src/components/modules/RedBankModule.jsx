@@ -199,22 +199,7 @@ export default function RedBankModule({ crabId }) {
     load();
   };
 
-  // Link a card to an account from the account side (add/remove)
-  const handleAccountCardLink = async (acc, cardId, add) => {
-    const existing = acc.linked_card_ids || [];
-    const updated = add ? [...existing, cardId] : existing.filter(id => id !== cardId);
-    await base44.entities.RedBankAccount.update(acc.id, { linked_card_ids: updated });
-    // Sync card side
-    if (add) {
-      await base44.entities.RedBankCard.update(cardId, { linked_account_id: acc.id });
-    } else {
-      const card = cards.find(c => c.id === cardId);
-      if (card?.linked_account_id === acc.id) {
-        await base44.entities.RedBankCard.update(cardId, { linked_account_id: "" });
-      }
-    }
-    load();
-  };
+
 
   if (loading) return <div className="flex justify-center py-6"><div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
 
@@ -335,30 +320,7 @@ export default function RedBankModule({ crabId }) {
                         {acc.bsb_address ? `, ${acc.bsb_address}` : ""}
                       </div>
                     )}
-                    {/* Linked cards selector */}
-                    {cards.length > 0 && (
-                      <div className="pl-5 pt-1">
-                        <Label className="text-xs flex items-center gap-1 text-muted-foreground"><Link2 className="h-3 w-3" /> Linked Cards</Label>
-                        <div className="flex flex-wrap gap-1.5 mt-1">
-                          {cards.map(card => {
-                            const linked = (acc.linked_card_ids || []).includes(card.id);
-                            return (
-                              <button
-                                key={card.id}
-                                onClick={() => handleAccountCardLink(acc, card.id, !linked)}
-                                className={`text-[10px] px-2 py-0.5 rounded-full border font-mono transition-colors ${
-                                  linked
-                                    ? "bg-primary text-primary-foreground border-primary"
-                                    : "bg-muted text-muted-foreground border-border hover:border-primary"
-                                }`}
-                              >
-                                •••• {card.card_number?.slice(-4) || "????"}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
+
                   </div>
                   <div className="flex gap-1 shrink-0 ml-2">
                     <button onClick={() => setEditingAccount(acc)} className="text-muted-foreground hover:text-foreground p-1"><Pencil className="h-3.5 w-3.5" /></button>
