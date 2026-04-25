@@ -111,7 +111,9 @@ export default function CrabDocumentDetail() {
       setDoc(d);
       setEditTitle(d?.title || "");
       setEditNotes(d?.notes || "");
-      setEditDocDate(d?.document_date || "");
+      // Default to creation date if no document_date set
+      const defaultDate = d?.document_date || (d?.created_date ? d.created_date.slice(0, 10) : "");
+      setEditDocDate(defaultDate);
       setCrabs(crbs);
 
       // Load version history if this doc has a filename
