@@ -16,6 +16,7 @@ const DEFAULT_CATEGORIES = [
   "Notice of Assessment",
   "Passport",
   "Pay Slip",
+  "Questionnaire",
   "Utility Bill",
   "Work Licence",
 ];
