@@ -1,0 +1,66 @@
+{
+  "name": "CrabModule",
+  "type": "object",
+  "properties": {
+    "crab_id": {
+      "type": "string",
+      "title": "Crab ID"
+    },
+    "module_type": {
+      "type": "string",
+      "title": "Module Type",
+      "enum": [
+        "redbank"
+      ],
+      "default": "redbank"
+    },
+    "override_phone": {
+      "type": "string",
+      "title": "Override Phone"
+    },
+    "override_email": {
+      "type": "string",
+      "title": "Override Email"
+    },
+    "override_address1": {
+      "type": "string",
+      "title": "Override Address Line 1"
+    },
+    "override_address2": {
+      "type": "string",
+      "title": "Override Address Line 2"
+    },
+    "override_suburb": {
+      "type": "string",
+      "title": "Override Suburb"
+    },
+    "override_state": {
+      "type": "string",
+      "title": "Override State"
+    },
+    "override_postcode": {
+      "type": "string",
+      "title": "Override Postcode"
+    },
+    "redbank_customer_number": {
+      "type": "string",
+      "title": "RedBank Customer Number"
+    },
+    "redbank_password": {
+      "type": "string",
+      "title": "RedBank Password"
+    },
+    "redbank_joint_accounts": {
+      "type": "number",
+      "title": "Number of Joint Accounts"
+    },
+    "notes": {
+      "type": "string",
+      "title": "Notes"
+    }
+  },
+  "required": [
+    "crab_id",
+    "module_type"
+  ]
+}

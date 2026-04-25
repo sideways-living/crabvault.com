@@ -5,19 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
 import {
   ArrowLeft, Save, Trash2, Plus, X, FileText,
-  Phone, Mail, MapPin, User, AlertTriangle, Loader2, Star
+  Phone, Mail, MapPin, User, AlertTriangle, Loader2, Layers
 } from "lucide-react";
+import RedBankModule from "@/components/modules/RedBankModule";
 import { toast } from "sonner";
-
-const STATUS_COLORS = {
-  active: "bg-emerald-100 text-emerald-700",
-  inactive: "bg-gray-100 text-gray-600",
-  banned: "bg-red-100 text-red-700",
-  watch: "bg-amber-100 text-amber-700",
-};
 
 const isNew = (id) => id === "new";
 
@@ -36,8 +29,6 @@ export default function CrabDetail() {
     id_numbers: [], emergency_summary: "", notes: "", status: "active", tags: [],
   });
   const [documents, setDocuments] = useState([]);
-  const [markets, setMarkets] = useState([]);
-  const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(!creating);
   const [saving, setSaving] = useState(false);
   const [aliasInput, setAliasInput] = useState("");
@@ -48,13 +39,9 @@ export default function CrabDetail() {
     Promise.all([
       base44.entities.Crab.filter({ id }, "full_name", 1),
       base44.entities.CrabDocument.filter({ is_deleted: false }, "-created_date", 200),
-      base44.entities.TargetMarket.list("name", 200),
-      base44.entities.CrabMarketActivity.filter({ crab_id: id }, "-created_date", 100),
-    ]).then(([crabs, docs, mkts, acts]) => {
+    ]).then(([crabs, docs]) => {
       if (crabs[0]) setCrab(crabs[0]);
       setDocuments(docs.filter(d => (d.crab_ids || []).includes(id)));
-      setMarkets(mkts);
-      setActivities(acts);
       setLoading(false);
     });
   }, [id]);
@@ -373,32 +360,20 @@ export default function CrabDetail() {
             </div>
           </div>
 
-          {/* Market Activity */}
+          {/* Modules */}
           {!creating && (
-            <div className="bg-card border rounded-xl p-5 space-y-3">
-              <h2 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground">Market Activity</h2>
-              {activities.length === 0 ? (
-                <p className="text-xs text-muted-foreground">No market activity recorded</p>
-              ) : (
-                <div className="space-y-2">
-                  {activities.map(a => {
-                    const market = markets.find(m => m.id === a.market_id);
-                    return (
-                      <div key={a.id} className="flex items-center justify-between text-sm">
-                        <span className="text-sm truncate">{market?.name || "Unknown"}</span>
-                        <div className="flex items-center gap-1">
-                          {[1,2,3,4,5].map(s => (
-                            <Star key={s} className={`h-3 w-3 ${s <= (a.rating || 0) ? "text-amber-400 fill-amber-400" : "text-muted-foreground"}`} />
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })}
+            <div className="bg-card border rounded-xl p-5 space-y-4">
+              <div className="flex items-center gap-2">
+                <Layers className="h-4 w-4 text-muted-foreground" />
+                <h2 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground">Modules</h2>
+              </div>
+              {/* RedBank Module */}
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded bg-red-100 text-red-700 border border-red-200">RedBank</span>
                 </div>
-              )}
-              <Link to={`/markets`}>
-                <Button variant="outline" size="sm" className="w-full text-xs mt-1">Manage Markets</Button>
-              </Link>
+                <RedBankModule crabId={id} />
+              </div>
             </div>
           )}
 
