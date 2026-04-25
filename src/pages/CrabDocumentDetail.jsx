@@ -16,6 +16,8 @@ const DEFAULT_CATEGORIES = [
   "Notice of Assessment",
   "Passport",
   "Utility Bill",
+  "Work Licence",
+  "Pay Slip",
 ];
 
 const IMAGE_TYPES = ["jpg", "jpeg", "png", "heic", "webp", "gif"];
