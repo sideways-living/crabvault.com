@@ -224,7 +224,7 @@ export default function CrabDetail() {
               </div>
               <div>
                 <Label className="text-xs">Suburb</Label>
-                <Input className="mt-1" value={crab.suburb || ""} onChange={set("suburb")} />
+                <Input className="mt-1" value={crab.suburb || ""} onChange={e => setCrab(c => ({ ...c, suburb: e.target.value.toUpperCase() }))} />
               </div>
               <div>
                 <Label className="text-xs">State</Label>
@@ -267,7 +267,7 @@ export default function CrabDetail() {
                 </div>
                 <div>
                   <Label className="text-xs">Suburb</Label>
-                  <Input className="mt-1" value={crab.mailing_suburb || ""} onChange={set("mailing_suburb")} />
+                  <Input className="mt-1" value={crab.mailing_suburb || ""} onChange={e => setCrab(c => ({ ...c, mailing_suburb: e.target.value.toUpperCase() }))} />
                 </div>
                 <div>
                   <Label className="text-xs">State</Label>
