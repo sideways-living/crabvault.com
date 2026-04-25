@@ -11,6 +11,7 @@ import { toast } from "sonner";
 const DEFAULT_CATEGORIES = [
   "Credit Card",
   "Debit Card",
+  "Document",
   "Drivers Licence",
   "Medicare Card",
   "Notice of Assessment",
