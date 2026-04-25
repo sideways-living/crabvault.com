@@ -14,11 +14,13 @@ const DEFAULT_CATEGORIES = [
   "Document",
   "Drivers Licence",
   "Medicare Card",
+  "Mugshot",
   "Notice of Assessment",
   "Passport",
   "Pay Slip",
   "Photo Card",
   "Questionnaire",
+  "Signature",
   "Utility Bill",
   "Work Licence",
 ];
