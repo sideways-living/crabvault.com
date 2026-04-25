@@ -159,10 +159,8 @@ Deno.serve(async (req) => {
       ({ crabId, crabName, isNew } = await findOrCreateCrab(db, { firstName, middleName, surname }));
     }
 
-    // Build vault path: /crabs/SURNAME-Firstname/documents/filename
-    const folderName = surname
-      ? `${surname.toUpperCase()}${firstName ? '-' + firstName : ''}`
-      : crabName.replace(/\s+/g, '-').toUpperCase();
+    // Build vault path: /crabs/Firstname Middlename SURNAME/documents/filename
+    const folderName = [firstName, middleName, surname?.toUpperCase()].filter(Boolean).join(' ');
     const vaultPath = `/crabs/${folderName}/documents/${filename}`;
 
     // Check for existing versions of this filename for this crab

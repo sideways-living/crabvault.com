@@ -259,9 +259,8 @@ export default function CrabDocumentDetail() {
     if (JSON.stringify(editCrabIds) !== JSON.stringify(doc.crab_ids || [])) {
       const primaryCrab = editCrabIds.length > 0 ? crabs.find(c => c.id === editCrabIds[0]) : null;
       if (primaryCrab) {
-        const crabFolder = [primaryCrab.surname, primaryCrab.first_name].filter(Boolean).join("-").toUpperCase();
-        const vaultRoot = "/crabs";
-        updateData.vault_path = `${vaultRoot}/${crabFolder}/documents/${doc.original_filename || "document"}`;
+        const crabFolder = [primaryCrab.first_name, primaryCrab.middle_name, primaryCrab.surname?.toUpperCase()].filter(Boolean).join(" ");
+        updateData.vault_path = `/crabs/${crabFolder}/documents/${doc.original_filename || "document"}`;
       }
     }
     
