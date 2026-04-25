@@ -9,6 +9,7 @@ import { ArrowLeft, Download, ExternalLink, FileText, Loader2, User, GitBranch, 
 import { toast } from "sonner";
 
 const DEFAULT_CATEGORIES = [
+  "Correspondence",
   "Credit Card",
   "Debit Card",
   "Document",
