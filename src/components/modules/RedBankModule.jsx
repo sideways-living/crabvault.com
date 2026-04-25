@@ -59,8 +59,8 @@ export default function RedBankModule({ crabId }) {
   const load = async () => {
     const [mods, accs, cds] = await Promise.all([
       base44.entities.CrabModule.filter({ crab_id: crabId, module_type: "redbank" }),
-      base44.entities.RedBankAccount.filter({ crab_id: crabId }),
-      base44.entities.RedBankCard.filter({ crab_id: crabId }),
+      base44.entities.RedBankAccount.filter({ crab_id: crabId }, "created_date"),
+      base44.entities.RedBankCard.filter({ crab_id: crabId }, "created_date"),
     ]);
     const mod = mods[0] || null;
     setModule(mod);
