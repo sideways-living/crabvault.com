@@ -7,9 +7,10 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   ArrowLeft, Save, Trash2, Plus, X, FileText,
-  Phone, Mail, MapPin, User, AlertTriangle, Loader2, Layers
+  Phone, Mail, MapPin, User, AlertTriangle, Loader2
 } from "lucide-react";
 import RedBankModule from "@/components/modules/RedBankModule";
+import ModuleSelector from "@/components/modules/ModuleSelector";
 import { toast } from "sonner";
 
 const isNew = (id) => id === "new";
@@ -29,6 +30,7 @@ export default function CrabDetail() {
     id_numbers: [], emergency_summary: "", notes: "", status: "active", tags: [],
   });
   const [documents, setDocuments] = useState([]);
+  const [enabledModules, setEnabledModules] = useState([]);
   const [loading, setLoading] = useState(!creating);
   const [saving, setSaving] = useState(false);
   const [aliasInput, setAliasInput] = useState("");
@@ -39,9 +41,11 @@ export default function CrabDetail() {
     Promise.all([
       base44.entities.Crab.filter({ id }, "full_name", 1),
       base44.entities.CrabDocument.filter({ is_deleted: false }, "-created_date", 200),
-    ]).then(([crabs, docs]) => {
+      base44.entities.CrabModule.filter({ crab_id: id }),
+    ]).then(([crabs, docs, mods]) => {
       if (crabs[0]) setCrab(crabs[0]);
       setDocuments(docs.filter(d => (d.crab_ids || []).includes(id)));
+      setEnabledModules(mods.map(m => m.module_type));
       setLoading(false);
     });
   }, [id]);
@@ -112,6 +116,19 @@ export default function CrabDetail() {
     if (!tagInput.trim()) return;
     setCrab(c => ({ ...c, tags: [...(c.tags || []), tagInput.trim()] }));
     setTagInput("");
+  };
+
+  const handleModuleToggle = async (moduleType, currentlyEnabled) => {
+    if (currentlyEnabled) {
+      // Disable: delete the module record
+      const mods = await base44.entities.CrabModule.filter({ crab_id: id, module_type: moduleType });
+      if (mods[0]) await base44.entities.CrabModule.delete(mods[0].id);
+      setEnabledModules(em => em.filter(m => m !== moduleType));
+    } else {
+      // Enable: create the module record
+      await base44.entities.CrabModule.create({ crab_id: id, module_type: moduleType });
+      setEnabledModules(em => [...em, moduleType]);
+    }
   };
 
   const addIdNumber = () => setCrab(c => ({ ...c, id_numbers: [...(c.id_numbers || []), { label: "", value: "" }] }));
@@ -338,6 +355,17 @@ export default function CrabDetail() {
               placeholder="Additional notes…"
             />
           </div>
+
+          {/* Active Module Cards — drop into main stack */}
+          {!creating && enabledModules.includes("redbank") && (
+            <div className="bg-card border rounded-xl p-5 space-y-4">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold px-2 py-0.5 rounded bg-red-100 text-red-700 border border-red-200">RedBank</span>
+                <h2 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground">RedBank Module</h2>
+              </div>
+              <RedBankModule crabId={id} />
+            </div>
+          )}
         </div>
 
         {/* Right col — tags, docs, markets */}
@@ -360,21 +388,9 @@ export default function CrabDetail() {
             </div>
           </div>
 
-          {/* Modules */}
+          {/* Module Selector */}
           {!creating && (
-            <div className="bg-card border rounded-xl p-5 space-y-4">
-              <div className="flex items-center gap-2">
-                <Layers className="h-4 w-4 text-muted-foreground" />
-                <h2 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground">Modules</h2>
-              </div>
-              {/* RedBank Module */}
-              <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="text-xs font-semibold px-2 py-0.5 rounded bg-red-100 text-red-700 border border-red-200">RedBank</span>
-                </div>
-                <RedBankModule crabId={id} />
-              </div>
-            </div>
+            <ModuleSelector enabledModules={enabledModules} onToggle={handleModuleToggle} />
           )}
 
           {/* Linked Documents */}
