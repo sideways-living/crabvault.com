@@ -4,7 +4,7 @@ Deno.serve(async (req) => {
   // Validate API key (same key used by the watcher)
   const apiKey = req.headers.get('x-api-key');
   if (!apiKey || apiKey !== Deno.env.get('INGEST_API_KEY')) {
-    return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    return Response.json({ documents: [] }, { status: 200 });
   }
 
   const base44 = createClientFromRequest(req);
