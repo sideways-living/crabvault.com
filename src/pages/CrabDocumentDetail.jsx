@@ -15,9 +15,9 @@ const DEFAULT_CATEGORIES = [
   "Medicare Card",
   "Notice of Assessment",
   "Passport",
+  "Pay Slip",
   "Utility Bill",
   "Work Licence",
-  "Pay Slip",
 ];
 
 const IMAGE_TYPES = ["jpg", "jpeg", "png", "heic", "webp", "gif"];
