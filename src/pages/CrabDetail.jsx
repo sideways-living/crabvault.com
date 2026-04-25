@@ -12,6 +12,7 @@ import {
 import RedBankModule from "@/components/modules/RedBankModule";
 import YellowBankModule from "@/components/modules/YellowBankModule";
 import ModuleSelector from "@/components/modules/ModuleSelector";
+import CrabAIExtractPanel from "@/components/CrabAIExtractPanel";
 import { toast } from "sonner";
 
 const isNew = (id) => id === "new";
@@ -328,6 +329,15 @@ export default function CrabDetail() {
               </div>
             ))}
           </div>
+
+          {/* AI Extraction */}
+          {!creating && documents.length > 0 && (
+            <CrabAIExtractPanel
+              crabId={id}
+              currentCrab={crab}
+              onApply={(updates) => setCrab(c => ({ ...c, ...updates }))}
+            />
+          )}
 
           {/* Emergency Summary */}
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-5 space-y-2">
