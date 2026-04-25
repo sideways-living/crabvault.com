@@ -183,12 +183,40 @@ export default function CrabDocumentDetail() {
 
   const handleSave = async () => {
     setSaving(true);
+    const updatedTitle = editTitle.trim() || doc.title;
+    
+    // Log manual edits after processing for learning
+    if (doc.processing_status === "needs_review" || doc.processing_status === "completed") {
+      const changes = [];
+      if (updatedTitle !== doc.title) changes.push("title");
+      if (editDocDate !== (doc.document_date || "")) changes.push("date");
+      if (editNotes !== doc.notes) changes.push("notes");
+      
+      if (changes.length > 0) {
+        // Extract vendor/company name from title if possible
+        const titleMatch = updatedTitle.match(/(?:^|-\s)([A-Z][A-Za-z\s&]+?)(?:\s-|$)/);
+        const vendorName = titleMatch ? titleMatch[1].trim() : null;
+        
+        await base44.entities.LearningLog.create({
+          action_type: "document_renamed",
+          original_title: doc.title,
+          new_title: updatedTitle,
+          original_filename: doc.original_filename,
+          file_type: doc.file_type,
+          document_date: editDocDate,
+          vendor_name: vendorName,
+          is_receipt: doc.category === "receipt",
+          notes: `Manual correction after AI processing. Changed: ${changes.join(", ")}`,
+        });
+      }
+    }
+    
     await base44.entities.CrabDocument.update(doc.id, {
-      title: editTitle.trim() || doc.title,
+      title: updatedTitle,
       notes: editNotes,
       document_date: editDocDate,
     });
-    setDoc(d => ({ ...d, title: editTitle.trim() || d.title, notes: editNotes, document_date: editDocDate }));
+    setDoc(d => ({ ...d, title: updatedTitle, notes: editNotes, document_date: editDocDate }));
     setDirty(false);
     toast.success("Changes saved");
     setSaving(false);
