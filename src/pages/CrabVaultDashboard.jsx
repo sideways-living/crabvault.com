@@ -16,7 +16,7 @@ export default function CrabVaultDashboard() {
       base44.entities.TargetMarket.list("name", 200),
     ]).then(([crabs, docs, markets]) => {
       setRecentCrabs(crabs.slice(0, 6));
-      setPendingDocs(docs.filter(d => d.processing_status === "needs_review" || d.processing_status === "pending").slice(0, 5));
+      setPendingDocs(docs.filter(d => ["needs_review", "pending", "processing"].includes(d.processing_status)).slice(0, 5));
       setStats({
         totalCrabs: crabs.length,
         activeCrabs: crabs.filter(c => c.status === "active").length,
