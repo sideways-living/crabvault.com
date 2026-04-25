@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Download, ExternalLink, FileText, Loader2, User, GitBranch, Plus, Save, Cpu } from "lucide-react";
+import { ArrowLeft, Download, ExternalLink, FileText, Loader2, User, GitBranch, Plus, Save, Cpu, X } from "lucide-react";
 import { toast } from "sonner";
 
 const DEFAULT_CATEGORIES = [
@@ -112,6 +112,9 @@ export default function CrabDocumentDetail() {
   const [editTitle, setEditTitle] = useState("");
   const [editNotes, setEditNotes] = useState("");
   const [editDocDate, setEditDocDate] = useState("");
+  const [editCrabIds, setEditCrabIds] = useState([]);
+  const [showAddProfile, setShowAddProfile] = useState(false);
+  const [selectedProfileId, setSelectedProfileId] = useState("");
 
   const [versions, setVersions] = useState([]);
 
@@ -124,6 +127,7 @@ export default function CrabDocumentDetail() {
       setDoc(d);
       setEditTitle(d?.title || "");
       setEditNotes(d?.notes || "");
+      setEditCrabIds(d?.crab_ids || []);
       // Default to creation date if no document_date set
       const defaultDate = d?.document_date || (d?.created_date ? d.created_date.slice(0, 10) : "");
       setEditDocDate(defaultDate);
@@ -142,7 +146,21 @@ export default function CrabDocumentDetail() {
     }).finally(() => setLoading(false));
   }, [id]);
 
-  const linkedCrabs = (doc?.crab_ids || []).map(cid => crabs.find(c => c.id === cid)).filter(Boolean);
+  const linkedCrabs = editCrabIds.map(cid => crabs.find(c => c.id === cid)).filter(Boolean);
+
+  const handleAddProfile = () => {
+    if (selectedProfileId && !editCrabIds.includes(selectedProfileId)) {
+      setEditCrabIds(prev => [...prev, selectedProfileId]);
+      setDirty(true);
+      setSelectedProfileId("");
+      setShowAddProfile(false);
+    }
+  };
+
+  const handleRemoveProfile = (crabId) => {
+    setEditCrabIds(prev => prev.filter(id => id !== crabId));
+    setDirty(true);
+  };
 
   const [addingCategory, setAddingCategory] = useState(false);
   const [newCategory, setNewCategory] = useState("");
@@ -233,8 +251,9 @@ export default function CrabDocumentDetail() {
       title: updatedTitle,
       notes: editNotes,
       document_date: editDocDate,
+      crab_ids: editCrabIds,
     });
-    setDoc(d => ({ ...d, title: updatedTitle, notes: editNotes, document_date: editDocDate }));
+    setDoc(d => ({ ...d, title: updatedTitle, notes: editNotes, document_date: editDocDate, crab_ids: editCrabIds }));
     setDirty(false);
     toast.success("Changes saved");
     setSaving(false);
@@ -312,19 +331,55 @@ export default function CrabDocumentDetail() {
         {/* Metadata sidebar */}
         <div className="space-y-5">
           {/* Linked crabs */}
-          {linkedCrabs.length > 0 && (
-            <div className="rounded-xl border p-4 space-y-3">
-              <h3 className="text-xs font-semibold uppercase text-muted-foreground tracking-wider">Linked Profiles</h3>
+          <div className="rounded-xl border p-4 space-y-3">
+            <h3 className="text-xs font-semibold uppercase text-muted-foreground tracking-wider">Linked Profiles</h3>
+            {linkedCrabs.length === 0 ? (
+              <p className="text-xs text-muted-foreground">No profiles linked</p>
+            ) : (
               <div className="space-y-2">
                 {linkedCrabs.map(c => (
-                  <Link key={c.id} to={`/crabs/${c.id}`} className="flex items-center gap-2 hover:text-primary transition-colors">
-                    <User className="h-3.5 w-3.5 text-muted-foreground" />
-                    <span className="text-sm font-medium">{c.full_name || c.surname}</span>
-                  </Link>
+                  <div key={c.id} className="flex items-center justify-between gap-2 p-2 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
+                    <Link to={`/crabs/${c.id}`} className="flex items-center gap-2 flex-1 hover:text-primary transition-colors">
+                      <User className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                      <span className="text-sm font-medium">{c.full_name || c.surname}</span>
+                    </Link>
+                    <button
+                      onClick={() => handleRemoveProfile(c.id)}
+                      className="p-1 hover:bg-destructive/10 rounded transition-colors"
+                      title="Remove profile"
+                    >
+                      <X className="h-3.5 w-3.5 text-destructive opacity-60 hover:opacity-100" />
+                    </button>
+                  </div>
                 ))}
               </div>
-            </div>
-          )}
+            )}
+            {showAddProfile ? (
+              <div className="flex gap-1.5 pt-1">
+                <Select value={selectedProfileId} onValueChange={setSelectedProfileId}>
+                  <SelectTrigger className="h-7 text-xs">
+                    <SelectValue placeholder="Select profile…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {crabs.filter(c => !editCrabIds.includes(c.id)).map(c => (
+                      <SelectItem key={c.id} value={c.id}>{c.full_name || c.surname}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button size="sm" className="h-7 text-xs px-2" onClick={handleAddProfile} disabled={!selectedProfileId}>Add</Button>
+                <Button size="sm" variant="ghost" className="h-7 text-xs px-2" onClick={() => { setShowAddProfile(false); setSelectedProfileId(""); }}>✕</Button>
+              </div>
+            ) : (
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-full h-7 text-xs gap-1"
+                onClick={() => setShowAddProfile(true)}
+              >
+                <Plus className="h-3 w-3" /> Add Profile
+              </Button>
+            )}
+          </div>
 
           {/* Details */}
           <div className="rounded-xl border p-4 space-y-3">
