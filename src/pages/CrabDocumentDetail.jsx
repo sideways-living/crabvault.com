@@ -248,13 +248,24 @@ export default function CrabDocumentDetail() {
       }
     }
     
-    await base44.entities.CrabDocument.update(doc.id, {
+    // Compute vault path based on primary linked crab if crab_ids changed
+    let updateData = {
       title: updatedTitle,
       notes: editNotes,
       document_date: editDocDate,
       crab_ids: editCrabIds,
-    });
-    setDoc(d => ({ ...d, title: updatedTitle, notes: editNotes, document_date: editDocDate, crab_ids: editCrabIds }));
+    };
+
+    if (JSON.stringify(editCrabIds) !== JSON.stringify(doc.crab_ids || [])) {
+      const primaryCrab = editCrabIds.length > 0 ? crabs.find(c => c.id === editCrabIds[0]) : null;
+      if (primaryCrab) {
+        const crabFolder = [primaryCrab.surname, primaryCrab.first_name].filter(Boolean).join("-").toUpperCase();
+        updateData.vault_path = `/crabs/${crabFolder}/documents/${doc.original_filename || "document"}`;
+      }
+    }
+    
+    await base44.entities.CrabDocument.update(doc.id, updateData);
+    setDoc(d => ({ ...d, ...updateData }));
     setDirty(false);
     toast.success("Changes saved");
     setSaving(false);
