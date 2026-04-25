@@ -14,16 +14,7 @@ import { toast } from "sonner";
 import YellowBankAccountForm from "./YellowBankAccountForm";
 import YellowBankCardForm from "./YellowBankCardForm";
 
-const SECURITY_QUESTIONS = [
-  "What was the name of your first pet?",
-  "What was the name of the street you grew up on?",
-  "What is your mother's maiden name?",
-  "What was the name of your primary school?",
-  "What was the make of your first car?",
-  "What city were you born in?",
-  "What is your oldest sibling's middle name?",
-  "What was the name of your childhood best friend?",
-];
+
 
 const CARD_FEATURE_DEFS = [
   { key: "is_digital", label: "Digital Card", icon: Smartphone, tip: "A virtual/digital-only card" },
@@ -253,16 +244,9 @@ export default function YellowBankModule({ crabId }) {
             {[1, 2].map(n => (
               <div key={n} className="space-y-2 p-3 bg-muted/30 rounded-lg">
                 <Label className="text-xs">Question {n}</Label>
-                <Select
-                  value={loginEdit[`yellowbank_security_q${n}`] || "__none__"}
-                  onValueChange={v => LV(`yellowbank_security_q${n}`, v === "__none__" ? "" : v)}
-                >
-                  <SelectTrigger className="text-xs h-8"><SelectValue placeholder="Choose a question…" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__none__">Choose a question…</SelectItem>
-                    {SECURITY_QUESTIONS.map(q => <SelectItem key={q} value={q}>{q}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                <Input className="text-xs" placeholder="Security question…"
+                  value={loginEdit[`yellowbank_security_q${n}`]}
+                  onChange={L(`yellowbank_security_q${n}`)} />
                 <Input className="text-xs" placeholder="Answer…"
                   value={loginEdit[`yellowbank_security_a${n}`]}
                   onChange={L(`yellowbank_security_a${n}`)} />
