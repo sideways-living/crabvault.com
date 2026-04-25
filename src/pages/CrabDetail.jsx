@@ -61,6 +61,27 @@ export default function CrabDetail() {
 
   const set = (field) => (e) => setCrab(c => ({ ...c, [field]: e.target.value }));
 
+  const formatPhone = (raw) => {
+    // Strip everything except digits and leading +
+    let digits = raw.replace(/[^\d]/g, '');
+    if (!digits) return raw;
+    // If starts with 0, replace with 61
+    if (digits.startsWith('0')) digits = '61' + digits.slice(1);
+    // If starts with 61, format as +61 XX XXX XXX
+    if (digits.startsWith('61') && digits.length >= 3) {
+      const local = digits.slice(2); // e.g. "412345678"
+      const p1 = local.slice(0, 2);
+      const p2 = local.slice(2, 5);
+      const p3 = local.slice(5, 8);
+      return ('+61 ' + [p1, p2, p3].filter(Boolean).join(' ')).trim();
+    }
+    return '+' + digits;
+  };
+
+  const handlePhoneBlur = () => {
+    if (crab.phone) setCrab(c => ({ ...c, phone: formatPhone(c.phone) }));
+  };
+
   const computedFullName = [crab.first_name, crab.middle_name, crab.surname].filter(Boolean).join(" ");
 
   const handleSave = async () => {
@@ -176,7 +197,7 @@ export default function CrabDetail() {
               </div>
               <div>
                 <Label className="text-xs">Phone</Label>
-                <Input className="mt-1" value={crab.phone || ""} onChange={set("phone")} />
+                <Input className="mt-1" value={crab.phone || ""} onChange={set("phone")} onBlur={handlePhoneBlur} placeholder="+61 XX XXX XXX" />
               </div>
               <div>
                 <Label className="text-xs">Email</Label>
