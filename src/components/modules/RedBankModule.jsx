@@ -314,10 +314,9 @@ export default function RedBankModule({ crabId }) {
                     <div className="text-xs font-mono text-muted-foreground pl-5">
                       BSB: {acc.bsb} &nbsp;|&nbsp; Acc: {acc.account_number}
                     </div>
-                    {acc.bsb_institution_name && (
+                    {acc.bsb_branch_name && (
                       <div className="text-xs text-emerald-700 pl-5">
-                        {acc.bsb_institution_name} — {acc.bsb_branch_name}
-                        {acc.bsb_address ? `, ${acc.bsb_address}` : ""}
+                        {acc.bsb_branch_name}
                       </div>
                     )}
                     {/* Linked cards — Choice accounts only */}

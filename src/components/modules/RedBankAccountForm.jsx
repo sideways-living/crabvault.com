@@ -75,8 +75,7 @@ export default function RedBankAccountForm({ initial, onSave, onCancel }) {
           {bsbInfo && !bsbLoading && (
             <p className="text-xs text-emerald-700 mt-1 flex items-start gap-1">
               <MapPin className="h-3 w-3 shrink-0 mt-0.5" />
-              {bsbInfo.institution_name} — {bsbInfo.branch_name}
-              {bsbInfo.address ? `, ${bsbInfo.address}` : ""}
+              {bsbInfo.branch_name}
             </p>
           )}
           {bsbError && <p className="text-xs text-destructive mt-1">{bsbError}</p>}
