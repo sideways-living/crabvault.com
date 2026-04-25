@@ -420,23 +420,9 @@ export default function CrabDetail() {
                 <h2 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground">Documents</h2>
                 <span className="text-xs text-muted-foreground">{documents.length}</span>
               </div>
-              {documents.length === 0 ? (
-                <p className="text-xs text-muted-foreground">No documents linked yet</p>
-              ) : (
-                <div className="space-y-1.5">
-                  {documents.slice(0, 8).map(d => (
-                    <Link key={d.id} to={`/crab-documents/${d.id}`}>
-                      <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50 transition-colors">
-                        <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                        <span className="text-xs truncate">{d.title}</span>
-                      </div>
-                    </Link>
-                  ))}
-                  {documents.length > 8 && (
-                    <p className="text-xs text-muted-foreground text-center pt-1">+{documents.length - 8} more</p>
-                  )}
-                </div>
-              )}
+              <Link to={`/crabs/${id}/documents`}>
+                <Button className="w-full" variant="outline">View All Documents</Button>
+              </Link>
             </div>
           )}
         </div>
