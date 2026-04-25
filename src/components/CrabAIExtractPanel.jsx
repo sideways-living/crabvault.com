@@ -43,7 +43,14 @@ export default function CrabAIExtractPanel({ crabId, currentCrab, onApply }) {
     setError(null);
     setExtraction(null);
     setSelected({});
-    const res = await base44.functions.invoke("aiExtractCrabProfile", { crab_id: crabId });
+    let res;
+    try {
+      res = await base44.functions.invoke("aiExtractCrabProfile", { crab_id: crabId });
+    } catch (e) {
+      setLoading(false);
+      setError(e.response?.data?.error || e.message || "Extraction failed");
+      return;
+    }
     setLoading(false);
     if (res.data?.error) {
       setError(res.data.error);

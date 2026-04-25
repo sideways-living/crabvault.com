@@ -331,7 +331,7 @@ export default function CrabDetail() {
           </div>
 
           {/* AI Extraction */}
-          {!creating && documents.length > 0 && (
+          {!creating && (
             <CrabAIExtractPanel
               crabId={id}
               currentCrab={crab}
