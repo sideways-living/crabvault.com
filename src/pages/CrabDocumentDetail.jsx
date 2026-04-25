@@ -248,13 +248,19 @@ export default function CrabDocumentDetail() {
       }
     }
     
-    // Compute vault path based on primary linked crab if crab_ids changed
+    // Auto-mark as completed if status was needs_review
     let updateData = {
       title: updatedTitle,
       notes: editNotes,
       document_date: editDocDate,
       crab_ids: editCrabIds,
     };
+
+    if (doc.processing_status === "needs_review") {
+      updateData.processing_status = "completed";
+    }
+
+    // Compute vault path based on primary linked crab if crab_ids changed
 
     if (JSON.stringify(editCrabIds) !== JSON.stringify(doc.crab_ids || [])) {
       const primaryCrab = editCrabIds.length > 0 ? crabs.find(c => c.id === editCrabIds[0]) : null;
