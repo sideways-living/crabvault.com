@@ -220,12 +220,10 @@ export default function CrabDocumentDetail() {
           )}
         </div>
         <div className="flex gap-2 shrink-0 items-center">
-          {dirty && (
-            <Button size="sm" onClick={handleSave} disabled={saving} className="gap-1.5">
-              {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-              Save
-            </Button>
-          )}
+          <Button size="sm" onClick={handleSave} disabled={saving || !dirty} className="gap-1.5">
+            {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+            Save
+          </Button>
           {doc.file_url && (
             <a href={doc.file_url} target="_blank" rel="noopener noreferrer">
               <Button variant="outline" size="sm" className="gap-2">
