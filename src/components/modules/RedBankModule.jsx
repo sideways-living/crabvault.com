@@ -320,7 +320,7 @@ export default function RedBankModule({ crabId }) {
                       </div>
                     )}
                     {/* Linked cards — Choice accounts only */}
-                    {acc.account_type?.toLowerCase() === "choice" && cards.length > 0 && (
+                    {acc.account_type?.toLowerCase().includes("choice") && cards.length > 0 && (
                       <div className="pl-5 pt-1">
                         <Label className="text-xs flex items-center gap-1 text-muted-foreground"><Link2 className="h-3 w-3" /> Linked Cards</Label>
                         <div className="flex flex-wrap gap-1.5 mt-1">
