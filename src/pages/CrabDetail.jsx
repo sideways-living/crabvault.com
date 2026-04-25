@@ -59,7 +59,11 @@ export default function CrabDetail() {
     });
   }, [id]);
 
+  const toTitleCase = (str) => str.replace(/\b\w/g, c => c.toUpperCase());
+
   const set = (field) => (e) => setCrab(c => ({ ...c, [field]: e.target.value }));
+  const setTitle = (field) => (e) => setCrab(c => ({ ...c, [field]: toTitleCase(e.target.value) }));
+  const setUpper = (field) => (e) => setCrab(c => ({ ...c, [field]: e.target.value.toUpperCase() }));
 
   const formatPhone = (raw) => {
     // Strip everything except digits and leading +
@@ -167,15 +171,15 @@ export default function CrabDetail() {
             <div className="grid grid-cols-3 gap-4">
               <div>
                 <Label className="text-xs">First Name</Label>
-                <Input className="mt-1" value={crab.first_name || ""} onChange={set("first_name")} />
+                <Input className="mt-1" value={crab.first_name || ""} onChange={setTitle("first_name")} />
               </div>
               <div>
                 <Label className="text-xs">Middle Name</Label>
-                <Input className="mt-1" value={crab.middle_name || ""} onChange={set("middle_name")} />
+                <Input className="mt-1" value={crab.middle_name || ""} onChange={setTitle("middle_name")} />
               </div>
               <div>
                 <Label className="text-xs">Surname *</Label>
-                <Input className="mt-1" value={crab.surname || ""} onChange={set("surname")} />
+                <Input className="mt-1" value={crab.surname || ""} onChange={setUpper("surname")} />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -216,11 +220,11 @@ export default function CrabDetail() {
             <div className="grid grid-cols-2 gap-3">
               <div className="col-span-2">
                 <Label className="text-xs">Address Line 1</Label>
-                <Input className="mt-1" value={crab.address1 || ""} onChange={set("address1")} placeholder="Street number and name" />
+                <Input className="mt-1" value={crab.address1 || ""} onChange={setTitle("address1")} placeholder="Street number and name" />
               </div>
               <div className="col-span-2">
                 <Label className="text-xs">Address Line 2</Label>
-                <Input className="mt-1" value={crab.address2 || ""} onChange={set("address2")} placeholder="Unit, apartment, floor…" />
+                <Input className="mt-1" value={crab.address2 || ""} onChange={setTitle("address2")} placeholder="Unit, apartment, floor…" />
               </div>
               <div>
                 <Label className="text-xs">Suburb</Label>
@@ -228,7 +232,7 @@ export default function CrabDetail() {
               </div>
               <div>
                 <Label className="text-xs">State</Label>
-                <Input className="mt-1" value={crab.state || ""} onChange={set("state")} />
+                <Input className="mt-1" value={crab.state || ""} onChange={setUpper("state")} />
               </div>
               <div>
                 <Label className="text-xs">Postcode</Label>
@@ -236,7 +240,7 @@ export default function CrabDetail() {
               </div>
               <div>
                 <Label className="text-xs">Country</Label>
-                <Input className="mt-1" value={crab.country || "Australia"} onChange={set("country")} />
+                <Input className="mt-1" value={crab.country || "Australia"} onChange={setTitle("country")} />
               </div>
             </div>
           </div>
@@ -259,11 +263,11 @@ export default function CrabDetail() {
               <div className="grid grid-cols-2 gap-3">
                 <div className="col-span-2">
                   <Label className="text-xs">Address Line 1</Label>
-                  <Input className="mt-1" value={crab.mailing_address1 || ""} onChange={set("mailing_address1")} placeholder="Street number and name" />
+                  <Input className="mt-1" value={crab.mailing_address1 || ""} onChange={setTitle("mailing_address1")} placeholder="Street number and name" />
                 </div>
                 <div className="col-span-2">
                   <Label className="text-xs">Address Line 2</Label>
-                  <Input className="mt-1" value={crab.mailing_address2 || ""} onChange={set("mailing_address2")} placeholder="Unit, PO Box, locked bag…" />
+                  <Input className="mt-1" value={crab.mailing_address2 || ""} onChange={setTitle("mailing_address2")} placeholder="Unit, PO Box, locked bag…" />
                 </div>
                 <div>
                   <Label className="text-xs">Suburb</Label>
@@ -271,7 +275,7 @@ export default function CrabDetail() {
                 </div>
                 <div>
                   <Label className="text-xs">State</Label>
-                  <Input className="mt-1" value={crab.mailing_state || ""} onChange={set("mailing_state")} />
+                  <Input className="mt-1" value={crab.mailing_state || ""} onChange={setUpper("mailing_state")} />
                 </div>
                 <div>
                   <Label className="text-xs">Postcode</Label>
@@ -279,7 +283,7 @@ export default function CrabDetail() {
                 </div>
                 <div>
                   <Label className="text-xs">Country</Label>
-                  <Input className="mt-1" value={crab.mailing_country || "Australia"} onChange={set("mailing_country")} />
+                  <Input className="mt-1" value={crab.mailing_country || "Australia"} onChange={setTitle("mailing_country")} />
                 </div>
               </div>
             )}
