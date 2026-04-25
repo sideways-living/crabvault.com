@@ -21,11 +21,16 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'No documents linked to this profile' }, { status: 400 });
     }
 
-    // Build file_urls list (up to 10 docs to keep prompt manageable)
+    // Build file_urls list — only types supported by the LLM vision API
+    const SUPPORTED_TYPES = ["pdf", "jpg", "jpeg", "png", "heic"];
     const fileUrls = linkedDocs
-      .filter(d => d.file_url)
+      .filter(d => d.file_url && SUPPORTED_TYPES.includes((d.file_type || "").toLowerCase()))
       .slice(0, 10)
       .map(d => d.file_url);
+
+    if (fileUrls.length === 0) {
+      return Response.json({ error: 'No supported document types found (supported: PDF, JPG, PNG, HEIC). DOCX and other formats cannot be analysed directly.' }, { status: 400 });
+    }
 
     const existingProfile = {
       first_name: crab.first_name || "",
