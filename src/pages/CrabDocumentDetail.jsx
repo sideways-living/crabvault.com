@@ -218,22 +218,28 @@ export default function CrabDocumentDetail() {
     }
   };
 
+  const findNextPendingDoc = async (currentDocId) => {
+    const allDocs = await base44.entities.CrabDocument.list("-created_date", 500);
+    const pending = allDocs.filter(d => !d.is_deleted && ["needs_review", "pending", "processing"].includes(d.processing_status) && d.id !== currentDocId);
+    return pending.length > 0 ? pending[0].id : null;
+  };
+
   const handleSave = async () => {
     setSaving(true);
     const updatedTitle = editTitle.trim() || doc.title;
-    
+
     // Log manual edits after processing for learning
     if (doc.processing_status === "needs_review" || doc.processing_status === "completed") {
       const changes = [];
       if (updatedTitle !== doc.title) changes.push("title");
       if (editDocDate !== (doc.document_date || "")) changes.push("date");
       if (editNotes !== doc.notes) changes.push("notes");
-      
+
       if (changes.length > 0) {
         // Extract vendor/company name from title if possible
         const titleMatch = updatedTitle.match(/(?:^|-\s)([A-Z][A-Za-z\s&]+?)(?:\s-|$)/);
         const vendorName = titleMatch ? titleMatch[1].trim() : null;
-        
+
         await base44.entities.LearningLog.create({
           action_type: "document_renamed",
           original_title: doc.title,
@@ -247,7 +253,7 @@ export default function CrabDocumentDetail() {
         });
       }
     }
-    
+
     // Auto-mark as completed if status was needs_review
     let updateData = {
       title: updatedTitle,
@@ -269,13 +275,22 @@ export default function CrabDocumentDetail() {
         updateData.vault_path = `/crabs/${crabFolder}/documents/${doc.original_filename || "document"}`;
       }
     }
-    
+
     await base44.entities.CrabDocument.update(doc.id, updateData);
     setDoc(d => ({ ...d, ...updateData }));
     setDirty(false);
     toast.success("Changes saved");
+
+    // Find and navigate to next pending document
+    const nextDocId = await findNextPendingDoc(doc.id);
     setSaving(false);
-    navigate("/crab-documents");
+
+    if (nextDocId) {
+      navigate(`/crab-documents/${nextDocId}`);
+    } else {
+      toast.success("All documents processed!");
+      navigate("/crab-documents");
+    }
   };
 
   if (loading) {

@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { FileText, Search, Upload, Loader2, CheckCircle2, Clock, AlertTriangle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import CrabDocumentUploadDialog from "@/components/CrabDocumentUploadDialog";
 
 const STATUS_ICONS = {
@@ -61,6 +62,16 @@ export default function CrabDocumentsPage() {
   const getCrabNames = (crabIds = []) =>
     crabIds.map(id => crabs.find(c => c.id === id)?.full_name).filter(Boolean);
 
+  const handleProcessAll = () => {
+    const pending = documents.filter(d => ["needs_review", "pending", "processing"].includes(d.processing_status));
+    if (pending.length === 0) {
+      toast.error("No documents need attention");
+      return;
+    }
+    // Navigate to first pending document
+    window.location.href = `/crab-documents/${pending[0].id}`;
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -68,7 +79,12 @@ export default function CrabDocumentsPage() {
           <h1 className="text-2xl font-semibold tracking-tight">Documents</h1>
           <p className="text-sm text-muted-foreground mt-1">{documents.length} document{documents.length !== 1 ? "s" : ""}</p>
         </div>
-        <Button onClick={() => setUploadOpen(true)} className="gap-2"><Upload className="h-4 w-4" /> Upload</Button>
+        <div className="flex gap-2">
+          <Button onClick={handleProcessAll} variant="outline" className="gap-2">
+            <Clock className="h-4 w-4" /> Process All
+          </Button>
+          <Button onClick={() => setUploadOpen(true)} className="gap-2"><Upload className="h-4 w-4" /> Upload</Button>
+        </div>
       </div>
 
       <div className="relative">
