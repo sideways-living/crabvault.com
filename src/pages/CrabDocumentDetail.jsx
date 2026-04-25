@@ -9,6 +9,7 @@ import { ArrowLeft, Download, ExternalLink, FileText, Loader2, User, GitBranch, 
 import { toast } from "sonner";
 
 const DEFAULT_CATEGORIES = [
+  "Birth Certificate",
   "Correspondence",
   "Credit Card",
   "Debit Card",
@@ -88,6 +89,7 @@ const CATEGORY_COLORS = {
   legal: "bg-red-50 text-red-700 border-red-200",
   medical: "bg-pink-50 text-pink-700 border-pink-200",
   financial: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  "birth certificate": "bg-cyan-50 text-cyan-700 border-cyan-200",
   other: "bg-gray-50 text-gray-600 border-gray-200",
 };
 

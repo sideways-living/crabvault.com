@@ -23,6 +23,7 @@ const CATEGORY_COLORS = {
   legal: "bg-red-50 text-red-700",
   medical: "bg-pink-50 text-pink-700",
   financial: "bg-emerald-50 text-emerald-700",
+  "birth certificate": "bg-cyan-50 text-cyan-700",
   other: "bg-gray-50 text-gray-600",
 };
 
