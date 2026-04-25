@@ -177,20 +177,26 @@ export default function CrabDocumentDetail() {
   const allCategories = [...new Set([...DEFAULT_CATEGORIES, ...customCategories, ...(doc?.category && !DEFAULT_CATEGORIES.includes(doc.category) ? [doc.category] : [])])].sort();
 
   const handleProcess = async () => {
+    if (processing) return;
     setProcessing(true);
-    await base44.functions.invoke("processCrabDocument", { document_id: doc.id });
-    // Reload doc to pick up AI-updated fields
-    const [docs] = await Promise.all([base44.entities.CrabDocument.filter({ id })]);
-    const d = docs[0];
-    if (d) {
-      setDoc(d);
-      setEditTitle(d.title || "");
-      setEditNotes(d.notes || "");
-      setEditDocDate(d.document_date || (d.created_date ? d.created_date.slice(0, 10) : ""));
+    try {
+      await base44.functions.invoke("processCrabDocument", { document_id: doc.id });
+      // Reload doc to pick up AI-updated fields
+      const [docs] = await Promise.all([base44.entities.CrabDocument.filter({ id })]);
+      const d = docs[0];
+      if (d) {
+        setDoc(d);
+        setEditTitle(d.title || "");
+        setEditNotes(d.notes || "");
+        setEditDocDate(d.document_date || (d.created_date ? d.created_date.slice(0, 10) : ""));
+      }
+      setDirty(true);
+      toast.success("Document processed — please review the AI suggestions");
+    } catch (error) {
+      toast.error("Processing failed. Please try again.");
+    } finally {
+      setProcessing(false);
     }
-    setDirty(true);
-    toast.success("Document processed — please review the AI suggestions");
-    setProcessing(false);
   };
 
   const handleSave = async () => {
