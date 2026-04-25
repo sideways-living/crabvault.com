@@ -232,7 +232,7 @@ export default function CrabDetail() {
               </div>
               <div>
                 <Label className="text-xs">State</Label>
-                <Input className="mt-1" value={crab.state || ""} onChange={setUpper("state")} />
+                <Input className="mt-1" value={crab.state || ""} onChange={setTitle("state")} />
               </div>
               <div>
                 <Label className="text-xs">Postcode</Label>
@@ -275,7 +275,7 @@ export default function CrabDetail() {
                 </div>
                 <div>
                   <Label className="text-xs">State</Label>
-                  <Input className="mt-1" value={crab.mailing_state || ""} onChange={setUpper("mailing_state")} />
+                  <Input className="mt-1" value={crab.mailing_state || ""} onChange={setTitle("mailing_state")} />
                 </div>
                 <div>
                   <Label className="text-xs">Postcode</Label>
