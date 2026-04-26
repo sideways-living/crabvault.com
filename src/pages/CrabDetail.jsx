@@ -393,23 +393,6 @@ export default function CrabDetail() {
             )}
           </div>
 
-          {/* Aliases */}
-          <div className="bg-card border rounded-xl p-5 space-y-3">
-            <h2 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground">Known Aliases</h2>
-            <div className="flex gap-2">
-              <Input value={aliasInput} onChange={e => setAliasInput(e.target.value)} placeholder="Add alias…" onKeyDown={e => e.key === "Enter" && addAlias()} className="flex-1" />
-              <Button variant="outline" onClick={addAlias} size="sm">Add</Button>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {(crab.aliases || []).map((a, i) => (
-                <span key={i} className="flex items-center gap-1 bg-secondary text-sm px-2.5 py-1 rounded-full">
-                  {a}
-                  <button onClick={() => setCrab(c => ({ ...c, aliases: c.aliases.filter((_, idx) => idx !== i) }))}><X className="h-3 w-3" /></button>
-                </span>
-              ))}
-            </div>
-          </div>
-
           {/* ID Numbers */}
           <div className="bg-card border rounded-xl p-5 space-y-3">
             <div className="flex items-center justify-between">
