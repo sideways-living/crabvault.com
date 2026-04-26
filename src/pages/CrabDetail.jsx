@@ -376,7 +376,19 @@ export default function CrabDetail() {
                      <Input placeholder="Address Line 2" className="h-7 text-xs" value={crab.address2 || ""} onChange={setTitle("address2")} />
                      <div className="grid grid-cols-2 gap-2">
                        <Input placeholder="Suburb" className="h-7 text-xs" value={crab.suburb || ""} onChange={e => setCrab(c => ({ ...c, suburb: e.target.value.toUpperCase() }))} />
-                       <Input placeholder="State" className="h-7 text-xs" value={crab.state || ""} onChange={setTitle("state")} />
+                       <Select value={crab.state || ""} onValueChange={v => setCrab(c => ({ ...c, state: v }))}>
+                         <SelectTrigger className="h-7 text-xs"><SelectValue placeholder="State" /></SelectTrigger>
+                         <SelectContent>
+                           <SelectItem value="NSW">NSW</SelectItem>
+                           <SelectItem value="VIC">VIC</SelectItem>
+                           <SelectItem value="QLD">QLD</SelectItem>
+                           <SelectItem value="WA">WA</SelectItem>
+                           <SelectItem value="SA">SA</SelectItem>
+                           <SelectItem value="TAS">TAS</SelectItem>
+                           <SelectItem value="NT">NT</SelectItem>
+                           <SelectItem value="ACT">ACT</SelectItem>
+                         </SelectContent>
+                       </Select>
                        <Input placeholder="Postcode" className="h-7 text-xs" value={crab.postcode || ""} onChange={set("postcode")} />
                        <Input placeholder="Country" className="h-7 text-xs" value={crab.country || "Australia"} onChange={setTitle("country")} />
                      </div>
@@ -404,7 +416,19 @@ export default function CrabDetail() {
                     <Input placeholder="Address Line 2" className="h-7 text-xs" value={addr.address2} onChange={e => updateAdditionalAddress(i, "address2", e.target.value)} />
                     <div className="grid grid-cols-2 gap-2">
                       <Input placeholder="Suburb" className="h-7 text-xs" value={addr.suburb} onChange={e => updateAdditionalAddress(i, "suburb", e.target.value.toUpperCase())} />
-                      <Input placeholder="State" className="h-7 text-xs" value={addr.state} onChange={e => updateAdditionalAddress(i, "state", e.target.value)} />
+                      <Select value={addr.state || ""} onValueChange={v => updateAdditionalAddress(i, "state", v)}>
+                        <SelectTrigger className="h-7 text-xs"><SelectValue placeholder="State" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="NSW">NSW</SelectItem>
+                          <SelectItem value="VIC">VIC</SelectItem>
+                          <SelectItem value="QLD">QLD</SelectItem>
+                          <SelectItem value="WA">WA</SelectItem>
+                          <SelectItem value="SA">SA</SelectItem>
+                          <SelectItem value="TAS">TAS</SelectItem>
+                          <SelectItem value="NT">NT</SelectItem>
+                          <SelectItem value="ACT">ACT</SelectItem>
+                        </SelectContent>
+                      </Select>
                       <Input placeholder="Postcode" className="h-7 text-xs" value={addr.postcode} onChange={e => updateAdditionalAddress(i, "postcode", e.target.value)} />
                       <Input placeholder="Country" className="h-7 text-xs" value={addr.country} onChange={e => updateAdditionalAddress(i, "country", e.target.value)} />
                     </div>
@@ -483,7 +507,19 @@ export default function CrabDetail() {
                   </div>
                   <div>
                     <Label className="text-xs">State</Label>
-                    <Input className="mt-1" value={crab.mailing_state || ""} onChange={setTitle("mailing_state")} />
+                    <Select value={crab.mailing_state || ""} onValueChange={v => setCrab(c => ({ ...c, mailing_state: v }))}>
+                      <SelectTrigger className="mt-1"><SelectValue placeholder="State" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="NSW">NSW</SelectItem>
+                        <SelectItem value="VIC">VIC</SelectItem>
+                        <SelectItem value="QLD">QLD</SelectItem>
+                        <SelectItem value="WA">WA</SelectItem>
+                        <SelectItem value="SA">SA</SelectItem>
+                        <SelectItem value="TAS">TAS</SelectItem>
+                        <SelectItem value="NT">NT</SelectItem>
+                        <SelectItem value="ACT">ACT</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div>
                     <Label className="text-xs">Postcode</Label>
