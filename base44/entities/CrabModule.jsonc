@@ -72,6 +72,23 @@
       "type": "number",
       "title": "Number of Joint Accounts"
     },
+    "redbank_payids": {
+      "type": "array",
+      "title": "RedBank PayIDs",
+      "items": {
+        "type": "object",
+        "properties": {
+          "payid": {
+            "type": "string",
+            "title": "PayID"
+          },
+          "linked_account_id": {
+            "type": "string",
+            "title": "Linked Account ID"
+          }
+        }
+      }
+    },
     "yellowbank_client_number": {
       "type": "string",
       "title": "YellowBank Client Number"

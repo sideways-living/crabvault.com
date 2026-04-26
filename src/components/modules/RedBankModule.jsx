@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Plus, Pencil, Trash2, CreditCard, Landmark, Smartphone,
-  WalletCards, Lock, Link2, KeyRound, Users, Hash, Phone, BadgeCheck
+  WalletCards, Lock, Link2, KeyRound, Users, Hash, Phone, BadgeCheck, AtSign, Check
 } from "lucide-react";
 import { toast } from "sonner";
 import RedBankAccountForm from "./RedBankAccountForm";
@@ -41,6 +41,44 @@ function accountLabel(acc) {
   return `${acc.account_type || "Account"} ${acc.account_number || ""}`.trim();
 }
 
+function PayidForm({ form, setForm, accounts, onSave, onCancel }) {
+  return (
+    <div className="space-y-2 p-3 bg-muted/30 rounded-lg border">
+      <div>
+        <Label className="text-xs">PayID (email, phone, or ABN)</Label>
+        <Input
+          autoFocus
+          className="mt-1 text-sm font-mono"
+          placeholder="e.g. +61 412 345 678 or name@email.com"
+          value={form.payid}
+          onChange={e => setForm(f => ({ ...f, payid: e.target.value }))}
+          onKeyDown={e => { if (e.key === "Enter") onSave(); if (e.key === "Escape") onCancel(); }}
+        />
+      </div>
+      {accounts.length > 0 && (
+        <div>
+          <Label className="text-xs">Linked Account</Label>
+          <Select value={form.linked_account_id || "__none__"} onValueChange={v => setForm(f => ({ ...f, linked_account_id: v === "__none__" ? "" : v }))}>
+            <SelectTrigger className="mt-1 h-7 text-xs"><SelectValue placeholder="None" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__none__">None</SelectItem>
+              {accounts.map(acc => (
+                <SelectItem key={acc.id} value={acc.id}>{accountLabel(acc)}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+      <div className="flex gap-2 pt-1">
+        <Button size="sm" onClick={onSave} disabled={!form.payid.trim()} className="gap-1 h-7 text-xs px-2">
+          <Check className="h-3 w-3" /> Save
+        </Button>
+        <Button size="sm" variant="outline" onClick={onCancel} className="h-7 text-xs px-2">Cancel</Button>
+      </div>
+    </div>
+  );
+}
+
 export default function RedBankModule({ crabId }) {
   const [module, setModule] = useState(null);
   const [accounts, setAccounts] = useState([]);
@@ -55,6 +93,11 @@ export default function RedBankModule({ crabId }) {
   const [editingAccount, setEditingAccount] = useState(null);
   const [addingCard, setAddingCard] = useState(false);
   const [editingCard, setEditingCard] = useState(null);
+
+  const [payids, setPayids] = useState([]);
+  const [addingPayid, setAddingPayid] = useState(false);
+  const [editingPayidIdx, setEditingPayidIdx] = useState(null);
+  const [payidForm, setPayidForm] = useState({ payid: "", linked_account_id: "" });
 
   const load = async () => {
     const [mods, accs, cds] = await Promise.all([
@@ -78,6 +121,7 @@ export default function RedBankModule({ crabId }) {
     });
     setAccounts(accs);
     setCards(cds);
+    setPayids(mod?.redbank_payids || []);
     setLoading(false);
   };
 
@@ -193,6 +237,33 @@ export default function RedBankModule({ crabId }) {
     setCards(cs => cs.map(c => c.id === card.id ? updated : c));
   };
 
+  const savePayids = async (updated) => {
+    const mod = await ensureModule();
+    await base44.entities.CrabModule.update(mod.id, { redbank_payids: updated });
+    setPayids(updated);
+  };
+
+  const handleSavePayid = async () => {
+    if (!payidForm.payid.trim()) return;
+    let updated;
+    if (editingPayidIdx !== null) {
+      updated = payids.map((p, i) => i === editingPayidIdx ? { ...payidForm } : p);
+      setEditingPayidIdx(null);
+    } else {
+      updated = [...payids, { ...payidForm }];
+      setAddingPayid(false);
+    }
+    setPayidForm({ payid: "", linked_account_id: "" });
+    await savePayids(updated);
+    toast.success("PayID saved");
+  };
+
+  const handleDeletePayid = async (idx) => {
+    const updated = payids.filter((_, i) => i !== idx);
+    await savePayids(updated);
+    toast.success("PayID deleted");
+  };
+
   // Link a card to an account (or unlink)
   const handleCardAccountLink = async (card, newAccountId) => {
     const oldAccountId = card.linked_account_id || "";
@@ -294,11 +365,14 @@ export default function RedBankModule({ crabId }) {
               <h3 className="font-semibold text-sm">RedBank Accounts</h3>
             </div>
             <div className="flex gap-2">
-              <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => { setAddingAccount(true); setAddingCard(false); }}>
+              <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => { setAddingAccount(true); setAddingCard(false); setAddingPayid(false); }}>
                 <Plus className="h-3 w-3" /> Add Account
               </Button>
-              <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => { setAddingCard(true); setAddingAccount(false); }}>
+              <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => { setAddingCard(true); setAddingAccount(false); setAddingPayid(false); }}>
                 <Plus className="h-3 w-3" /> Add Card
+              </Button>
+              <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => { setAddingPayid(true); setAddingAccount(false); setAddingCard(false); setPayidForm({ payid: "", linked_account_id: "" }); }}>
+                <Plus className="h-3 w-3" /> PayID
               </Button>
             </div>
           </div>
@@ -352,6 +426,19 @@ export default function RedBankModule({ crabId }) {
                               </button>
                             );
                           })}
+                        </div>
+                      </div>
+                    )}
+                    {/* Linked PayIDs */}
+                    {payids.filter(p => p.linked_account_id === acc.id).length > 0 && (
+                      <div className="pl-5 pt-1">
+                        <Label className="text-xs flex items-center gap-1 text-muted-foreground"><AtSign className="h-3 w-3" /> PayID</Label>
+                        <div className="flex flex-wrap gap-1.5 mt-1">
+                          {payids.filter(p => p.linked_account_id === acc.id).map((p, idx) => (
+                            <span key={idx} className="text-[10px] px-2 py-0.5 rounded-full border font-mono bg-red-50 text-red-700 border-red-200">
+                              {p.payid}
+                            </span>
+                          ))}
                         </div>
                       </div>
                     )}
@@ -435,6 +522,43 @@ export default function RedBankModule({ crabId }) {
                   )}
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* PayIDs section */}
+          {(payids.length > 0 || addingPayid) && (
+            <div className="border-t pt-4 space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-1">
+                <AtSign className="h-3.5 w-3.5" /> PayIDs
+              </p>
+              {payids.map((p, idx) => (
+                <div key={idx}>
+                  {editingPayidIdx === idx ? (
+                    <PayidForm form={payidForm} setForm={setPayidForm} accounts={accounts} onSave={handleSavePayid} onCancel={() => { setEditingPayidIdx(null); setPayidForm({ payid: "", linked_account_id: "" }); }} />
+                  ) : (
+                    <div className="flex items-center justify-between p-2.5 bg-muted/40 rounded-lg">
+                      <div className="space-y-0.5">
+                        <div className="flex items-center gap-2 text-sm font-mono">
+                          <AtSign className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                          <span>{p.payid}</span>
+                        </div>
+                        {p.linked_account_id && accounts.find(a => a.id === p.linked_account_id) && (
+                          <div className="text-xs text-muted-foreground pl-5">
+                            Linked: {accountLabel(accounts.find(a => a.id === p.linked_account_id))}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex gap-1 shrink-0 ml-2">
+                        <button onClick={() => { setEditingPayidIdx(idx); setPayidForm({ payid: p.payid, linked_account_id: p.linked_account_id || "" }); setAddingPayid(false); }} className="text-muted-foreground hover:text-foreground p-1"><Pencil className="h-3.5 w-3.5" /></button>
+                        <button onClick={() => handleDeletePayid(idx)} className="text-muted-foreground hover:text-destructive p-1"><Trash2 className="h-3.5 w-3.5" /></button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+              {addingPayid && (
+                <PayidForm form={payidForm} setForm={setPayidForm} accounts={accounts} onSave={handleSavePayid} onCancel={() => { setAddingPayid(false); setPayidForm({ payid: "", linked_account_id: "" }); }} />
+              )}
             </div>
           )}
 
