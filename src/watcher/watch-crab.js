@@ -246,8 +246,8 @@ async function poll() {
     const stat = fs.statSync(entryPath);
 
     if (stat.isDirectory()) {
-      // Subfolder mode
-      const crabInfo = parseCrabFolder(entry);
+      // Subfolder mode — folder name is a hint, AI will verify
+      const crabInfo = { ...parseCrabFolder(entry), aiIdentify: true };
       if (!crabInfo.surname) continue;
 
       let subFiles;
@@ -286,28 +286,21 @@ async function poll() {
       const ext = path.extname(filename).toLowerCase();
       if (!SUPPORTED.includes(ext)) { uploadedFiles.add(filename); continue; }
 
-      // Resolve crab identity: default env vars → filename parsing → skip
-      let crabInfo = null;
-      if (DEFAULT_CRAB_ID || DEFAULT_SURNAME) {
-        crabInfo = {
-          surname: DEFAULT_SURNAME,
-          firstName: DEFAULT_FIRST_NAME,
-          middleName: DEFAULT_MIDDLE,
-          crabId: DEFAULT_CRAB_ID,
-        };
+      // Resolve crab identity hint: default env vars → filename parsing → AI
+      let crabInfo = { surname: '', firstName: '', middleName: '', aiIdentify: true };
+      if (DEFAULT_CRAB_ID) {
+        crabInfo = { surname: DEFAULT_SURNAME, firstName: DEFAULT_FIRST_NAME, middleName: DEFAULT_MIDDLE, crabId: DEFAULT_CRAB_ID, aiIdentify: true };
+      } else if (DEFAULT_SURNAME) {
+        crabInfo = { surname: DEFAULT_SURNAME, firstName: DEFAULT_FIRST_NAME, middleName: DEFAULT_MIDDLE, aiIdentify: true };
       } else {
-        // Try to parse crab name from filename: "John SMITH - description.pdf"
+        // Try to parse crab name from filename as a hint for AI
         const parsed = parseCrabFromFilename(filename);
         if (parsed && parsed.surname) {
-          crabInfo = parsed;
-          console.log(`🔍  Parsed from filename: ${parsed.firstName} ${parsed.surname}`);
+          console.log(`🔍  Filename hint: ${parsed.firstName} ${parsed.surname} — AI will verify`);
+          crabInfo = { ...parsed, aiIdentify: true };
+        } else {
+          console.log(`🤖  No filename hint for "${filename}" — AI will identify from document`);
         }
-      }
-
-      if (!crabInfo || (!crabInfo.surname && !crabInfo.crabId)) {
-        // No identity found — upload anyway and let AI identify from document content
-        console.log(`🤖  No crab identity for "${filename}" — will use AI to identify from document content`);
-        crabInfo = { surname: '', firstName: '', middleName: '', aiIdentify: true };
       }
 
       const filePath = entryPath;

@@ -147,15 +147,23 @@ Deno.serve(async (req) => {
     const fileType = ['pdf', 'docx', 'xlsx', 'jpg', 'jpeg', 'png', 'heic', 'txt', 'psd'].includes(ext) ? ext : 'other';
     const { file_url } = await db.integrations.Core.UploadFile({ file });
 
-    // AI identity extraction — try to figure out who this document belongs to
+    // AI verification — always run for supported file types to confirm identity and correct filename hint
     if (aiIdentify && !existingCrabId) {
       const isImage = ['jpg', 'jpeg', 'png', 'heic'].includes(ext);
       const isPdf = ext === 'pdf';
       if (isImage || isPdf) {
-        console.log(`🤖  AI identifying crab from document: ${filename}`);
+        const hint = [firstName, middleName, surname].filter(Boolean).join(' ');
+        console.log(`🤖  AI verifying document: ${filename}${hint ? ` (hint: ${hint})` : ''}`);
         try {
           const result = await db.integrations.Core.InvokeLLM({
-            prompt: `This is a document file. Extract the full name of the primary person this document belongs to or is addressed to (e.g. the account holder, recipient, patient, or subject). Also check the filename for name clues: "${filename}". Return only JSON with fields: first_name, middle_name, surname. If you cannot confidently identify a person, return all fields as empty strings.`,
+            prompt: `Analyse this document and extract the full name of the primary person it belongs to or is addressed to (e.g. the account holder, recipient, patient, or subject).
+
+Filename: "${filename}"
+${hint ? `Name hint from filename/folder: "${hint}" — use this as a strong hint but correct it if the document clearly shows a different name.` : 'No name hint available — identify from document content only.'}
+
+Return JSON with: first_name, middle_name, surname, document_title.
+- "document_title": a clean descriptive title for this document (e.g. "Westpac Bank Statement March 2024", "Medicare Card", "Centrelink Letter"). Use the document content, not the raw filename.
+- If you cannot confidently identify the person, return first_name/middle_name/surname as empty strings.`,
             file_urls: [file_url],
             response_json_schema: {
               type: 'object',
@@ -163,6 +171,7 @@ Deno.serve(async (req) => {
                 first_name: { type: 'string' },
                 middle_name: { type: 'string' },
                 surname: { type: 'string' },
+                document_title: { type: 'string' },
               },
             },
           });
@@ -170,18 +179,24 @@ Deno.serve(async (req) => {
             firstName = result.first_name || '';
             middleName = result.middle_name || '';
             surname = result.surname;
-            console.log(`🤖  AI identified: ${firstName} ${middleName} ${surname}`.trim());
+            console.log(`🤖  AI confirmed: ${[firstName, middleName, surname].filter(Boolean).join(' ')}`);
           } else {
             console.log(`🤖  AI could not identify crab — storing as unassigned`);
-            surname = 'UNASSIGNED';
+            if (!surname) surname = 'UNASSIGNED';
+          }
+          // Use AI-generated document title if provided
+          if (result.document_title) {
+            console.log(`🤖  AI document title: ${result.document_title}`);
+            // Pass as a special field to be used as the document title instead of filename
+            formData.set('ai_title', result.document_title);
           }
         } catch (e) {
-          console.warn(`🤖  AI identification failed: ${e.message} — storing as unassigned`);
-          surname = 'UNASSIGNED';
+          console.warn(`🤖  AI verification failed: ${e.message} — using filename hint or unassigned`);
+          if (!surname) surname = 'UNASSIGNED';
         }
       } else {
-        console.log(`🤖  File type ${ext} not supported for AI identification — storing as unassigned`);
-        surname = 'UNASSIGNED';
+        console.log(`🤖  File type ${ext} not supported for AI — using filename hint`);
+        if (!surname) surname = 'UNASSIGNED';
       }
     }
 
@@ -230,7 +245,8 @@ Deno.serve(async (req) => {
       console.log(`🔄  New version v${newVersion} of: ${filename} for crab ${crabId}`);
     }
 
-    const baseTitle = filename.replace(/\.[^/.]+$/, '');
+    const aiTitle = formData.get('ai_title') || '';
+    const baseTitle = aiTitle || filename.replace(/\.[^/.]+$/, '');
     const versionedTitle = newVersion > 1 ? `${baseTitle} (v${newVersion})` : baseTitle;
     const versionedVaultPath = newVersion > 1
       ? vaultPath.replace(/(\.[^/.]+)$/, ` (v${newVersion})$1`)
