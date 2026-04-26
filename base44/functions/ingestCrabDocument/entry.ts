@@ -160,16 +160,25 @@ Deno.serve(async (req) => {
           const categoryOptions = categories.map(c => c.name).join(', ');
 
           const result = await db.integrations.Core.InvokeLLM({
-            prompt: `Analyse this document and extract the full name of the primary person it belongs to or is addressed to (e.g. the account holder, recipient, patient, or subject).
+            prompt: `Analyse this document carefully and extract:
+1. The full name of the primary person it belongs to or is addressed to (e.g. the account holder, recipient, patient, or subject).
+2. A descriptive title for the document.
+3. The document type — MUST choose from the available types below based on what the document actually contains.
 
 Filename: "${filename}"
 ${hint ? `Name hint from filename/folder: "${hint}" — use this as a strong hint but correct it if the document clearly shows a different name.` : 'No name hint available — identify from document content only.'}
 
 Available document types: ${categoryOptions}
 
+CRITICAL: Read the document content and filename carefully. Match to the category that best describes what this document IS, not a generic label. For example:
+- A photo ID card, driver licence, passport → match to "id" or similar
+- A bank statement, account statement → match to a banking/finance category
+- Medical records, prescriptions → match to a medical category
+- Correspondence, letters → match to a correspondence category
+
 Return JSON with: first_name, middle_name, surname, document_title, document_type.
 - "document_title": a clean descriptive title for this document (e.g. "Westpac Bank Statement March 2024", "Medicare Card", "Centrelink Letter"). Use the document content, not the raw filename.
-- "document_type": MUST be one of the available document types listed above. Choose the one that best matches this document. Do NOT invent new types.
+- "document_type": MUST be exactly one of the available document types listed above. Choose the single category that best matches what the document actually is.
 - If you cannot confidently identify the person, return first_name/middle_name/surname as empty strings.`,
             file_urls: [file_url],
             response_json_schema: {
