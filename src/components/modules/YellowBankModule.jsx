@@ -593,19 +593,7 @@ export default function YellowBankModule({ crabId }) {
             </div>
           )}
 
-          {(accounts.length > 0 || cards.length > 0) && !addingAccount && !addingCard && !addingPayid && (
-            <div className="flex gap-2 pt-1 border-t">
-              <Button size="sm" variant="ghost" className="gap-1 text-xs text-muted-foreground" onClick={() => setAddingAccount(true)}>
-                <Plus className="h-3 w-3" /> Add Account
-              </Button>
-              <Button size="sm" variant="ghost" className="gap-1 text-xs text-muted-foreground" onClick={() => setAddingCard(true)}>
-                <Plus className="h-3 w-3" /> Add Card
-              </Button>
-              <Button size="sm" variant="ghost" className="gap-1 text-xs text-muted-foreground" onClick={() => { setAddingPayid(true); setPayidForm({ payid: "", linked_account_id: "" }); }}>
-                <Plus className="h-3 w-3" /> PayID
-              </Button>
-            </div>
-          )}
+
         </div>
 
       </div>
