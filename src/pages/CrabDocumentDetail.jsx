@@ -460,9 +460,10 @@ export default function CrabDocumentDetail() {
                         <SelectValue placeholder="Select profile…" />
                       </SelectTrigger>
                       <SelectContent>
-                        {crabs.filter(c => !editCrabIds.includes(c.id)).map(c => (
-                          <SelectItem key={c.id} value={c.id}>{c.full_name || c.surname}</SelectItem>
-                        ))}
+                        {crabs.filter(c => !editCrabIds.includes(c.id)).map(c => {
+                          const formatted = [c.first_name, c.middle_name].filter(Boolean).map(formatNameCase).join(" ") + " " + formatSurnameCase(c.surname);
+                          return <SelectItem key={c.id} value={c.id}>{formatted.trim()}</SelectItem>;
+                        })}
                       </SelectContent>
                     </Select>
                     <Button size="sm" className="h-7 text-xs px-2" onClick={handleAddProfile} disabled={!selectedProfileId}>Add</Button>
