@@ -135,13 +135,13 @@ function CardRow({ card, editing, accounts, onEdit, onDelete, onSave, onCancel, 
               </div>
               {/* Linked Account */}
               {accounts.length > 0 && (
-                <div className="pl-5">
+                <div className="pl-0">
                   <Select
                     value={card.linked_account_id || "__none__"}
                     onValueChange={v => onLinkAccount(card, v === "__none__" ? "" : v)}
                   >
                     <SelectTrigger className="h-6 text-xs border-0 bg-transparent px-0 shadow-none text-muted-foreground gap-1 w-auto focus:ring-0">
-                      <Link2 className="h-3 w-3 shrink-0" />
+                      <Link2 className="h-3.5 w-3.5 shrink-0" />
                       <SelectValue placeholder="No account linked" />
                     </SelectTrigger>
                     <SelectContent>
