@@ -271,42 +271,31 @@ export default function CrabDetail() {
                 </div>
               </>
             ) : (
-              <div className="space-y-3">
-                {/* Photo + name row */}
-                <div className="flex items-start gap-4">
-                  {crab.photo_url ? (
-                    <img src={crab.photo_url} alt={computedFullName} className="w-16 h-16 rounded-xl object-cover border shrink-0" />
-                  ) : (
-                    <div className="w-16 h-16 rounded-xl bg-muted flex items-center justify-center shrink-0">
-                      <User className="h-7 w-7 text-muted-foreground" />
-                    </div>
-                  )}
-                  <div className="flex-1 min-w-0 space-y-1">
-                    <p className="text-lg font-semibold">{computedFullName || <span className="text-muted-foreground italic">No name</span>}</p>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full border capitalize ${STATUS_COLORS[crab.status] || STATUS_COLORS.active}`}>
-                        {crab.status || "active"}
-                      </span>
-                      {crab.date_of_birth && (
-                        <>
-                          <span className="text-xs text-muted-foreground">{new Date(crab.date_of_birth).toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" })}</span>
-                          {age !== null && <span className="text-xs text-muted-foreground">· {age} yrs</span>}
-                          {starSign && <span className="text-xs text-muted-foreground">· {starSign}</span>}
-                        </>
-                      )}
-                    </div>
+              <div className="space-y-1.5">
+                {/* Row 1: Name + badges right */}
+                <div className="flex items-center justify-between gap-4">
+                  <p className="text-lg font-semibold">{computedFullName || <span className="text-muted-foreground italic">No name</span>}</p>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full border capitalize ${STATUS_COLORS[crab.status] || STATUS_COLORS.active}`}>
+                      {crab.status || "active"}
+                    </span>
+                    {enabledModules.includes("redbank") && (
+                      <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-700 border border-red-200">RedBank</span>
+                    )}
+                    {enabledModules.includes("yellowbank") && (
+                      <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700 border border-yellow-200">YellowBank</span>
+                    )}
                   </div>
                 </div>
-                {/* Contact row */}
-                <div className="flex flex-wrap gap-x-5 gap-y-1 text-sm text-muted-foreground pt-1">
+                {/* Row 2: DOB left, Phone right */}
+                <div className="flex items-center justify-between text-sm text-muted-foreground">
+                  <span>{crab.date_of_birth ? new Date(crab.date_of_birth).toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" }) : <span className="italic">No date of birth</span>}</span>
                   {crab.phone && <span className="flex items-center gap-1.5"><Phone className="h-3.5 w-3.5 shrink-0" />{crab.phone}</span>}
+                </div>
+                {/* Row 3: Age + star sign left, Email right */}
+                <div className="flex items-center justify-between text-sm text-muted-foreground">
+                  <span>{age !== null ? `${age} yrs${starSign ? `  ·  ${starSign}` : ""}` : ""}</span>
                   {crab.email && <span className="flex items-center gap-1.5"><Mail className="h-3.5 w-3.5 shrink-0" />{crab.email}</span>}
-                  {(crab.suburb || crab.state) && (
-                    <span className="flex items-center gap-1.5">
-                      <MapPin className="h-3.5 w-3.5 shrink-0" />
-                      {[crab.suburb, crab.state].filter(Boolean).join(", ")}
-                    </span>
-                  )}
                 </div>
               </div>
             )}
