@@ -186,6 +186,8 @@ export default function YellowBankModule({ crabId }) {
   const [cards, setCards] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loginEditing, setLoginEditing] = useState(false);
+  const [shown, setShown] = useState({ password: false, app_pin: false, tel_pin: false, a1: false, a2: false });
+  const toggleShown = (key) => setShown(s => ({ ...s, [key]: !s[key] }));
 
   const [loginEdit, setLoginEdit] = useState({
     yellowbank_client_number: "",
@@ -459,21 +461,42 @@ export default function YellowBankModule({ crabId }) {
             <div className="space-y-3 text-sm">
               {/* Row 1+2: credentials in 2-col grid */}
               <div className="grid grid-cols-2 gap-x-6 gap-y-1.5">
-                <div className="flex justify-between">
+                <div className="flex justify-between items-center">
                   <span className="text-muted-foreground">Client Number</span>
                   <span className="font-mono">{loginEdit.yellowbank_client_number || "—"}</span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between items-center gap-2">
                   <span className="text-muted-foreground">Password</span>
-                  <span className="font-mono">{loginEdit.yellowbank_password || "—"}</span>
+                  <span className="flex items-center gap-1 font-mono">
+                    {shown.password ? (loginEdit.yellowbank_password || "—") : (loginEdit.yellowbank_password ? "••••••" : "—")}
+                    {loginEdit.yellowbank_password && (
+                      <button onClick={() => toggleShown("password")} className="text-muted-foreground hover:text-foreground ml-1">
+                        {shown.password ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                      </button>
+                    )}
+                  </span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between items-center gap-2">
                   <span className="text-muted-foreground">App PIN</span>
-                  <span className="font-mono">{loginEdit.yellowbank_app_pin || "—"}</span>
+                  <span className="flex items-center gap-1 font-mono">
+                    {shown.app_pin ? (loginEdit.yellowbank_app_pin || "—") : (loginEdit.yellowbank_app_pin ? "••••" : "—")}
+                    {loginEdit.yellowbank_app_pin && (
+                      <button onClick={() => toggleShown("app_pin")} className="text-muted-foreground hover:text-foreground ml-1">
+                        {shown.app_pin ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                      </button>
+                    )}
+                  </span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between items-center gap-2">
                   <span className="text-muted-foreground">Telephone PIN</span>
-                  <span className="font-mono">{loginEdit.yellowbank_telephone_pin || "—"}</span>
+                  <span className="flex items-center gap-1 font-mono">
+                    {shown.tel_pin ? (loginEdit.yellowbank_telephone_pin || "—") : (loginEdit.yellowbank_telephone_pin ? "••••" : "—")}
+                    {loginEdit.yellowbank_telephone_pin && (
+                      <button onClick={() => toggleShown("tel_pin")} className="text-muted-foreground hover:text-foreground ml-1">
+                        {shown.tel_pin ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                      </button>
+                    )}
+                  </span>
                 </div>
               </div>
 
@@ -493,7 +516,14 @@ export default function YellowBankModule({ crabId }) {
                       <p className="text-xs text-muted-foreground font-medium">Question 1:</p>
                       <div className="flex justify-between items-baseline gap-4">
                         <span className="text-sm">{loginEdit.yellowbank_security_q1}</span>
-                        <span className="text-sm font-mono text-right shrink-0">{loginEdit.yellowbank_security_a1 || "—"}</span>
+                        <span className="flex items-center gap-1 text-sm font-mono text-right shrink-0">
+                          {shown.a1 ? (loginEdit.yellowbank_security_a1 || "—") : (loginEdit.yellowbank_security_a1 ? "••••••" : "—")}
+                          {loginEdit.yellowbank_security_a1 && (
+                            <button onClick={() => toggleShown("a1")} className="text-muted-foreground hover:text-foreground ml-1">
+                              {shown.a1 ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                            </button>
+                          )}
+                        </span>
                       </div>
                     </div>
                   )}
@@ -502,7 +532,14 @@ export default function YellowBankModule({ crabId }) {
                       <p className="text-xs text-muted-foreground font-medium">Question 2:</p>
                       <div className="flex justify-between items-baseline gap-4">
                         <span className="text-sm">{loginEdit.yellowbank_security_q2}</span>
-                        <span className="text-sm font-mono text-right shrink-0">{loginEdit.yellowbank_security_a2 || "—"}</span>
+                        <span className="flex items-center gap-1 text-sm font-mono text-right shrink-0">
+                          {shown.a2 ? (loginEdit.yellowbank_security_a2 || "—") : (loginEdit.yellowbank_security_a2 ? "••••••" : "—")}
+                          {loginEdit.yellowbank_security_a2 && (
+                            <button onClick={() => toggleShown("a2")} className="text-muted-foreground hover:text-foreground ml-1">
+                              {shown.a2 ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                            </button>
+                          )}
+                        </span>
                       </div>
                     </div>
                   )}
