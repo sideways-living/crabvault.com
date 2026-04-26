@@ -505,9 +505,10 @@ export default function CrabDetail() {
                 </div>
               )}
               </div>
+              </div>
 
               {/* ID Numbers */}
-          <div className="bg-card border rounded-xl p-5 space-y-3">
+              <div className="bg-card border rounded-xl p-5 space-y-3">
             <div className="flex items-center justify-between">
               <h2 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground">ID Numbers / References</h2>
               <Button variant="outline" size="sm" onClick={addIdNumber} className="gap-1"><Plus className="h-3 w-3" /> Add</Button>
