@@ -491,7 +491,7 @@ export default function RedBankModule({ crabId }) {
                               </div>
                               {/* Linked account */}
                               {accounts.length > 0 && (
-                                <div className="pl-0">
+                                <div className="pl-[22px]">
                                   <Select
                                     value={card.linked_account_id || "__none__"}
                                     onValueChange={v => handleCardAccountLink(card, v === "__none__" ? "" : v)}

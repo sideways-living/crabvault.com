@@ -135,7 +135,7 @@ function CardRow({ card, editing, accounts, onEdit, onDelete, onSave, onCancel, 
               </div>
               {/* Linked Account */}
               {accounts.length > 0 && (
-                <div className="pl-0">
+                <div className="pl-[22px]">
                   <Select
                     value={card.linked_account_id || "__none__"}
                     onValueChange={v => onLinkAccount(card, v === "__none__" ? "" : v)}
