@@ -16,6 +16,28 @@ async function processDoc(db, doc) {
   const ext = (doc.file_type || '').toLowerCase();
   const isVisual = fileUrl && ['pdf', 'jpg', 'jpeg', 'png', 'heic', 'webp'].includes(ext);
 
+  // Parse filename for document type hints
+  const filename = (doc.original_filename || doc.title || '').toLowerCase();
+  const categoryHints = {
+    'medicare': 'Medicare Card',
+    'driving': 'Drivers Licence',
+    'passport': 'Passport',
+    'birth': 'Birth Certificate',
+    'license': 'Drivers Licence',
+    'licence': 'Drivers Licence',
+  };
+  
+  let categoryHint = null;
+  for (const [keyword, cat] of Object.entries(categoryHints)) {
+    if (filename.includes(keyword)) {
+      categoryHint = cat;
+      break;
+    }
+  }
+
+  // Detect if filename suggests both sides (e.g., "both", "front and back", "both sides")
+  const bothSidesHint = /both|both.?sides|front.?and.?back/.test(filename);
+
   // Fetch linked crab names for context
   let crabContext = '';
   if (doc.crab_ids?.length) {
@@ -31,19 +53,20 @@ ${crabContext}
 
 Document filename: ${doc.original_filename || doc.title}
 Current title: ${doc.title}
+${categoryHint ? `Filename hint suggests this is a: ${categoryHint}` : ''}
 
 Please analyse this document and return structured data:
 - suggested_title: A clean, descriptive title. Format: "YYYY-MM-DD - Description" if you can identify a date, otherwise just a clean description. Keep it concise.
 - summary: 2-3 sentence summary of what this document is and its key details.
-- category: One of: correspondence, evidence, receipt, id, legal, medical, financial, Pay Slip, other
-- id_card_side: If this is an ID document (category "id"), specify "front" or "back" based on the document content or filename hints. Otherwise null.
+- category: One of: correspondence, evidence, receipt, Medicare Card, Drivers Licence, Passport, Birth Certificate, id, legal, medical, financial, Pay Slip, other
+- id_card_side: If this is an ID document, specify "front", "back", or "both" based on the document content or filename hints. Otherwise null.
 - is_payslip: Boolean - true if this is a payslip/pay advice/salary statement
 - pay_period_end_date: If payslip, the end date of the pay period in YYYY-MM-DD format, otherwise null
 - pay_date: If payslip, the actual pay/payment date in YYYY-MM-DD format, otherwise null
 - document_date: The date of the document in YYYY-MM-DD format if identifiable, otherwise null. For payslips, use the later of pay_date or pay_period_end_date.
-- tags: Array of relevant keyword tags (e.g. ["passport", "identity", "uk"])
+- tags: Array of relevant keyword tags (e.g. ["passport", "identity", "medicare"])
 
-Be precise. If this is an ID document, include the ID type and specify front/back side. If it's correspondence, note who it's from/to. For payslips, always extract both pay period end date and payment date.`,
+Be precise. If this is an ID document, include the ID type and specify front/back/both sides. If it's correspondence, note who it's from/to. For payslips, always extract both pay period end date and payment date.`,
     file_urls: isVisual ? [fileUrl] : undefined,
     response_json_schema: {
       type: 'object',
