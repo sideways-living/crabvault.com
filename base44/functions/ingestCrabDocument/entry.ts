@@ -161,8 +161,9 @@ Deno.serve(async (req) => {
 Filename: "${filename}"
 ${hint ? `Name hint from filename/folder: "${hint}" — use this as a strong hint but correct it if the document clearly shows a different name.` : 'No name hint available — identify from document content only.'}
 
-Return JSON with: first_name, middle_name, surname, document_title.
+Return JSON with: first_name, middle_name, surname, document_title, document_type.
 - "document_title": a clean descriptive title for this document (e.g. "Westpac Bank Statement March 2024", "Medicare Card", "Centrelink Letter"). Use the document content, not the raw filename.
+- "document_type": a short description of what the document is (e.g. "Bank Statement", "Medicare Card", "Centrelink Letter", "Passport", "Driver Licence", "Tax Return"). This will be used as part of the filename.
 - If you cannot confidently identify the person, return first_name/middle_name/surname as empty strings.`,
             file_urls: [file_url],
             response_json_schema: {
@@ -172,6 +173,7 @@ Return JSON with: first_name, middle_name, surname, document_title.
                 middle_name: { type: 'string' },
                 surname: { type: 'string' },
                 document_title: { type: 'string' },
+                document_type: { type: 'string' },
               },
             },
           });
@@ -184,10 +186,16 @@ Return JSON with: first_name, middle_name, surname, document_title.
             console.log(`🤖  AI could not identify crab — storing as unassigned`);
             if (!surname) surname = 'UNASSIGNED';
           }
-          // Use AI-generated document title if provided
+          // Build standardised filename: "Firstname Middlename SURNAME - Document Type.ext"
+          if (result.document_type) {
+            const namePart = [result.first_name, result.middle_name, result.surname?.toUpperCase()].filter(Boolean).join(' ');
+            const aiFilename = namePart
+              ? `${namePart} - ${result.document_type}`
+              : result.document_type;
+            formData.set('ai_filename', aiFilename);
+            console.log(`🤖  AI filename: ${aiFilename}`);
+          }
           if (result.document_title) {
-            console.log(`🤖  AI document title: ${result.document_title}`);
-            // Pass as a special field to be used as the document title instead of filename
             formData.set('ai_title', result.document_title);
           }
         } catch (e) {
@@ -217,7 +225,7 @@ Return JSON with: first_name, middle_name, surname, document_title.
     const folderName = [firstName, middleName, surname?.toUpperCase()].filter(Boolean).join(' ');
     const vaultPath = `/crabs/${folderName}/documents/${filename}`;
 
-    // Check for existing versions of this filename for this crab
+    // Check for existing versions of this filename for this crab (check both original and canonical)
     const existingDocs = await db.entities.CrabDocument.filter({ original_filename: filename });
     const active = existingDocs.filter(d => !d.is_deleted && (d.crab_ids || []).includes(crabId));
 
@@ -246,16 +254,23 @@ Return JSON with: first_name, middle_name, surname, document_title.
     }
 
     const aiTitle = formData.get('ai_title') || '';
-    const baseTitle = aiTitle || filename.replace(/\.[^/.]+$/, '');
+    const aiFilename = formData.get('ai_filename') || '';
+    // Use AI filename for vault path if available, otherwise fall back to original filename (without ext)
+    const fileExt = filename.includes('.') ? filename.slice(filename.lastIndexOf('.')) : '';
+    const canonicalBase = aiFilename || filename.replace(/\.[^/.]+$/, '');
+    const canonicalFilename = `${canonicalBase}${fileExt}`;
+    // Rebuild vault path with canonical filename
+    const canonicalVaultPath = `/crabs/${folderName}/documents/${canonicalFilename}`;
+    const baseTitle = aiTitle || canonicalBase;
     const versionedTitle = newVersion > 1 ? `${baseTitle} (v${newVersion})` : baseTitle;
     const versionedVaultPath = newVersion > 1
-      ? vaultPath.replace(/(\.[^/.]+)$/, ` (v${newVersion})$1`)
-      : vaultPath;
+      ? canonicalVaultPath.replace(/(\.[^/.]+)$/, ` (v${newVersion})$1`)
+      : canonicalVaultPath;
 
     const doc = await db.entities.CrabDocument.create({
       title: versionedTitle,
       file_url,
-      original_filename: filename,
+      original_filename: canonicalFilename,
       file_type: fileType,
       file_size: file.size || 0,
       crab_ids: [crabId],
