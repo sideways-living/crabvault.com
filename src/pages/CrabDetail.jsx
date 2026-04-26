@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   ArrowLeft, Save, Trash2, Plus, X, FileText,
-  Phone, Mail, MapPin, User, AlertTriangle, Loader2, Pencil
+  Phone, Mail, MapPin, User, Loader2, Pencil
 } from "lucide-react";
 import RedBankModule from "@/components/modules/RedBankModule";
 import YellowBankModule from "@/components/modules/YellowBankModule";
@@ -429,22 +429,6 @@ export default function CrabDetail() {
               onApply={(updates) => setCrab(c => ({ ...c, ...updates }))}
             />
           )}
-
-          {/* Emergency Summary */}
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-5 space-y-2">
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-amber-600" />
-              <h2 className="font-semibold text-sm text-amber-800">Emergency Summary</h2>
-            </div>
-            <p className="text-xs text-amber-700">Quick facts to answer questions on the spot</p>
-            <textarea
-              className="w-full mt-1 text-sm border border-amber-200 rounded-lg px-3 py-2 bg-white resize-none focus-visible:ring-1 focus-visible:ring-amber-400 outline-none"
-              rows={4}
-              value={crab.emergency_summary || ""}
-              onChange={e => setCrab(c => ({ ...c, emergency_summary: e.target.value }))}
-              placeholder="Key facts, red flags, known methods…"
-            />
-          </div>
 
           {/* Notes */}
           <div className="bg-card border rounded-xl p-5 space-y-2">
