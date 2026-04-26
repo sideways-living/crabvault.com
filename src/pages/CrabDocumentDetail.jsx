@@ -499,6 +499,7 @@ export default function CrabDocumentDetail() {
                     <SelectItem value="__none__">— Not Set —</SelectItem>
                     <SelectItem value="front">Front</SelectItem>
                     <SelectItem value="back">Back</SelectItem>
+                    <SelectItem value="both">Both Sides</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
