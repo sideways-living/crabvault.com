@@ -365,17 +365,9 @@ export default function RedBankModule({ crabId }) {
               <Landmark className="h-4 w-4 text-red-600" />
               <h3 className="font-semibold text-sm">RedBank Accounts</h3>
             </div>
-            <div className="flex gap-2">
-              <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => { setAddingAccount(true); setAddingCard(false); setAddingPayid(false); }}>
-                <Plus className="h-3 w-3" /> Add Account
-              </Button>
-              <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => { setAddingCard(true); setAddingAccount(false); setAddingPayid(false); }}>
-                <Plus className="h-3 w-3" /> Add Card
-              </Button>
-              <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => { setAddingPayid(true); setAddingAccount(false); setAddingCard(false); setPayidForm({ payid: "", linked_account_id: "" }); }}>
-                <Plus className="h-3 w-3" /> PayID
-              </Button>
-            </div>
+            <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => { setAddingPayid(true); setAddingAccount(false); setAddingCard(false); setPayidForm({ payid: "", linked_account_id: "" }); }}>
+              <Plus className="h-3 w-3" /> PayID
+            </Button>
           </div>
 
           {addingAccount && (
