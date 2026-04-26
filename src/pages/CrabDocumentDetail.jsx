@@ -322,15 +322,16 @@ export default function CrabDocumentDetail() {
     const primaryCrab = editCrabIds.length > 0 ? crabs.find(c => c.id === editCrabIds[0]) : null;
     if (primaryCrab) {
       const crabFolder = [primaryCrab.first_name, primaryCrab.middle_name, primaryCrab.surname?.toUpperCase()].filter(Boolean).join(" ");
-      const crabName = [primaryCrab.first_name, primaryCrab.surname?.toUpperCase()].filter(Boolean).join(" ");
       
-      // Build standardized filename: <crab name> - <state/country> <category> - <card side>.<ext>
+      // Build standardized filename: <Firstname> <Middlename> <SURNAME> - <State/Country> <DocumentType> - <Front/Back>.<ext>
       const stateOrCountry = primaryCrab.state || primaryCrab.country || '';
       const docType = doc.category || 'Document';
-      const cardSide = editIdCardSide ? ` - ${editIdCardSide === 'front' ? 'Front' : editIdCardSide === 'back' ? 'Back' : 'Both Sides'}` : '';
+      const cardSide = editIdCardSide ? `${editIdCardSide === 'front' ? 'Front' : editIdCardSide === 'back' ? 'Back' : 'Both Sides'}` : '';
       const ext = doc.original_filename?.split('.').pop() || 'pdf';
       
-      const newFilename = `${crabName} - ${stateOrCountry} ${docType}${cardSide}.${ext}`;
+      const newFilename = cardSide
+        ? `${crabFolder} - ${stateOrCountry} ${docType} - ${cardSide}.${ext}`
+        : `${crabFolder} - ${stateOrCountry} ${docType}.${ext}`;
       updateData.vault_path = `/crabs/${crabFolder}/documents/${newFilename}`;
       updateData.original_filename = newFilename;
     } else if (JSON.stringify(editCrabIds) !== JSON.stringify(doc.crab_ids || [])) {
@@ -524,7 +525,7 @@ export default function CrabDocumentDetail() {
             <h3 className="text-xs font-semibold uppercase text-muted-foreground tracking-wider">Details</h3>
             <div className="space-y-2.5">
               <div className="flex gap-3 items-start">
-                <span className="text-xs text-muted-foreground w-28 shrink-0 pt-1.5">Category</span>
+                <span className="text-xs text-muted-foreground w-28 shrink-0 pt-1.5">Document Type</span>
                 <div className="flex-1 space-y-2">
                   <Select value={doc.category || "__none__"} onValueChange={handleCategoryChange}>
                     <SelectTrigger className="h-7 text-xs w-full">
