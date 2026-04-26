@@ -14,6 +14,7 @@ import { getCardImage } from "@/lib/cardImages";
 import { toast } from "sonner";
 import YellowBankAccountForm from "./YellowBankAccountForm";
 import YellowBankCardForm from "./YellowBankCardForm";
+import { PhoneSelector, EmailSelector, AddressSelector } from "@/components/ContactSelector";
 
 
 
@@ -182,6 +183,7 @@ function CardRow({ card, editing, accounts, onEdit, onDelete, onSave, onCancel, 
 
 export default function YellowBankModule({ crabId }) {
   const [module, setModule] = useState(null);
+  const [crab, setCrab] = useState(null);
   const [accounts, setAccounts] = useState([]);
   const [cards, setCards] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -215,13 +217,15 @@ export default function YellowBankModule({ crabId }) {
   const [payidForm, setPayidForm] = useState({ payid: "", linked_account_id: "" });
 
   const load = async () => {
-    const [mods, accs, cds] = await Promise.all([
+    const [mods, crabs, accs, cds] = await Promise.all([
       base44.entities.CrabModule.filter({ crab_id: crabId, module_type: "yellowbank" }),
+      base44.entities.Crab.filter({ id: crabId }),
       base44.entities.YellowBankAccount.filter({ crab_id: crabId }, "created_date"),
       base44.entities.YellowBankCard.filter({ crab_id: crabId }, "created_date"),
     ]);
     const mod = mods[0] || null;
     setModule(mod);
+    setCrab(crabs[0] || null);
     if (mod) {
       setLoginEdit({
         yellowbank_client_number: mod.yellowbank_client_number || "",
@@ -350,6 +354,33 @@ export default function YellowBankModule({ crabId }) {
     const oldAccountId = card.linked_account_id || "";
     await base44.entities.YellowBankCard.update(card.id, { linked_account_id: newAccountId || "" });
     await syncAccountCardLinks({ id: card.id }, newAccountId, oldAccountId);
+    load();
+  };
+
+  const handlePhoneSelect = async (type, index) => {
+    const mod = await ensureModule();
+    await base44.entities.CrabModule.update(mod.id, {
+      selected_phone_type: type,
+      selected_phone_index: index,
+    });
+    load();
+  };
+
+  const handleEmailSelect = async (type, index) => {
+    const mod = await ensureModule();
+    await base44.entities.CrabModule.update(mod.id, {
+      selected_email_type: type,
+      selected_email_index: index,
+    });
+    load();
+  };
+
+  const handleAddressSelect = async (type, index) => {
+    const mod = await ensureModule();
+    await base44.entities.CrabModule.update(mod.id, {
+      selected_address_type: type,
+      selected_address_index: index,
+    });
     load();
   };
 
@@ -548,6 +579,27 @@ export default function YellowBankModule({ crabId }) {
             </div>
           )}
         </div>
+
+        {/* Contact Selection */}
+        {crab && (
+          <div className="bg-card border rounded-xl p-5 space-y-3">
+            <h3 className="font-semibold text-sm text-muted-foreground">Contact Information for Yellow Bank</h3>
+            <div className="space-y-3">
+              <div>
+                <Label className="text-xs mb-2 block">Phone Number</Label>
+                <PhoneSelector crab={crab} selectedType={module?.selected_phone_type} selectedIndex={module?.selected_phone_index} onChange={handlePhoneSelect} />
+              </div>
+              <div>
+                <Label className="text-xs mb-2 block">Email Address</Label>
+                <EmailSelector crab={crab} selectedType={module?.selected_email_type} selectedIndex={module?.selected_email_index} onChange={handleEmailSelect} />
+              </div>
+              <div>
+                <Label className="text-xs mb-2 block">Residential Address</Label>
+                <AddressSelector crab={crab} selectedType={module?.selected_address_type} selectedIndex={module?.selected_address_index} onChange={handleAddressSelect} />
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Accounts & Cards */}
         <div className="bg-card border rounded-xl p-5 space-y-4">

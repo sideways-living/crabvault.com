@@ -26,8 +26,9 @@ export default function CrabDetail() {
   const [crab, setCrab] = useState({
     first_name: "", middle_name: "", surname: "", full_name: "",
     aliases: [], date_of_birth: "", photo_url: "",
-    phone: "", email: "",
+    phone: "", additional_phones: [], email: "", additional_emails: [],
     address1: "", address2: "", suburb: "", state: "", postcode: "", country: "Australia",
+    additional_addresses: [],
     mailing_same_as_residential: true,
     mailing_address1: "", mailing_address2: "", mailing_suburb: "", mailing_state: "", mailing_postcode: "", mailing_country: "Australia",
     id_numbers: [], emergency_summary: "", notes: "", status: "active", tags: [],
@@ -181,6 +182,24 @@ export default function CrabDetail() {
   const removeIdNumber = (i) =>
     setCrab(c => ({ ...c, id_numbers: c.id_numbers.filter((_, idx) => idx !== i) }));
 
+  const addAdditionalPhone = () => setCrab(c => ({ ...c, additional_phones: [...(c.additional_phones || []), { number: "", label: "" }] }));
+  const updateAdditionalPhone = (i, field, val) =>
+    setCrab(c => ({ ...c, additional_phones: c.additional_phones.map((p, idx) => idx === i ? { ...p, [field]: val } : p) }));
+  const removeAdditionalPhone = (i) =>
+    setCrab(c => ({ ...c, additional_phones: c.additional_phones.filter((_, idx) => idx !== i) }));
+
+  const addAdditionalEmail = () => setCrab(c => ({ ...c, additional_emails: [...(c.additional_emails || []), { email: "", label: "" }] }));
+  const updateAdditionalEmail = (i, field, val) =>
+    setCrab(c => ({ ...c, additional_emails: c.additional_emails.map((e, idx) => idx === i ? { ...e, [field]: val } : e) }));
+  const removeAdditionalEmail = (i) =>
+    setCrab(c => ({ ...c, additional_emails: c.additional_emails.filter((_, idx) => idx !== i) }));
+
+  const addAdditionalAddress = () => setCrab(c => ({ ...c, additional_addresses: [...(c.additional_addresses || []), { label: "", address1: "", address2: "", suburb: "", state: "", postcode: "", country: "Australia" }] }));
+  const updateAdditionalAddress = (i, field, val) =>
+    setCrab(c => ({ ...c, additional_addresses: c.additional_addresses.map((a, idx) => idx === i ? { ...a, [field]: val } : a) }));
+  const removeAdditionalAddress = (i) =>
+    setCrab(c => ({ ...c, additional_addresses: c.additional_addresses.filter((_, idx) => idx !== i) }));
+
   if (loading) return (
     <div className="flex justify-center py-16">
       <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
@@ -256,18 +275,54 @@ export default function CrabDetail() {
                     </Select>
                   </div>
                   <div>
-                    <Label className="text-xs">Phone</Label>
+                    <Label className="text-xs">Main Phone</Label>
                     <Input className="mt-1" value={crab.phone || ""} onChange={set("phone")} onBlur={handlePhoneBlur} placeholder="+61 XXX XXX XXX" />
                   </div>
                   <div>
-                    <Label className="text-xs">Email</Label>
+                    <Label className="text-xs">Main Email</Label>
                     <Input className="mt-1" value={crab.email || ""} onChange={set("email")} />
                   </div>
                   <div>
                     <Label className="text-xs">Photo URL</Label>
                     <Input className="mt-1" value={crab.photo_url || ""} onChange={set("photo_url")} />
                   </div>
-                </div>
+                  </div>
+
+                  {/* Additional phones */}
+                  {(crab.additional_phones || []).length > 0 && (
+                  <div className="space-y-2 pt-2 border-t">
+                    <p className="text-xs font-semibold text-muted-foreground">Additional Phone Numbers</p>
+                    {crab.additional_phones.map((p, i) => (
+                      <div key={i} className="flex gap-2">
+                        <Input placeholder="Label" className="w-24 text-xs" value={p.label} onChange={e => updateAdditionalPhone(i, "label", e.target.value)} />
+                        <Input placeholder="+61..." className="flex-1 text-xs" value={p.number} onChange={e => updateAdditionalPhone(i, "number", e.target.value)} />
+                        <button onClick={() => removeAdditionalPhone(i)} className="text-muted-foreground hover:text-destructive"><X className="h-4 w-4" /></button>
+                      </div>
+                    ))}
+                    <Button size="sm" variant="outline" onClick={addAdditionalPhone} className="gap-1 text-xs"><Plus className="h-3 w-3" /> Add Phone</Button>
+                  </div>
+                  )}
+                  {(crab.additional_phones || []).length === 0 && (
+                  <Button size="sm" variant="outline" onClick={addAdditionalPhone} className="gap-1 text-xs"><Plus className="h-3 w-3" /> Add Additional Phone</Button>
+                  )}
+
+                  {/* Additional emails */}
+                  {(crab.additional_emails || []).length > 0 && (
+                  <div className="space-y-2 pt-2 border-t">
+                    <p className="text-xs font-semibold text-muted-foreground">Additional Emails</p>
+                    {crab.additional_emails.map((e, i) => (
+                      <div key={i} className="flex gap-2">
+                        <Input placeholder="Label" className="w-24 text-xs" value={e.label} onChange={ev => updateAdditionalEmail(i, "label", ev.target.value)} />
+                        <Input placeholder="email@example.com" className="flex-1 text-xs" value={e.email} onChange={ev => updateAdditionalEmail(i, "email", ev.target.value)} />
+                        <button onClick={() => removeAdditionalEmail(i)} className="text-muted-foreground hover:text-destructive"><X className="h-4 w-4" /></button>
+                      </div>
+                    ))}
+                    <Button size="sm" variant="outline" onClick={addAdditionalEmail} className="gap-1 text-xs"><Plus className="h-3 w-3" /> Add Email</Button>
+                  </div>
+                  )}
+                  {(crab.additional_emails || []).length === 0 && (
+                  <Button size="sm" variant="outline" onClick={addAdditionalEmail} className="gap-1 text-xs"><Plus className="h-3 w-3" /> Add Additional Email</Button>
+                  )}
               </>
             ) : (
               <div className="space-y-1.5">
@@ -403,10 +458,48 @@ export default function CrabDetail() {
                   {crab.mailing_country && crab.mailing_country !== "Australia" && <p>{crab.mailing_country}</p>}
                 </div>
               )}
-            </div>
-          </div>
+              </div>
 
-          {/* ID Numbers */}
+              {/* Additional Addresses */}
+              {(crab.additional_addresses || []).length > 0 && (
+              <div className="border-t pt-4">
+                <p className="text-xs font-medium text-muted-foreground mb-3">Additional Addresses</p>
+                {crab.additional_addresses.map((addr, i) => (
+                  <div key={i} className="mb-4 pb-4 border-b last:border-b-0 last:pb-0">
+                    <div className="flex gap-2 mb-2">
+                      <Input
+                        placeholder="Label (e.g., Work, Holiday Home)"
+                        className="flex-1 text-xs"
+                        value={addr.label}
+                        onChange={e => updateAdditionalAddress(i, "label", e.target.value)}
+                      />
+                      <button onClick={() => removeAdditionalAddress(i)} className="text-muted-foreground hover:text-destructive"><X className="h-4 w-4" /></button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="col-span-2">
+                        <Input placeholder="Address Line 1" className="text-xs" value={addr.address1} onChange={e => updateAdditionalAddress(i, "address1", e.target.value)} />
+                      </div>
+                      <div className="col-span-2">
+                        <Input placeholder="Address Line 2" className="text-xs" value={addr.address2} onChange={e => updateAdditionalAddress(i, "address2", e.target.value)} />
+                      </div>
+                      <Input placeholder="Suburb" className="text-xs" value={addr.suburb} onChange={e => updateAdditionalAddress(i, "suburb", e.target.value.toUpperCase())} />
+                      <Input placeholder="State" className="text-xs" value={addr.state} onChange={e => updateAdditionalAddress(i, "state", e.target.value)} />
+                      <Input placeholder="Postcode" className="text-xs" value={addr.postcode} onChange={e => updateAdditionalAddress(i, "postcode", e.target.value)} />
+                      <Input placeholder="Country" className="text-xs" value={addr.country} onChange={e => updateAdditionalAddress(i, "country", e.target.value)} />
+                    </div>
+                  </div>
+                ))}
+                <Button size="sm" variant="outline" onClick={addAdditionalAddress} className="gap-1 text-xs"><Plus className="h-3 w-3" /> Add Address</Button>
+              </div>
+              )}
+              {(crab.additional_addresses || []).length === 0 && (
+              <div className="border-t pt-4">
+                <Button size="sm" variant="outline" onClick={addAdditionalAddress} className="gap-1 text-xs"><Plus className="h-3 w-3" /> Add Additional Address</Button>
+              </div>
+              )}
+              </div>
+
+              {/* ID Numbers */}
           <div className="bg-card border rounded-xl p-5 space-y-3">
             <div className="flex items-center justify-between">
               <h2 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground">ID Numbers / References</h2>

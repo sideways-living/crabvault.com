@@ -36,36 +36,107 @@
     },
     "phone": {
       "type": "string",
-      "title": "Phone Number"
+      "title": "Main Phone Number"
+    },
+    "additional_phones": {
+      "type": "array",
+      "title": "Additional Phone Numbers",
+      "items": {
+        "type": "object",
+        "properties": {
+          "number": {
+            "type": "string",
+            "title": "Phone Number"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label (e.g., Work, Mobile)"
+          }
+        }
+      }
     },
     "email": {
       "type": "string",
-      "title": "Email Address"
+      "title": "Main Email Address"
+    },
+    "additional_emails": {
+      "type": "array",
+      "title": "Additional Emails",
+      "items": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "title": "Email"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label (e.g., Work, Personal)"
+          }
+        }
+      }
     },
     "address1": {
       "type": "string",
-      "title": "Address Line 1"
+      "title": "Main Residential Address Line 1"
     },
     "address2": {
       "type": "string",
-      "title": "Address Line 2"
+      "title": "Main Residential Address Line 2"
     },
     "suburb": {
       "type": "string",
-      "title": "Suburb"
+      "title": "Main Residential Suburb"
     },
     "state": {
       "type": "string",
-      "title": "State"
+      "title": "Main Residential State"
     },
     "postcode": {
       "type": "string",
-      "title": "Postcode"
+      "title": "Main Residential Postcode"
     },
     "country": {
       "type": "string",
-      "title": "Country",
+      "title": "Main Residential Country",
       "default": "Australia"
+    },
+    "additional_addresses": {
+      "type": "array",
+      "title": "Additional Addresses",
+      "items": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "title": "Label (e.g., Work, Holiday Home)"
+          },
+          "address1": {
+            "type": "string",
+            "title": "Address Line 1"
+          },
+          "address2": {
+            "type": "string",
+            "title": "Address Line 2"
+          },
+          "suburb": {
+            "type": "string",
+            "title": "Suburb"
+          },
+          "state": {
+            "type": "string",
+            "title": "State"
+          },
+          "postcode": {
+            "type": "string",
+            "title": "Postcode"
+          },
+          "country": {
+            "type": "string",
+            "title": "Country"
+          }
+        }
+      }
     },
     "mailing_same_as_residential": {
       "type": "boolean",

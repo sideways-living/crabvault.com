@@ -15,6 +15,48 @@
       ],
       "default": "redbank"
     },
+    "selected_phone_type": {
+      "type": "string",
+      "title": "Selected Phone Type",
+      "enum": [
+        "main",
+        "additional"
+      ],
+      "default": "main"
+    },
+    "selected_phone_index": {
+      "type": "number",
+      "title": "Selected Additional Phone Index",
+      "description": "Index in additional_phones array if selected_phone_type is 'additional'"
+    },
+    "selected_email_type": {
+      "type": "string",
+      "title": "Selected Email Type",
+      "enum": [
+        "main",
+        "additional"
+      ],
+      "default": "main"
+    },
+    "selected_email_index": {
+      "type": "number",
+      "title": "Selected Additional Email Index",
+      "description": "Index in additional_emails array if selected_email_type is 'additional'"
+    },
+    "selected_address_type": {
+      "type": "string",
+      "title": "Selected Address Type",
+      "enum": [
+        "main_residential",
+        "additional"
+      ],
+      "default": "main_residential"
+    },
+    "selected_address_index": {
+      "type": "number",
+      "title": "Selected Additional Address Index",
+      "description": "Index in additional_addresses array if selected_address_type is 'additional'"
+    },
     "override_phone": {
       "type": "string",
       "title": "Override Phone"
