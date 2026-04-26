@@ -8,7 +8,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import {
   Plus, Pencil, Trash2, CreditCard, Landmark, Smartphone,
   WalletCards, Lock, Link2, KeyRound, Hash, Phone, Building2,
-  ShieldQuestion, MapPin
+  ShieldQuestion, MapPin, Eye, EyeOff
 } from "lucide-react";
 import { toast } from "sonner";
 import YellowBankAccountForm from "./YellowBankAccountForm";
@@ -35,6 +35,83 @@ function AccountSummary(accounts) {
     counts[t] = (counts[t] || 0) + 1;
   });
   return Object.entries(counts).map(([t, n]) => `${n} × ${t}`).join(", ");
+}
+
+function CardRow({ card, editing, accounts, onEdit, onDelete, onSave, onCancel, onToggleFeature, onLinkAccount }) {
+  const [showCcv, setShowCcv] = useState(false);
+  const [showPin, setShowPin] = useState(false);
+
+  if (editing) {
+    return <YellowBankCardForm initial={card} onSave={onSave} onCancel={onCancel} accounts={accounts} />;
+  }
+
+  return (
+    <div className="p-3 bg-muted/40 rounded-lg space-y-2">
+      <div className="flex items-start justify-between">
+        <div className="space-y-1">
+          {/* Card number */}
+          <div className="flex items-center gap-2 text-sm font-mono font-medium">
+            <CreditCard className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+            <span>{card.card_number || "—"}</span>
+          </div>
+          {/* Expiry */}
+          <div className="text-xs text-muted-foreground pl-5 font-mono">
+            Expiry: {card.expiry || "—"}
+          </div>
+          {/* CVV */}
+          <div className="flex items-center gap-1.5 pl-5">
+            <span className="text-xs text-muted-foreground font-mono">CVV: {showCcv ? (card.ccv || "—") : "•••"}</span>
+            <button onClick={() => setShowCcv(v => !v)} className="text-muted-foreground hover:text-foreground">
+              {showCcv ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+            </button>
+          </div>
+          {/* PIN */}
+          <div className="flex items-center gap-1.5 pl-5">
+            <span className="text-xs text-muted-foreground font-mono">PIN: {showPin ? (card.pin || "—") : "•••"}</span>
+            <button onClick={() => setShowPin(v => !v)} className="text-muted-foreground hover:text-foreground">
+              {showPin ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+            </button>
+          </div>
+        </div>
+        <div className="flex gap-1 shrink-0 ml-2">
+          <button onClick={onEdit} className="text-muted-foreground hover:text-foreground p-1"><Pencil className="h-3.5 w-3.5" /></button>
+          <button onClick={onDelete} className="text-muted-foreground hover:text-destructive p-1"><Trash2 className="h-3.5 w-3.5" /></button>
+        </div>
+      </div>
+      {/* Checkboxes */}
+      <div className="flex flex-wrap gap-3 pl-1">
+        {CARD_FEATURE_DEFS.map(({ key, label, icon: FeatureIcon, tip }) => (
+          <Tooltip key={key}>
+            <TooltipTrigger asChild>
+              <label className="flex items-center gap-1.5 cursor-pointer select-none">
+                <input type="checkbox" checked={!!card[key]} onChange={() => onToggleFeature(card, key)} className="rounded" />
+                <FeatureIcon className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="text-xs text-muted-foreground">{label}</span>
+              </label>
+            </TooltipTrigger>
+            <TooltipContent><p className="text-xs max-w-xs">{tip}</p></TooltipContent>
+          </Tooltip>
+        ))}
+      </div>
+      {accounts.length > 0 && (
+        <div className="pl-1">
+          <Label className="text-xs flex items-center gap-1 text-muted-foreground mb-1"><Link2 className="h-3 w-3" /> Linked Account</Label>
+          <Select
+            value={card.linked_account_id || "__none__"}
+            onValueChange={v => onLinkAccount(card, v === "__none__" ? "" : v)}
+          >
+            <SelectTrigger className="h-7 text-xs"><SelectValue placeholder="No account linked" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__none__">None</SelectItem>
+              {accounts.map(acc => (
+                <SelectItem key={acc.id} value={acc.id}>{accountLabel(acc)}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function YellowBankModule({ crabId }) {
@@ -362,58 +439,18 @@ export default function YellowBankModule({ crabId }) {
               )}
 
               {cards.map(card => (
-                <div key={card.id}>
-                  {editingCard?.id === card.id ? (
-                    <YellowBankCardForm initial={card} onSave={handleSaveCard} onCancel={() => setEditingCard(null)} accounts={accounts} />
-                  ) : (
-                    <div className="p-3 bg-muted/40 rounded-lg space-y-2">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 text-sm font-mono font-medium">
-                          <CreditCard className="h-3.5 w-3.5 text-muted-foreground" />
-                          <span>{card.card_number || "—"}</span>
-                          <span className="text-xs text-muted-foreground font-sans">Exp: {card.expiry}</span>
-                          <span className="text-xs text-muted-foreground font-sans">CCV: {card.ccv}</span>
-                          {card.pin && <span className="text-xs text-muted-foreground font-sans">PIN: {card.pin}</span>}
-                        </div>
-                        <div className="flex gap-1">
-                          <button onClick={() => setEditingCard(card)} className="text-muted-foreground hover:text-foreground p-1"><Pencil className="h-3.5 w-3.5" /></button>
-                          <button onClick={() => handleDeleteCard(card)} className="text-muted-foreground hover:text-destructive p-1"><Trash2 className="h-3.5 w-3.5" /></button>
-                        </div>
-                      </div>
-                      <div className="flex flex-wrap gap-3 pl-1">
-                        {CARD_FEATURE_DEFS.map(({ key, label, icon: Icon, tip }) => (
-                          <Tooltip key={key}>
-                            <TooltipTrigger asChild>
-                              <label className="flex items-center gap-1.5 cursor-pointer select-none">
-                                <input type="checkbox" checked={!!card[key]} onChange={() => toggleCardFeature(card, key)} className="rounded" />
-                                <Icon className="h-3.5 w-3.5 text-muted-foreground" />
-                                <span className="text-xs text-muted-foreground">{label}</span>
-                              </label>
-                            </TooltipTrigger>
-                            <TooltipContent><p className="text-xs max-w-xs">{tip}</p></TooltipContent>
-                          </Tooltip>
-                        ))}
-                      </div>
-                      {accounts.length > 0 && (
-                        <div className="pl-1">
-                          <Label className="text-xs flex items-center gap-1 text-muted-foreground mb-1"><Link2 className="h-3 w-3" /> Linked Account</Label>
-                          <Select
-                            value={card.linked_account_id || "__none__"}
-                            onValueChange={v => handleCardAccountLink(card, v === "__none__" ? "" : v)}
-                          >
-                            <SelectTrigger className="h-7 text-xs"><SelectValue placeholder="No account linked" /></SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="__none__">None</SelectItem>
-                              {accounts.map(acc => (
-                                <SelectItem key={acc.id} value={acc.id}>{accountLabel(acc)}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
+                <CardRow
+                  key={card.id}
+                  card={card}
+                  editing={editingCard?.id === card.id}
+                  accounts={accounts}
+                  onEdit={() => setEditingCard(card)}
+                  onDelete={() => handleDeleteCard(card)}
+                  onSave={handleSaveCard}
+                  onCancel={() => setEditingCard(null)}
+                  onToggleFeature={toggleCardFeature}
+                  onLinkAccount={handleCardAccountLink}
+                />
               ))}
             </div>
           )}
