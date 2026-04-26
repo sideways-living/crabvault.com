@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Plus, Pencil, Trash2, CreditCard, Landmark, Smartphone,
-  WalletCards, Lock, Link2, KeyRound, Hash, Phone, Building2,
+  WalletCards, Lock, LockOpen, Link2, KeyRound, Hash, Phone, Building2,
   ShieldQuestion, MapPin, Eye, EyeOff
 } from "lucide-react";
 import { toast } from "sonner";
@@ -37,13 +37,28 @@ function AccountSummary(accounts) {
   return Object.entries(counts).map(([t, n]) => `${n} × ${t}`).join(", ");
 }
 
+// Shift digits 9-12 (positions 8-11 in the raw digit string) up by 1 (wrapping 9→0)
+function obfuscateCardNumber(cardNumber) {
+  if (!cardNumber) return cardNumber;
+  const digits = cardNumber.replace(/\D/g, "");
+  if (digits.length < 12) return cardNumber;
+  const shifted = digits.slice(0, 8) +
+    digits.slice(8, 12).replace(/\d/g, d => String((parseInt(d) + 1) % 10)) +
+    digits.slice(12);
+  // Re-format into groups of 4 with spaces
+  return shifted.replace(/(.{4})/g, "$1 ").trim();
+}
+
 function CardRow({ card, editing, accounts, onEdit, onDelete, onSave, onCancel, onToggleFeature, onLinkAccount }) {
+  const [locked, setLocked] = useState(true);
   const [showCcv, setShowCcv] = useState(false);
   const [showPin, setShowPin] = useState(false);
 
   if (editing) {
     return <YellowBankCardForm initial={card} onSave={onSave} onCancel={onCancel} accounts={accounts} />;
   }
+
+  const displayCardNumber = locked ? obfuscateCardNumber(card.card_number) : (card.card_number || "—");
 
   return (
     <div className="p-3 bg-muted/40 rounded-lg space-y-2">
@@ -52,7 +67,10 @@ function CardRow({ card, editing, accounts, onEdit, onDelete, onSave, onCancel, 
           {/* Card number */}
           <div className="flex items-center gap-2 text-sm font-mono font-medium">
             <CreditCard className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-            <span>{card.card_number || "—"}</span>
+            <span>{displayCardNumber}</span>
+            <button onClick={() => setLocked(v => !v)} className="text-muted-foreground hover:text-foreground ml-1">
+              {locked ? <Lock className="h-3.5 w-3.5" /> : <LockOpen className="h-3.5 w-3.5 text-amber-500" />}
+            </button>
           </div>
           {/* Expiry */}
           <div className="text-xs text-muted-foreground pl-5 font-mono">
