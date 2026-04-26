@@ -12,6 +12,7 @@ import {
 import RedBankModule from "@/components/modules/RedBankModule";
 import YellowBankModule from "@/components/modules/YellowBankModule";
 import ModuleSelector from "@/components/modules/ModuleSelector";
+import CollapsibleModuleCard from "@/components/modules/CollapsibleModuleCard";
 import CrabAIExtractPanel from "@/components/CrabAIExtractPanel";
 import { toast } from "sonner";
 
@@ -301,33 +302,48 @@ export default function CrabDetail() {
 
           {/* Residential Address */}
           <div className="bg-card border rounded-xl p-5 space-y-4">
-            <h2 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground">Residential Address</h2>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="col-span-2">
-                <Label className="text-xs">Address Line 1</Label>
-                <Input className="mt-1" value={crab.address1 || ""} onChange={setTitle("address1")} placeholder="Street number and name" />
-              </div>
-              <div className="col-span-2">
-                <Label className="text-xs">Address Line 2</Label>
-                <Input className="mt-1" value={crab.address2 || ""} onChange={setTitle("address2")} placeholder="Unit, apartment, floor…" />
-              </div>
-              <div>
-                <Label className="text-xs">Suburb</Label>
-                <Input className="mt-1" value={crab.suburb || ""} onChange={e => setCrab(c => ({ ...c, suburb: e.target.value.toUpperCase() }))} />
-              </div>
-              <div>
-                <Label className="text-xs">State</Label>
-                <Input className="mt-1" value={crab.state || ""} onChange={setTitle("state")} />
-              </div>
-              <div>
-                <Label className="text-xs">Postcode</Label>
-                <Input className="mt-1" value={crab.postcode || ""} onChange={set("postcode")} />
-              </div>
-              <div>
-                <Label className="text-xs">Country</Label>
-                <Input className="mt-1" value={crab.country || "Australia"} onChange={setTitle("country")} />
-              </div>
+            <div className="flex items-center justify-between">
+              <h2 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground">Residential Address</h2>
+              {!editing && <button onClick={() => setEditing(true)} className="text-muted-foreground hover:text-foreground"><Pencil className="h-3.5 w-3.5" /></button>}
             </div>
+            {editing ? (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="col-span-2">
+                  <Label className="text-xs">Address Line 1</Label>
+                  <Input className="mt-1" value={crab.address1 || ""} onChange={setTitle("address1")} placeholder="Street number and name" />
+                </div>
+                <div className="col-span-2">
+                  <Label className="text-xs">Address Line 2</Label>
+                  <Input className="mt-1" value={crab.address2 || ""} onChange={setTitle("address2")} placeholder="Unit, apartment, floor…" />
+                </div>
+                <div>
+                  <Label className="text-xs">Suburb</Label>
+                  <Input className="mt-1" value={crab.suburb || ""} onChange={e => setCrab(c => ({ ...c, suburb: e.target.value.toUpperCase() }))} />
+                </div>
+                <div>
+                  <Label className="text-xs">State</Label>
+                  <Input className="mt-1" value={crab.state || ""} onChange={setTitle("state")} />
+                </div>
+                <div>
+                  <Label className="text-xs">Postcode</Label>
+                  <Input className="mt-1" value={crab.postcode || ""} onChange={set("postcode")} />
+                </div>
+                <div>
+                  <Label className="text-xs">Country</Label>
+                  <Input className="mt-1" value={crab.country || "Australia"} onChange={setTitle("country")} />
+                </div>
+              </div>
+            ) : (
+              <div className="text-sm text-muted-foreground space-y-0.5">
+                {crab.address1 && <p>{crab.address1}</p>}
+                {crab.address2 && <p>{crab.address2}</p>}
+                {(crab.suburb || crab.state || crab.postcode) && (
+                  <p>{[crab.suburb, crab.state, crab.postcode].filter(Boolean).join("  ")}</p>
+                )}
+                {crab.country && crab.country !== "Australia" && <p>{crab.country}</p>}
+                {!crab.address1 && !crab.suburb && <p className="italic">No address recorded</p>}
+              </div>
+            )}
           </div>
 
           {/* Mailing Address */}
@@ -448,22 +464,20 @@ export default function CrabDetail() {
 
           {/* Active Module Cards — drop into main stack */}
           {!creating && enabledModules.includes("redbank") && (
-            <div className="bg-card border rounded-xl p-5 space-y-4">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-semibold px-2 py-0.5 rounded bg-red-100 text-red-700 border border-red-200">RedBank</span>
-                <h2 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground">RedBank Module</h2>
-              </div>
+            <CollapsibleModuleCard
+              label="RedBank"
+              badgeClass="bg-red-100 text-red-700 border-red-200"
+            >
               <RedBankModule crabId={id} />
-            </div>
+            </CollapsibleModuleCard>
           )}
           {!creating && enabledModules.includes("yellowbank") && (
-            <div className="bg-card border rounded-xl p-5 space-y-4">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-semibold px-2 py-0.5 rounded bg-yellow-100 text-yellow-700 border border-yellow-200">YellowBank</span>
-                <h2 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground">YellowBank Module</h2>
-              </div>
+            <CollapsibleModuleCard
+              label="YellowBank"
+              badgeClass="bg-yellow-100 text-yellow-700 border-yellow-200"
+            >
               <YellowBankModule crabId={id} />
-            </div>
+            </CollapsibleModuleCard>
           )}
         </div>
 
