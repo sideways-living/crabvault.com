@@ -185,6 +185,7 @@ export default function YellowBankModule({ crabId }) {
   const [accounts, setAccounts] = useState([]);
   const [cards, setCards] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loginEditing, setLoginEditing] = useState(false);
 
   const [loginEdit, setLoginEdit] = useState({
     yellowbank_client_number: "",
@@ -258,6 +259,7 @@ export default function YellowBankModule({ crabId }) {
     toast.success("Login details saved");
     setLoginDirty(false);
     setSavingLogin(false);
+    setLoginEditing(false);
     load();
   };
 
@@ -386,66 +388,127 @@ export default function YellowBankModule({ crabId }) {
 
         {/* Login & Security */}
         <div className="bg-card border rounded-xl p-5 space-y-4">
-          <div className="flex items-center gap-2">
-            <KeyRound className="h-4 w-4 text-yellow-600" />
-            <h3 className="font-semibold text-sm">Yellow Bank Login &amp; Security</h3>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <KeyRound className="h-4 w-4 text-yellow-600" />
+              <h3 className="font-semibold text-sm">Yellow Bank Login &amp; Security</h3>
+            </div>
+            {!loginEditing && (
+              <button onClick={() => setLoginEditing(true)} className="text-muted-foreground hover:text-foreground"><Pencil className="h-3.5 w-3.5" /></button>
+            )}
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label className="text-xs flex items-center gap-1"><Hash className="h-3 w-3" /> Client Number</Label>
-              <Input className="mt-1 font-mono" value={loginEdit.yellowbank_client_number} onChange={L("yellowbank_client_number")} />
-            </div>
-            <div>
-              <Label className="text-xs flex items-center gap-1"><Lock className="h-3 w-3" /> Password</Label>
-              <Input className="mt-1 font-mono" value={loginEdit.yellowbank_password} onChange={L("yellowbank_password")} />
-            </div>
-            <div>
-              <Label className="text-xs flex items-center gap-1"><Phone className="h-3 w-3" /> App PIN</Label>
-              <Input className="mt-1 font-mono" placeholder="4-6 digits" maxLength={6}
-                value={loginEdit.yellowbank_app_pin}
-                onChange={e => { setLoginEdit(l => ({ ...l, yellowbank_app_pin: e.target.value.replace(/\D/g, "").slice(0, 6) })); setLoginDirty(true); }} />
-            </div>
-            <div>
-              <Label className="text-xs flex items-center gap-1"><Phone className="h-3 w-3" /> Telephone PIN</Label>
-              <Input className="mt-1 font-mono" placeholder="4-6 digits" maxLength={6}
-                value={loginEdit.yellowbank_telephone_pin}
-                onChange={e => { setLoginEdit(l => ({ ...l, yellowbank_telephone_pin: e.target.value.replace(/\D/g, "").slice(0, 6) })); setLoginDirty(true); }} />
-            </div>
-          </div>
-
-          {/* Security Questions */}
-          <div className="space-y-3 pt-1">
-            <Label className="text-xs flex items-center gap-1 text-muted-foreground"><ShieldQuestion className="h-3 w-3" /> Security Questions</Label>
-            {[1, 2].map(n => (
-              <div key={n} className="space-y-2 p-3 bg-muted/30 rounded-lg">
-                <Label className="text-xs">Question {n}</Label>
-                <Input className="text-xs" placeholder="Security question…"
-                  value={loginEdit[`yellowbank_security_q${n}`]}
-                  onChange={L(`yellowbank_security_q${n}`)} />
-                <Input className="text-xs" placeholder="Answer…"
-                  value={loginEdit[`yellowbank_security_a${n}`]}
-                  onChange={L(`yellowbank_security_a${n}`)} />
+          {loginEditing ? (
+            <>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs flex items-center gap-1"><Hash className="h-3 w-3" /> Client Number</Label>
+                  <Input className="mt-1 font-mono" value={loginEdit.yellowbank_client_number} onChange={L("yellowbank_client_number")} />
+                </div>
+                <div>
+                  <Label className="text-xs flex items-center gap-1"><Lock className="h-3 w-3" /> Password</Label>
+                  <Input className="mt-1 font-mono" value={loginEdit.yellowbank_password} onChange={L("yellowbank_password")} />
+                </div>
+                <div>
+                  <Label className="text-xs flex items-center gap-1"><Phone className="h-3 w-3" /> App PIN</Label>
+                  <Input className="mt-1 font-mono" placeholder="4-6 digits" maxLength={6}
+                    value={loginEdit.yellowbank_app_pin}
+                    onChange={e => { setLoginEdit(l => ({ ...l, yellowbank_app_pin: e.target.value.replace(/\D/g, "").slice(0, 6) })); setLoginDirty(true); }} />
+                </div>
+                <div>
+                  <Label className="text-xs flex items-center gap-1"><Phone className="h-3 w-3" /> Telephone PIN</Label>
+                  <Input className="mt-1 font-mono" placeholder="4-6 digits" maxLength={6}
+                    value={loginEdit.yellowbank_telephone_pin}
+                    onChange={e => { setLoginEdit(l => ({ ...l, yellowbank_telephone_pin: e.target.value.replace(/\D/g, "").slice(0, 6) })); setLoginDirty(true); }} />
+                </div>
               </div>
-            ))}
-          </div>
 
-          {/* Last Branch */}
-          <div className="grid grid-cols-2 gap-3 pt-1">
-            <div>
-              <Label className="text-xs flex items-center gap-1"><MapPin className="h-3 w-3" /> Last Branch Visited</Label>
-              <Input className="mt-1" placeholder="Branch name / location" value={loginEdit.yellowbank_last_branch} onChange={L("yellowbank_last_branch")} />
-            </div>
-            <div>
-              <Label className="text-xs flex items-center gap-1"><Building2 className="h-3 w-3" /> Purpose of Visit</Label>
-              <Input className="mt-1" placeholder="e.g. Open account, dispute…" value={loginEdit.yellowbank_last_branch_purpose} onChange={L("yellowbank_last_branch_purpose")} />
-            </div>
-          </div>
+              {/* Security Questions — edit */}
+              <div className="space-y-3 pt-1">
+                <Label className="text-xs flex items-center gap-1 text-muted-foreground"><ShieldQuestion className="h-3 w-3" /> Security Questions</Label>
+                {[1, 2].map(n => (
+                  <div key={n} className="space-y-2 p-3 bg-muted/30 rounded-lg">
+                    <Label className="text-xs">Question {n}</Label>
+                    <Input className="text-xs" placeholder="Security question…"
+                      value={loginEdit[`yellowbank_security_q${n}`]}
+                      onChange={L(`yellowbank_security_q${n}`)} />
+                    <Input className="text-xs" placeholder="Answer…"
+                      value={loginEdit[`yellowbank_security_a${n}`]}
+                      onChange={L(`yellowbank_security_a${n}`)} />
+                  </div>
+                ))}
+              </div>
 
-          {loginDirty && (
-            <Button size="sm" onClick={saveLogin} disabled={savingLogin} className="gap-1">
-              {savingLogin ? "Saving…" : "Save Login Details"}
-            </Button>
+              {/* Last Branch — edit */}
+              <div className="grid grid-cols-2 gap-3 pt-1">
+                <div>
+                  <Label className="text-xs flex items-center gap-1"><MapPin className="h-3 w-3" /> Last Branch Visited</Label>
+                  <Input className="mt-1" placeholder="Branch name / location" value={loginEdit.yellowbank_last_branch} onChange={L("yellowbank_last_branch")} />
+                </div>
+                <div>
+                  <Label className="text-xs flex items-center gap-1"><Building2 className="h-3 w-3" /> Purpose of Visit</Label>
+                  <Input className="mt-1" placeholder="e.g. Open account, dispute…" value={loginEdit.yellowbank_last_branch_purpose} onChange={L("yellowbank_last_branch_purpose")} />
+                </div>
+              </div>
+
+              <Button size="sm" onClick={saveLogin} disabled={savingLogin} className="gap-1">
+                {savingLogin ? "Saving…" : "Save Login Details"}
+              </Button>
+            </>
+          ) : (
+            <div className="space-y-3 text-sm">
+              {/* Row 1+2: credentials in 2-col grid */}
+              <div className="grid grid-cols-2 gap-x-6 gap-y-1.5">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Client Number</span>
+                  <span className="font-mono">{loginEdit.yellowbank_client_number || "—"}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Password</span>
+                  <span className="font-mono">{loginEdit.yellowbank_password || "—"}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">App PIN</span>
+                  <span className="font-mono">{loginEdit.yellowbank_app_pin || "—"}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Telephone PIN</span>
+                  <span className="font-mono">{loginEdit.yellowbank_telephone_pin || "—"}</span>
+                </div>
+              </div>
+
+              {/* Last branch — bottom 1-col row */}
+              {(loginEdit.yellowbank_last_branch || loginEdit.yellowbank_last_branch_purpose) && (
+                <div className="flex justify-between pt-1 border-t">
+                  <span className="text-muted-foreground">{loginEdit.yellowbank_last_branch || "—"}</span>
+                  <span>{loginEdit.yellowbank_last_branch_purpose || ""}</span>
+                </div>
+              )}
+
+              {/* Security Questions */}
+              {(loginEdit.yellowbank_security_q1 || loginEdit.yellowbank_security_q2) && (
+                <div className="space-y-2 pt-1 border-t">
+                  {loginEdit.yellowbank_security_q1 && (
+                    <div>
+                      <p className="text-xs text-muted-foreground font-medium">Question 1:</p>
+                      <div className="flex justify-between items-baseline gap-4">
+                        <span className="text-sm">{loginEdit.yellowbank_security_q1}</span>
+                        <span className="text-sm font-mono text-right shrink-0">{loginEdit.yellowbank_security_a1 || "—"}</span>
+                      </div>
+                    </div>
+                  )}
+                  {loginEdit.yellowbank_security_q2 && (
+                    <div>
+                      <p className="text-xs text-muted-foreground font-medium">Question 2:</p>
+                      <div className="flex justify-between items-baseline gap-4">
+                        <span className="text-sm">{loginEdit.yellowbank_security_q2}</span>
+                        <span className="text-sm font-mono text-right shrink-0">{loginEdit.yellowbank_security_a2 || "—"}</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           )}
         </div>
 
