@@ -13,13 +13,8 @@ const CARD_IMAGE_MAP = [
 export function getCardImage(cardNumber) {
   if (!cardNumber) return null;
   const digits = String(cardNumber).replace(/\D/g, "");
-  console.log("[cardImages] checking prefix for digits:", digits.slice(0, 10));
   for (const { prefix, url, label } of CARD_IMAGE_MAP) {
-    if (digits.startsWith(prefix)) {
-      console.log("[cardImages] matched:", label);
-      return { url, label };
-    }
+    if (digits.startsWith(prefix)) return { url, label };
   }
-  console.log("[cardImages] no match found");
   return null;
 }
