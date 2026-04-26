@@ -489,6 +489,26 @@ export default function RedBankModule({ crabId }) {
                                 <span>CCV: {card.ccv || "—"}</span>
                                 {card.pin && <><span className="opacity-40">|</span><span>PIN: {card.pin}</span></>}
                               </div>
+                              {/* Linked account */}
+                              {accounts.length > 0 && (
+                                <div className="pl-5">
+                                  <Select
+                                    value={card.linked_account_id || "__none__"}
+                                    onValueChange={v => handleCardAccountLink(card, v === "__none__" ? "" : v)}
+                                  >
+                                    <SelectTrigger className="h-6 text-xs border-0 bg-transparent px-0 shadow-none text-muted-foreground gap-1 w-auto focus:ring-0">
+                                      <Link2 className="h-3 w-3 shrink-0" />
+                                      <SelectValue placeholder="No account linked" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="__none__">None</SelectItem>
+                                      {accounts.map(acc => (
+                                        <SelectItem key={acc.id} value={acc.id}>{accountLabel(acc)}</SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                              )}
                             </div>
                             <div className="flex gap-1 shrink-0 ml-2">
                               <button onClick={() => setEditingCard(card)} className="text-muted-foreground hover:text-foreground p-1"><Pencil className="h-3.5 w-3.5" /></button>
@@ -512,26 +532,6 @@ export default function RedBankModule({ crabId }) {
                           </Tooltip>
                         ))}
                       </div>
-                      {/* Linked account selector */}
-                      {accounts.length > 0 && (
-                        <div className="pl-1">
-                          <Label className="text-xs flex items-center gap-1 text-muted-foreground mb-1"><Link2 className="h-3 w-3" /> Linked Account</Label>
-                          <Select
-                            value={card.linked_account_id || "__none__"}
-                            onValueChange={v => handleCardAccountLink(card, v === "__none__" ? "" : v)}
-                          >
-                            <SelectTrigger className="h-7 text-xs">
-                              <SelectValue placeholder="No account linked" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="__none__">None</SelectItem>
-                              {accounts.map(acc => (
-                                <SelectItem key={acc.id} value={acc.id}>{accountLabel(acc)}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      )}
                     </div>
                   )}
                 </div>
