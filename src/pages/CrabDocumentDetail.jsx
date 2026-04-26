@@ -118,6 +118,12 @@ export default function CrabDocumentDetail() {
   const [editCrabIds, setEditCrabIds] = useState([]);
   const [showAddProfile, setShowAddProfile] = useState(false);
   const [selectedProfileId, setSelectedProfileId] = useState("");
+  const [creatingProfile, setCreatingProfile] = useState(false);
+  const [newProfileForm, setNewProfileForm] = useState({
+    first_name: "",
+    middle_name: "",
+    surname: "",
+  });
   const [editIdCardSide, setEditIdCardSide] = useState("");
 
   const [versions, setVersions] = useState([]);
@@ -159,6 +165,33 @@ export default function CrabDocumentDetail() {
       setDirty(true);
       setSelectedProfileId("");
       setShowAddProfile(false);
+    }
+  };
+
+  const handleCreateProfile = async () => {
+    if (!newProfileForm.surname.trim()) {
+      toast.error("Surname is required");
+      return;
+    }
+    try {
+      const newCrab = await base44.entities.Crab.create({
+        first_name: newProfileForm.first_name.trim(),
+        middle_name: newProfileForm.middle_name.trim(),
+        surname: newProfileForm.surname.trim(),
+        full_name: [newProfileForm.first_name, newProfileForm.middle_name, newProfileForm.surname]
+          .filter(Boolean)
+          .join(" "),
+        status: "active",
+      });
+      setEditCrabIds(prev => [...prev, newCrab.id]);
+      setCrabs(prev => [...prev, newCrab]);
+      setDirty(true);
+      setCreatingProfile(false);
+      setNewProfileForm({ first_name: "", middle_name: "", surname: "" });
+      setShowAddProfile(false);
+      toast.success("Profile created and linked");
+    } catch (error) {
+      toast.error("Failed to create profile");
     }
   };
 
@@ -409,19 +442,59 @@ export default function CrabDocumentDetail() {
               </div>
             )}
             {showAddProfile ? (
-              <div className="flex gap-1.5 pt-1">
-                <Select value={selectedProfileId} onValueChange={setSelectedProfileId}>
-                  <SelectTrigger className="h-7 text-xs">
-                    <SelectValue placeholder="Select profile…" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {crabs.filter(c => !editCrabIds.includes(c.id)).map(c => (
-                      <SelectItem key={c.id} value={c.id}>{c.full_name || c.surname}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button size="sm" className="h-7 text-xs px-2" onClick={handleAddProfile} disabled={!selectedProfileId}>Add</Button>
-                <Button size="sm" variant="ghost" className="h-7 text-xs px-2" onClick={() => { setShowAddProfile(false); setSelectedProfileId(""); }}>✕</Button>
+              <div className="space-y-2 pt-1">
+                {!creatingProfile ? (
+                  <div className="flex gap-1.5">
+                    <Select value={selectedProfileId} onValueChange={setSelectedProfileId}>
+                      <SelectTrigger className="h-7 text-xs flex-1">
+                        <SelectValue placeholder="Select profile…" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {crabs.filter(c => !editCrabIds.includes(c.id)).map(c => (
+                          <SelectItem key={c.id} value={c.id}>{c.full_name || c.surname}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button size="sm" className="h-7 text-xs px-2" onClick={handleAddProfile} disabled={!selectedProfileId}>Add</Button>
+                    <Button size="sm" variant="ghost" className="h-7 text-xs px-2" onClick={() => { setShowAddProfile(false); setSelectedProfileId(""); }}>✕</Button>
+                  </div>
+                ) : null}
+                {creatingProfile ? (
+                  <div className="space-y-1.5 p-2 bg-muted/20 rounded-lg border">
+                    <Input
+                      placeholder="First Name"
+                      className="h-6 text-xs"
+                      value={newProfileForm.first_name}
+                      onChange={e => setNewProfileForm(f => ({ ...f, first_name: e.target.value }))}
+                    />
+                    <Input
+                      placeholder="Middle Name"
+                      className="h-6 text-xs"
+                      value={newProfileForm.middle_name}
+                      onChange={e => setNewProfileForm(f => ({ ...f, middle_name: e.target.value }))}
+                    />
+                    <Input
+                      placeholder="Surname (required)"
+                      className="h-6 text-xs"
+                      value={newProfileForm.surname}
+                      onChange={e => setNewProfileForm(f => ({ ...f, surname: e.target.value }))}
+                    />
+                    <div className="flex gap-1">
+                      <Button size="sm" className="h-6 text-xs px-2 flex-1" onClick={handleCreateProfile}>Create</Button>
+                      <Button size="sm" variant="ghost" className="h-6 text-xs px-2" onClick={() => { setCreatingProfile(false); setNewProfileForm({ first_name: "", middle_name: "", surname: "" }); }}>✕</Button>
+                    </div>
+                  </div>
+                ) : null}
+                {!creatingProfile && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-full h-6 text-xs"
+                    onClick={() => setCreatingProfile(true)}
+                  >
+                    <Plus className="h-3 w-3" /> New Profile
+                  </Button>
+                )}
               </div>
             ) : (
               <Button
