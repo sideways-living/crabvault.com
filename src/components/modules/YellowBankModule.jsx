@@ -120,7 +120,7 @@ function CardRow({ card, editing, accounts, onEdit, onDelete, onSave, onCancel, 
                 </button>
               </div>
               {/* Expiry | CVV | PIN */}
-              <div className="flex items-center gap-1.5 pl-5 font-mono text-xs text-muted-foreground">
+              <div className="flex items-center gap-1.5 pl-[22px] font-mono text-xs text-muted-foreground">
                 <span>Expiry: {card.expiry || "—"}</span>
                 <span className="opacity-40">|</span>
                 <span>CVV: {showCcv ? (card.ccv || "—") : "•••"}</span>

@@ -483,7 +483,7 @@ export default function RedBankModule({ crabId }) {
                                 <CreditCard className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                                 <span>{card.card_number || "—"}</span>
                               </div>
-                              <div className="flex items-center gap-1.5 pl-5 text-xs text-muted-foreground font-mono">
+                              <div className="flex items-center gap-1.5 pl-[22px] text-xs text-muted-foreground font-mono">
                                 <span>Exp: {card.expiry || "—"}</span>
                                 <span className="opacity-40">|</span>
                                 <span>CCV: {card.ccv || "—"}</span>
