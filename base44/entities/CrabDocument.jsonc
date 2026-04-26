@@ -67,6 +67,14 @@
       ],
       "default": "other"
     },
+    "id_card_side": {
+      "type": "string",
+      "title": "ID Card Side (front/back)",
+      "enum": [
+        "front",
+        "back"
+      ]
+    },
     "summary": {
       "type": "string",
       "title": "AI Summary"
