@@ -505,6 +505,19 @@ export default function YellowBankModule({ crabId }) {
                         </div>
                       </div>
                     )}
+                    {/* Linked PayIDs */}
+                    {payids.filter(p => p.linked_account_id === acc.id).length > 0 && (
+                      <div className="pl-5 pt-1">
+                        <Label className="text-xs flex items-center gap-1 text-muted-foreground"><AtSign className="h-3 w-3" /> PayID</Label>
+                        <div className="flex flex-wrap gap-1.5 mt-1">
+                          {payids.filter(p => p.linked_account_id === acc.id).map((p, idx) => (
+                            <span key={idx} className="text-[10px] px-2 py-0.5 rounded-full border font-mono bg-yellow-50 text-yellow-700 border-yellow-200">
+                              {p.payid}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                   <div className="flex gap-1 shrink-0 ml-2">
                     <button onClick={() => setEditingAccount(acc)} className="text-muted-foreground hover:text-foreground p-1"><Pencil className="h-3.5 w-3.5" /></button>
