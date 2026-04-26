@@ -106,7 +106,7 @@ function CardRow({ card, editing, accounts, onEdit, onDelete, onSave, onCancel, 
       <div className="flex gap-3">
         {/* Card image */}
         {cardImg && (
-          <img src={cardImg.url} alt={cardImg.label} className="rounded-lg object-cover shrink-0 self-start" style={{ width: 90, height: 57 }} />
+          <img src={cardImg.url} alt={cardImg.label} className="rounded-lg object-cover shrink-0 self-start" style={{ width: 108, height: 68 }} />
         )}
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between">

@@ -474,7 +474,7 @@ export default function RedBankModule({ crabId }) {
                       <div className="flex gap-3">
                         {/* Card image */}
                         {(() => { const img = getCardImage(card.card_number); return img ? (
-                          <img src={img.url} alt={img.label} className="rounded-lg object-cover shrink-0 self-start" style={{ width: 90, height: 57 }} />
+                          <img src={img.url} alt={img.label} className="rounded-lg object-cover shrink-0 self-start" style={{ width: 108, height: 68 }} />
                         ) : null; })()}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between">
