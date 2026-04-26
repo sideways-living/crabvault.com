@@ -221,8 +221,6 @@ export default function CrabDetail() {
 
           {/* Basic info */}
           <div className="bg-card border rounded-xl p-5 space-y-4">
-            <h2 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground">Profile</h2>
-
             {editing ? (
               <>
                 <div className="grid grid-cols-3 gap-4">
