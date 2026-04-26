@@ -72,20 +72,16 @@ function CardRow({ card, editing, accounts, onEdit, onDelete, onSave, onCancel, 
               {locked ? <Lock className="h-3.5 w-3.5" /> : <LockOpen className="h-3.5 w-3.5 text-amber-500" />}
             </button>
           </div>
-          {/* Expiry */}
-          <div className="text-xs text-muted-foreground pl-5 font-mono">
-            Expiry: {card.expiry || "—"}
-          </div>
-          {/* CVV */}
-          <div className="flex items-center gap-1.5 pl-5">
-            <span className="text-xs text-muted-foreground font-mono">CVV: {showCcv ? (card.ccv || "—") : "•••"}</span>
+          {/* Expiry | CVV | PIN */}
+          <div className="flex items-center gap-1.5 pl-5 font-mono text-xs text-muted-foreground">
+            <span>Expiry: {card.expiry || "—"}</span>
+            <span className="opacity-40">  |  </span>
+            <span>CVV: {showCcv ? (card.ccv || "—") : "•••"}</span>
             <button onClick={() => setShowCcv(v => !v)} className="text-muted-foreground hover:text-foreground">
               {showCcv ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
             </button>
-          </div>
-          {/* PIN */}
-          <div className="flex items-center gap-1.5 pl-5">
-            <span className="text-xs text-muted-foreground font-mono">PIN: {showPin ? (card.pin || "—") : "•••"}</span>
+            <span className="opacity-40">  |  </span>
+            <span>PIN: {showPin ? (card.pin || "—") : "•••"}</span>
             <button onClick={() => setShowPin(v => !v)} className="text-muted-foreground hover:text-foreground">
               {showPin ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
             </button>
