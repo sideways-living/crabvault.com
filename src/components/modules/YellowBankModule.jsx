@@ -10,6 +10,7 @@ import {
   WalletCards, Lock, LockOpen, Link2, KeyRound, Hash, Phone, Building2,
   ShieldQuestion, MapPin, Eye, EyeOff, AtSign, X, Check
 } from "lucide-react";
+import { getCardImage } from "@/lib/cardImages";
 import { toast } from "sonner";
 import YellowBankAccountForm from "./YellowBankAccountForm";
 import YellowBankCardForm from "./YellowBankCardForm";
@@ -98,36 +99,46 @@ function CardRow({ card, editing, accounts, onEdit, onDelete, onSave, onCancel, 
 
   const displayCardNumber = locked ? obfuscateCardNumber(card.card_number) : (card.card_number || "—");
 
+  const cardImg = getCardImage(card.card_number);
+
   return (
     <div className="p-3 bg-muted/40 rounded-lg space-y-2">
-      <div className="flex items-start justify-between">
-        <div className="space-y-1">
-          {/* Card number */}
-          <div className="flex items-center gap-2 text-sm font-mono font-medium">
-            <CreditCard className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-            <span>{displayCardNumber}</span>
-            <button onClick={() => setLocked(v => !v)} className="text-muted-foreground hover:text-foreground ml-1">
-              {locked ? <Lock className="h-3.5 w-3.5" /> : <LockOpen className="h-3.5 w-3.5 text-amber-500" />}
-            </button>
+      <div className="flex gap-3">
+        {/* Card image */}
+        {cardImg && (
+          <img src={cardImg.url} alt={cardImg.label} className="rounded-lg object-cover shrink-0 self-start" style={{ width: 90, height: 57 }} />
+        )}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between">
+            <div className="space-y-1">
+              {/* Card number */}
+              <div className="flex items-center gap-2 text-sm font-mono font-medium">
+                <CreditCard className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                <span>{displayCardNumber}</span>
+                <button onClick={() => setLocked(v => !v)} className="text-muted-foreground hover:text-foreground ml-1">
+                  {locked ? <Lock className="h-3.5 w-3.5" /> : <LockOpen className="h-3.5 w-3.5 text-amber-500" />}
+                </button>
+              </div>
+              {/* Expiry | CVV | PIN */}
+              <div className="flex items-center gap-1.5 pl-5 font-mono text-xs text-muted-foreground">
+                <span>Expiry: {card.expiry || "—"}</span>
+                <span className="opacity-40">|</span>
+                <span>CVV: {showCcv ? (card.ccv || "—") : "•••"}</span>
+                <button onClick={() => setShowCcv(v => !v)} className="text-muted-foreground hover:text-foreground">
+                  {showCcv ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                </button>
+                <span className="opacity-40">|</span>
+                <span>PIN: {showPin ? (card.pin || "—") : "•••"}</span>
+                <button onClick={() => setShowPin(v => !v)} className="text-muted-foreground hover:text-foreground">
+                  {showPin ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                </button>
+              </div>
+            </div>
+            <div className="flex gap-1 shrink-0 ml-2">
+              <button onClick={onEdit} className="text-muted-foreground hover:text-foreground p-1"><Pencil className="h-3.5 w-3.5" /></button>
+              <button onClick={onDelete} className="text-muted-foreground hover:text-destructive p-1"><Trash2 className="h-3.5 w-3.5" /></button>
+            </div>
           </div>
-          {/* Expiry | CVV | PIN */}
-          <div className="flex items-center gap-1.5 pl-5 font-mono text-xs text-muted-foreground">
-            <span>Expiry: {card.expiry || "—"}</span>
-            <span className="opacity-40">  |  </span>
-            <span>CVV: {showCcv ? (card.ccv || "—") : "•••"}</span>
-            <button onClick={() => setShowCcv(v => !v)} className="text-muted-foreground hover:text-foreground">
-              {showCcv ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
-            </button>
-            <span className="opacity-40">  |  </span>
-            <span>PIN: {showPin ? (card.pin || "—") : "•••"}</span>
-            <button onClick={() => setShowPin(v => !v)} className="text-muted-foreground hover:text-foreground">
-              {showPin ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
-            </button>
-          </div>
-        </div>
-        <div className="flex gap-1 shrink-0 ml-2">
-          <button onClick={onEdit} className="text-muted-foreground hover:text-foreground p-1"><Pencil className="h-3.5 w-3.5" /></button>
-          <button onClick={onDelete} className="text-muted-foreground hover:text-destructive p-1"><Trash2 className="h-3.5 w-3.5" /></button>
         </div>
       </div>
       {/* Checkboxes */}
