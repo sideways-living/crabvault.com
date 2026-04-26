@@ -183,6 +183,7 @@ async function uploadFile(filePath, filename, crabInfo) {
     category:    CATEGORY,
   };
   if (crabInfo.crabId) fields.crab_id = crabInfo.crabId;
+  if (crabInfo.aiIdentify) fields.ai_identify = 'true';
 
   let bodyParts = '';
   for (const [k, v] of Object.entries(fields)) {
@@ -304,8 +305,9 @@ async function poll() {
       }
 
       if (!crabInfo || (!crabInfo.surname && !crabInfo.crabId)) {
-        console.log(`⚠️  Skipping "${filename}" — no crab identity (set defaults or use "Name SURNAME - title.ext" format)`);
-        continue;
+        // No identity found — upload anyway and let AI identify from document content
+        console.log(`🤖  No crab identity for "${filename}" — will use AI to identify from document content`);
+        crabInfo = { surname: '', firstName: '', middleName: '', aiIdentify: true };
       }
 
       const filePath = entryPath;

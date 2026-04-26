@@ -125,16 +125,17 @@ Deno.serve(async (req) => {
     const formData = await req.formData();
     const file = formData.get('file');
     const filename = formData.get('filename') || file?.name || 'document';
-    const firstName = (formData.get('first_name') || '').trim();
-    const middleName = (formData.get('middle_name') || '').trim();
-    const surname = (formData.get('surname') || '').trim();
+    let firstName = (formData.get('first_name') || '').trim();
+    let middleName = (formData.get('middle_name') || '').trim();
+    let surname = (formData.get('surname') || '').trim();
     const existingCrabId = (formData.get('crab_id') || '').trim();
     const category = formData.get('category') || 'other';
+    const aiIdentify = formData.get('ai_identify') === 'true';
 
     if (!file) {
       return Response.json({ error: 'No file provided' }, { status: 400 });
     }
-    if (!existingCrabId && !surname) {
+    if (!existingCrabId && !surname && !aiIdentify) {
       return Response.json({ error: 'surname or crab_id is required' }, { status: 400 });
     }
 
@@ -145,6 +146,44 @@ Deno.serve(async (req) => {
     const ext = filename.split('.').pop()?.toLowerCase() || 'other';
     const fileType = ['pdf', 'docx', 'xlsx', 'jpg', 'jpeg', 'png', 'heic', 'txt', 'psd'].includes(ext) ? ext : 'other';
     const { file_url } = await db.integrations.Core.UploadFile({ file });
+
+    // AI identity extraction — try to figure out who this document belongs to
+    if (aiIdentify && !existingCrabId) {
+      const isImage = ['jpg', 'jpeg', 'png', 'heic'].includes(ext);
+      const isPdf = ext === 'pdf';
+      if (isImage || isPdf) {
+        console.log(`🤖  AI identifying crab from document: ${filename}`);
+        try {
+          const result = await db.integrations.Core.InvokeLLM({
+            prompt: `This is a document file. Extract the full name of the primary person this document belongs to or is addressed to (e.g. the account holder, recipient, patient, or subject). Also check the filename for name clues: "${filename}". Return only JSON with fields: first_name, middle_name, surname. If you cannot confidently identify a person, return all fields as empty strings.`,
+            file_urls: [file_url],
+            response_json_schema: {
+              type: 'object',
+              properties: {
+                first_name: { type: 'string' },
+                middle_name: { type: 'string' },
+                surname: { type: 'string' },
+              },
+            },
+          });
+          if (result.surname) {
+            firstName = result.first_name || '';
+            middleName = result.middle_name || '';
+            surname = result.surname;
+            console.log(`🤖  AI identified: ${firstName} ${middleName} ${surname}`.trim());
+          } else {
+            console.log(`🤖  AI could not identify crab — storing as unassigned`);
+            surname = 'UNASSIGNED';
+          }
+        } catch (e) {
+          console.warn(`🤖  AI identification failed: ${e.message} — storing as unassigned`);
+          surname = 'UNASSIGNED';
+        }
+      } else {
+        console.log(`🤖  File type ${ext} not supported for AI identification — storing as unassigned`);
+        surname = 'UNASSIGNED';
+      }
+    }
 
     let crabId, crabName, isNew;
 
