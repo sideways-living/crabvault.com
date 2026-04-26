@@ -9,6 +9,7 @@ import {
   ArrowLeft, Save, Trash2, Plus, X, FileText,
   Phone, Mail, MapPin, User, Loader2, Pencil
 } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import RedBankModule from "@/components/modules/RedBankModule";
 import YellowBankModule from "@/components/modules/YellowBankModule";
 import ModuleSelector from "@/components/modules/ModuleSelector";
@@ -40,6 +41,7 @@ export default function CrabDetail() {
   const [aliasInput, setAliasInput] = useState("");
   const [tagInput, setTagInput] = useState("");
   const [editing, setEditing] = useState(creating);
+  const [editingAddressIdx, setEditingAddressIdx] = useState(null);
 
   useEffect(() => {
     if (creating) return;
@@ -207,6 +209,7 @@ export default function CrabDetail() {
   );
 
   return (
+    <TooltipProvider>
     <div className="max-w-5xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
@@ -461,41 +464,98 @@ export default function CrabDetail() {
               </div>
 
               {/* Additional Addresses */}
-              {(crab.additional_addresses || []).length > 0 && (
-              <div className="border-t pt-4">
-                <p className="text-xs font-medium text-muted-foreground mb-3">Additional Addresses</p>
-                {crab.additional_addresses.map((addr, i) => (
-                  <div key={i} className="mb-4 pb-4 border-b last:border-b-0 last:pb-0">
-                    <div className="flex gap-2 mb-2">
-                      <Input
-                        placeholder="Label (e.g., Work, Holiday Home)"
-                        className="flex-1 text-xs"
-                        value={addr.label}
-                        onChange={e => updateAdditionalAddress(i, "label", e.target.value)}
-                      />
-                      <button onClick={() => removeAdditionalAddress(i)} className="text-muted-foreground hover:text-destructive"><X className="h-4 w-4" /></button>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="col-span-2">
-                        <Input placeholder="Address Line 1" className="text-xs" value={addr.address1} onChange={e => updateAdditionalAddress(i, "address1", e.target.value)} />
-                      </div>
-                      <div className="col-span-2">
-                        <Input placeholder="Address Line 2" className="text-xs" value={addr.address2} onChange={e => updateAdditionalAddress(i, "address2", e.target.value)} />
-                      </div>
-                      <Input placeholder="Suburb" className="text-xs" value={addr.suburb} onChange={e => updateAdditionalAddress(i, "suburb", e.target.value.toUpperCase())} />
-                      <Input placeholder="State" className="text-xs" value={addr.state} onChange={e => updateAdditionalAddress(i, "state", e.target.value)} />
-                      <Input placeholder="Postcode" className="text-xs" value={addr.postcode} onChange={e => updateAdditionalAddress(i, "postcode", e.target.value)} />
-                      <Input placeholder="Country" className="text-xs" value={addr.country} onChange={e => updateAdditionalAddress(i, "country", e.target.value)} />
-                    </div>
+              {((crab.additional_addresses || []).length > 0 || editing) && (
+                <div className="border-t pt-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-xs font-medium text-muted-foreground">Additional Addresses</p>
+                    {editing && (
+                      <button
+                        onClick={addAdditionalAddress}
+                        className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 transition-colors"
+                        title="Add new address"
+                      >
+                        <Plus className="h-3.5 w-3.5" /> Add
+                      </button>
+                    )}
                   </div>
-                ))}
-                <Button size="sm" variant="outline" onClick={addAdditionalAddress} className="gap-1 text-xs"><Plus className="h-3 w-3" /> Add Address</Button>
-              </div>
-              )}
-              {(crab.additional_addresses || []).length === 0 && (
-              <div className="border-t pt-4">
-                <Button size="sm" variant="outline" onClick={addAdditionalAddress} className="gap-1 text-xs"><Plus className="h-3 w-3" /> Add Additional Address</Button>
-              </div>
+                  {(crab.additional_addresses || []).length > 0 ? (
+                    <div className="grid grid-cols-3 gap-3">
+                      {crab.additional_addresses.map((addr, i) => (
+                        <div key={i} className={`border rounded-lg p-3 transition-colors ${editingAddressIdx === i ? 'bg-muted/40 border-primary' : 'bg-muted/20 hover:bg-muted/30'}`}>
+                          {editingAddressIdx === i ? (
+                            // Edit mode
+                            <div className="space-y-2">
+                              <Input
+                                placeholder="Label"
+                                className="h-7 text-xs"
+                                value={addr.label}
+                                onChange={e => updateAdditionalAddress(i, "label", e.target.value)}
+                                autoFocus
+                              />
+                              <Input placeholder="Address Line 1" className="h-7 text-xs" value={addr.address1} onChange={e => updateAdditionalAddress(i, "address1", e.target.value)} />
+                              <Input placeholder="Address Line 2" className="h-7 text-xs" value={addr.address2} onChange={e => updateAdditionalAddress(i, "address2", e.target.value)} />
+                              <div className="grid grid-cols-2 gap-2">
+                                <Input placeholder="Suburb" className="h-7 text-xs" value={addr.suburb} onChange={e => updateAdditionalAddress(i, "suburb", e.target.value.toUpperCase())} />
+                                <Input placeholder="State" className="h-7 text-xs" value={addr.state} onChange={e => updateAdditionalAddress(i, "state", e.target.value)} />
+                                <Input placeholder="Postcode" className="h-7 text-xs" value={addr.postcode} onChange={e => updateAdditionalAddress(i, "postcode", e.target.value)} />
+                                <Input placeholder="Country" className="h-7 text-xs" value={addr.country} onChange={e => updateAdditionalAddress(i, "country", e.target.value)} />
+                              </div>
+                              <div className="flex gap-2 pt-1">
+                                <Button size="sm" onClick={() => setEditingAddressIdx(null)} className="h-6 text-xs flex-1">Done</Button>
+                                <Button size="sm" variant="outline" onClick={() => setEditingAddressIdx(null)} className="h-6 text-xs flex-1">Cancel</Button>
+                              </div>
+                            </div>
+                          ) : (
+                            // View mode
+                            <div className="space-y-2">
+                              <div className="flex items-start justify-between gap-2">
+                                <p className="font-medium text-xs">{addr.label || <span className="text-muted-foreground italic">No label</span>}</p>
+                                <div className="flex gap-1 shrink-0">
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <button
+                                        onClick={() => setEditingAddressIdx(i)}
+                                        className="text-muted-foreground hover:text-foreground p-1"
+                                      >
+                                        <Pencil className="h-3 w-3" />
+                                      </button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>Edit address</TooltipContent>
+                                  </Tooltip>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <button
+                                        onClick={() => {
+                                          if (confirm(`Delete address "${addr.label || 'Untitled'}"?`)) {
+                                            removeAdditionalAddress(i);
+                                          }
+                                        }}
+                                        className="text-muted-foreground hover:text-destructive p-1"
+                                      >
+                                        <Trash2 className="h-3 w-3" />
+                                      </button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>Delete address</TooltipContent>
+                                  </Tooltip>
+                                </div>
+                              </div>
+                              <div className="text-xs text-muted-foreground space-y-0.5">
+                                {addr.address1 && <p>{addr.address1}</p>}
+                                {addr.address2 && <p>{addr.address2}</p>}
+                                {(addr.suburb || addr.state || addr.postcode) && (
+                                  <p>{[addr.suburb, addr.state, addr.postcode].filter(Boolean).join("  ")}</p>
+                                )}
+                                {addr.country && addr.country !== "Australia" && <p>{addr.country}</p>}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground italic">No additional addresses</p>
+                  )}
+                </div>
               )}
               </div>
 
@@ -605,5 +665,6 @@ export default function CrabDetail() {
         </div>
       </div>
     </div>
+    </TooltipProvider>
   );
 }
