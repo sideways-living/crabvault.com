@@ -67,12 +67,13 @@ export default function RedBankModule({ crabId }) {
     setLoginEdit(mod ? {
       redbank_customer_number: mod.redbank_customer_number || "",
       redbank_password: mod.redbank_password || "",
+      redbank_app_pin: mod.redbank_app_pin || "",
       telephone_access_code: mod.telephone_access_code || "",
       has_joint_accounts: mod.has_joint_accounts || false,
       redbank_joint_holder_name: mod.redbank_joint_holder_name || "",
       redbank_joint_accounts: mod.redbank_joint_accounts || "",
     } : {
-      redbank_customer_number: "", redbank_password: "", telephone_access_code: "",
+      redbank_customer_number: "", redbank_password: "", redbank_app_pin: "", telephone_access_code: "",
       has_joint_accounts: false, redbank_joint_holder_name: "", redbank_joint_accounts: "",
     });
     setAccounts(accs);
@@ -95,6 +96,7 @@ export default function RedBankModule({ crabId }) {
     await base44.entities.CrabModule.update(mod.id, {
       redbank_customer_number: loginEdit.redbank_customer_number,
       redbank_password: loginEdit.redbank_password,
+      redbank_app_pin: loginEdit.redbank_app_pin,
       telephone_access_code: loginEdit.telephone_access_code,
       has_joint_accounts: loginEdit.has_joint_accounts,
       redbank_joint_holder_name: loginEdit.has_joint_accounts ? loginEdit.redbank_joint_holder_name : "",
@@ -224,6 +226,16 @@ export default function RedBankModule({ crabId }) {
             <div>
               <Label className="text-xs flex items-center gap-1"><Lock className="h-3 w-3" /> Password</Label>
               <Input className="mt-1 font-mono" value={loginEdit.redbank_password} onChange={L("redbank_password")} />
+            </div>
+            <div>
+              <Label className="text-xs flex items-center gap-1"><Phone className="h-3 w-3" /> App PIN</Label>
+              <Input
+                className="mt-1 font-mono"
+                placeholder="4 digits"
+                maxLength={4}
+                value={loginEdit.redbank_app_pin}
+                onChange={e => { setLoginEdit(l => ({ ...l, redbank_app_pin: e.target.value.replace(/\D/g, "").slice(0, 4) })); setLoginDirty(true); }}
+              />
             </div>
             <div>
               <Label className="text-xs flex items-center gap-1"><Phone className="h-3 w-3" /> Telephone Access Code</Label>

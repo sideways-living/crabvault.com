@@ -51,6 +51,10 @@
       "type": "string",
       "title": "RedBank Password"
     },
+    "redbank_app_pin": {
+      "type": "string",
+      "title": "RedBank App PIN (4 digits)"
+    },
     "telephone_access_code": {
       "type": "string",
       "title": "Telephone Access Code (3 digits)"
