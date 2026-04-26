@@ -53,20 +53,23 @@ ${crabContext}
 
 Document filename: ${doc.original_filename || doc.title}
 Current title: ${doc.title}
-${categoryHint ? `Filename hint suggests this is a: ${categoryHint}` : ''}
+${categoryHint ? `⚠️  FILENAME STRONGLY INDICATES THIS IS A: ${categoryHint} — Use this as primary classification.` : ''}
+${bothSidesHint ? `⚠️  FILENAME INDICATES BOTH SIDES: Set id_card_side to "both"` : ''}
+
+CRITICAL: Trust the filename hints above. If filename indicates Medicare Card, Drivers Licence, Passport, or Birth Certificate, classify it as such.
 
 Please analyse this document and return structured data:
-- suggested_title: A clean, descriptive title. Format: "YYYY-MM-DD - Description" if you can identify a date, otherwise just a clean description. Keep it concise.
+- suggested_title: A clean, descriptive title. For ID documents with both sides, note "(both sides)". Format: "YYYY-MM-DD - Description" if you can identify a date, otherwise just a clean description. Keep it concise.
 - summary: 2-3 sentence summary of what this document is and its key details.
-- category: One of: correspondence, evidence, receipt, Medicare Card, Drivers Licence, Passport, Birth Certificate, id, legal, medical, financial, Pay Slip, other
-- id_card_side: If this is an ID document, specify "front", "back", or "both" based on the document content or filename hints. Otherwise null.
+- category: One of: correspondence, evidence, receipt, Medicare Card, Drivers Licence, Passport, Birth Certificate, id, legal, medical, financial, Pay Slip, other. PRIORITIZE filename hints.
+- id_card_side: If this is an ID document, specify "front", "back", or "both" based on the document content or filename hints. Otherwise null. If filename hints at "both", use "both".
 - is_payslip: Boolean - true if this is a payslip/pay advice/salary statement
 - pay_period_end_date: If payslip, the end date of the pay period in YYYY-MM-DD format, otherwise null
 - pay_date: If payslip, the actual pay/payment date in YYYY-MM-DD format, otherwise null
 - document_date: The date of the document in YYYY-MM-DD format if identifiable, otherwise null. For payslips, use the later of pay_date or pay_period_end_date.
 - tags: Array of relevant keyword tags (e.g. ["passport", "identity", "medicare"])
 
-Be precise. If this is an ID document, include the ID type and specify front/back/both sides. If it's correspondence, note who it's from/to. For payslips, always extract both pay period end date and payment date.`,
+MOST IMPORTANT: If the filename strongly indicates a specific document type (Medicare, Passport, Drivers Licence, Birth Certificate), use that as the category even if the visual analysis is unclear.`,
     file_urls: isVisual ? [fileUrl] : undefined,
     response_json_schema: {
       type: 'object',
