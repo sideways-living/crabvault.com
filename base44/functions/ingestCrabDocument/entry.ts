@@ -155,15 +155,21 @@ Deno.serve(async (req) => {
         const hint = [firstName, middleName, surname].filter(Boolean).join(' ');
         console.log(`🤖  AI verifying document: ${filename}${hint ? ` (hint: ${hint})` : ''}`);
         try {
+          // Fetch available document types (categories)
+          const categories = await db.entities.Category.list();
+          const categoryOptions = categories.map(c => c.name).join(', ');
+
           const result = await db.integrations.Core.InvokeLLM({
             prompt: `Analyse this document and extract the full name of the primary person it belongs to or is addressed to (e.g. the account holder, recipient, patient, or subject).
 
 Filename: "${filename}"
 ${hint ? `Name hint from filename/folder: "${hint}" — use this as a strong hint but correct it if the document clearly shows a different name.` : 'No name hint available — identify from document content only.'}
 
+Available document types: ${categoryOptions}
+
 Return JSON with: first_name, middle_name, surname, document_title, document_type.
 - "document_title": a clean descriptive title for this document (e.g. "Westpac Bank Statement March 2024", "Medicare Card", "Centrelink Letter"). Use the document content, not the raw filename.
-- "document_type": a short description of what the document is (e.g. "Bank Statement", "Medicare Card", "Centrelink Letter", "Passport", "Driver Licence", "Tax Return"). This will be used as part of the filename.
+- "document_type": MUST be one of the available document types listed above. Choose the one that best matches this document. Do NOT invent new types.
 - If you cannot confidently identify the person, return first_name/middle_name/surname as empty strings.`,
             file_urls: [file_url],
             response_json_schema: {
