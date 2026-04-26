@@ -108,6 +108,23 @@
       "type": "string",
       "title": "Last Branch Purpose"
     },
+    "yellowbank_payids": {
+      "type": "array",
+      "title": "YellowBank PayIDs",
+      "items": {
+        "type": "object",
+        "properties": {
+          "payid": {
+            "type": "string",
+            "title": "PayID"
+          },
+          "linked_account_id": {
+            "type": "string",
+            "title": "Linked Account ID"
+          }
+        }
+      }
+    },
     "notes": {
       "type": "string",
       "title": "Notes"
