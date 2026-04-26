@@ -76,12 +76,19 @@ if (!WATCH_FOLDER || !INGEST_URL || !API_KEY) {
 // Uploaded log
 const UPLOADED_LOG = path.join(__dirname, '.crab-uploaded.json');
 let uploadedFiles = new Set();
-if (fs.existsSync(UPLOADED_LOG)) {
+
+// --reset flag clears the uploaded log so all files are re-processed
+if (process.argv.includes('--reset')) {
+  console.log('🔄  --reset: clearing uploaded log, all files will be re-processed');
+  try { fs.unlinkSync(UPLOADED_LOG); } catch { /* already gone */ }
+} else if (fs.existsSync(UPLOADED_LOG)) {
   try {
     const data = JSON.parse(fs.readFileSync(UPLOADED_LOG, 'utf8'));
     uploadedFiles = new Set(data);
     console.log(`📋  Loaded ${uploadedFiles.size} previously uploaded files from log`);
-  } catch { /* ignore */ }
+  } catch {
+    console.warn('⚠️  Could not parse uploaded log — starting fresh');
+  }
 }
 
 function saveLog() {
@@ -253,10 +260,11 @@ async function poll() {
         const filePath = path.join(entryPath, filename);
         if (!fs.statSync(filePath).isFile()) continue;
 
-        uploadedFiles.add(logKey); saveLog();
+        uploadedFiles.add(logKey);
         console.log(`📄  [${entry}] Detected: ${filename}`);
         try {
           const result = await uploadFile(filePath, filename, crabInfo);
+          saveLog(); // Only persist to log after confirmed success
           console.log(`✅  Uploaded: ${filename} → doc:${result.document_id} crab:${result.crab_id} ${result.is_new_crab ? '(new profile)' : ''}`);
           // Securely delete from unencrypted watch folder immediately after confirmed upload
           try {
@@ -301,10 +309,11 @@ async function poll() {
       }
 
       const filePath = entryPath;
-      uploadedFiles.add(filename); saveLog();
+      uploadedFiles.add(filename);
       console.log(`📄  Detected: ${filename}`);
       try {
         const result = await uploadFile(filePath, filename, crabInfo);
+        saveLog(); // Only persist to log after confirmed success
         console.log(`✅  Uploaded: ${filename} → doc:${result.document_id} crab:${result.crab_id} ${result.is_new_crab ? '(new profile)' : ''}`);
         // Securely delete from unencrypted watch folder immediately after confirmed upload
         try {
