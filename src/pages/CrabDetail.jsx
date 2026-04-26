@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   ArrowLeft, Save, Trash2, Plus, X, FileText,
-  Phone, Mail, MapPin, User, AlertTriangle, Loader2
+  Phone, Mail, MapPin, User, AlertTriangle, Loader2, Pencil
 } from "lucide-react";
 import RedBankModule from "@/components/modules/RedBankModule";
 import YellowBankModule from "@/components/modules/YellowBankModule";
@@ -37,6 +37,7 @@ export default function CrabDetail() {
   const [saving, setSaving] = useState(false);
   const [aliasInput, setAliasInput] = useState("");
   const [tagInput, setTagInput] = useState("");
+  const [editing, setEditing] = useState(creating);
 
   useEffect(() => {
     if (creating) return;
@@ -81,6 +82,45 @@ export default function CrabDetail() {
 
   const computedFullName = [crab.first_name, crab.middle_name, crab.surname].filter(Boolean).join(" ");
 
+  const computeAge = (dob) => {
+    if (!dob) return null;
+    const birth = new Date(dob);
+    const today = new Date();
+    let age = today.getFullYear() - birth.getFullYear();
+    const m = today.getMonth() - birth.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+    return age;
+  };
+
+  const computeStarSign = (dob) => {
+    if (!dob) return null;
+    const d = new Date(dob);
+    const day = d.getDate();
+    const month = d.getMonth() + 1;
+    if ((month === 3 && day >= 21) || (month === 4 && day <= 19)) return "♈ Aries";
+    if ((month === 4 && day >= 20) || (month === 5 && day <= 20)) return "♉ Taurus";
+    if ((month === 5 && day >= 21) || (month === 6 && day <= 20)) return "♊ Gemini";
+    if ((month === 6 && day >= 21) || (month === 7 && day <= 22)) return "♋ Cancer";
+    if ((month === 7 && day >= 23) || (month === 8 && day <= 22)) return "♌ Leo";
+    if ((month === 8 && day >= 23) || (month === 9 && day <= 22)) return "♍ Virgo";
+    if ((month === 9 && day >= 23) || (month === 10 && day <= 22)) return "♎ Libra";
+    if ((month === 10 && day >= 23) || (month === 11 && day <= 21)) return "♏ Scorpio";
+    if ((month === 11 && day >= 22) || (month === 12 && day <= 21)) return "♐ Sagittarius";
+    if ((month === 12 && day >= 22) || (month === 1 && day <= 19)) return "♑ Capricorn";
+    if ((month === 1 && day >= 20) || (month === 2 && day <= 18)) return "♒ Aquarius";
+    return "♓ Pisces";
+  };
+
+  const age = computeAge(crab.date_of_birth);
+  const starSign = computeStarSign(crab.date_of_birth);
+
+  const STATUS_COLORS = {
+    active: "text-emerald-700 bg-emerald-50 border-emerald-200",
+    inactive: "text-gray-600 bg-gray-50 border-gray-200",
+    banned: "text-red-700 bg-red-50 border-red-200",
+    watch: "text-amber-700 bg-amber-50 border-amber-200",
+  };
+
   const handleSave = async () => {
     if (!crab.surname?.trim()) { toast.error("Surname is required"); return; }
     setSaving(true);
@@ -94,6 +134,7 @@ export default function CrabDetail() {
       } else {
         await base44.entities.Crab.update(id, saveData);
         toast.success("Profile saved");
+        setEditing(false);
       }
     } catch (e) {
       toast.error(e.message);
@@ -160,10 +201,17 @@ export default function CrabDetail() {
               <Trash2 className="h-4 w-4" />
             </Button>
           )}
-          <Button onClick={handleSave} disabled={saving} className="gap-2">
-            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-            {saving ? "Saving…" : "Save"}
-          </Button>
+          {!editing && (
+            <Button variant="outline" onClick={() => setEditing(true)} className="gap-2">
+              <Pencil className="h-4 w-4" /> Edit
+            </Button>
+          )}
+          {editing && (
+            <Button onClick={handleSave} disabled={saving} className="gap-2">
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+              {saving ? "Saving…" : "Save"}
+            </Button>
+          )}
         </div>
       </div>
 
@@ -174,50 +222,94 @@ export default function CrabDetail() {
           {/* Basic info */}
           <div className="bg-card border rounded-xl p-5 space-y-4">
             <h2 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground">Profile</h2>
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <Label className="text-xs">First Name</Label>
-                <Input className="mt-1" value={crab.first_name || ""} onChange={setTitle("first_name")} />
+
+            {editing ? (
+              <>
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <Label className="text-xs">First Name</Label>
+                    <Input className="mt-1" value={crab.first_name || ""} onChange={setTitle("first_name")} />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Middle Name</Label>
+                    <Input className="mt-1" value={crab.middle_name || ""} onChange={setTitle("middle_name")} />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Surname *</Label>
+                    <Input className="mt-1" value={crab.surname || ""} onChange={setUpper("surname")} />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-xs">Date of Birth</Label>
+                    <Input type="date" className="mt-1" value={crab.date_of_birth || ""} onChange={set("date_of_birth")} />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Status</Label>
+                    <Select value={crab.status} onValueChange={v => setCrab(c => ({ ...c, status: v }))}>
+                      <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="active">Active</SelectItem>
+                        <SelectItem value="inactive">Inactive</SelectItem>
+                        <SelectItem value="banned">Banned</SelectItem>
+                        <SelectItem value="watch">Watch</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-xs">Phone</Label>
+                    <Input className="mt-1" value={crab.phone || ""} onChange={set("phone")} onBlur={handlePhoneBlur} placeholder="+61 XXX XXX XXX" />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Email</Label>
+                    <Input className="mt-1" value={crab.email || ""} onChange={set("email")} />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Photo URL</Label>
+                    <Input className="mt-1" value={crab.photo_url || ""} onChange={set("photo_url")} />
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="space-y-3">
+                {/* Photo + name row */}
+                <div className="flex items-start gap-4">
+                  {crab.photo_url ? (
+                    <img src={crab.photo_url} alt={computedFullName} className="w-16 h-16 rounded-xl object-cover border shrink-0" />
+                  ) : (
+                    <div className="w-16 h-16 rounded-xl bg-muted flex items-center justify-center shrink-0">
+                      <User className="h-7 w-7 text-muted-foreground" />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0 space-y-1">
+                    <p className="text-lg font-semibold">{computedFullName || <span className="text-muted-foreground italic">No name</span>}</p>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full border capitalize ${STATUS_COLORS[crab.status] || STATUS_COLORS.active}`}>
+                        {crab.status || "active"}
+                      </span>
+                      {crab.date_of_birth && (
+                        <>
+                          <span className="text-xs text-muted-foreground">{new Date(crab.date_of_birth).toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" })}</span>
+                          {age !== null && <span className="text-xs text-muted-foreground">· {age} yrs</span>}
+                          {starSign && <span className="text-xs text-muted-foreground">· {starSign}</span>}
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                {/* Contact row */}
+                <div className="flex flex-wrap gap-x-5 gap-y-1 text-sm text-muted-foreground pt-1">
+                  {crab.phone && <span className="flex items-center gap-1.5"><Phone className="h-3.5 w-3.5 shrink-0" />{crab.phone}</span>}
+                  {crab.email && <span className="flex items-center gap-1.5"><Mail className="h-3.5 w-3.5 shrink-0" />{crab.email}</span>}
+                  {(crab.suburb || crab.state) && (
+                    <span className="flex items-center gap-1.5">
+                      <MapPin className="h-3.5 w-3.5 shrink-0" />
+                      {[crab.suburb, crab.state].filter(Boolean).join(", ")}
+                    </span>
+                  )}
+                </div>
               </div>
-              <div>
-                <Label className="text-xs">Middle Name</Label>
-                <Input className="mt-1" value={crab.middle_name || ""} onChange={setTitle("middle_name")} />
-              </div>
-              <div>
-                <Label className="text-xs">Surname *</Label>
-                <Input className="mt-1" value={crab.surname || ""} onChange={setUpper("surname")} />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label className="text-xs">Date of Birth</Label>
-                <Input type="date" className="mt-1" value={crab.date_of_birth || ""} onChange={set("date_of_birth")} />
-              </div>
-              <div>
-                <Label className="text-xs">Status</Label>
-                <Select value={crab.status} onValueChange={v => setCrab(c => ({ ...c, status: v }))}>
-                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="inactive">Inactive</SelectItem>
-                    <SelectItem value="banned">Banned</SelectItem>
-                    <SelectItem value="watch">Watch</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label className="text-xs">Phone</Label>
-                <Input className="mt-1" value={crab.phone || ""} onChange={set("phone")} onBlur={handlePhoneBlur} placeholder="+61 XXX XXX XXX" />
-              </div>
-              <div>
-                <Label className="text-xs">Email</Label>
-                <Input className="mt-1" value={crab.email || ""} onChange={set("email")} />
-              </div>
-              <div className="col-span-2">
-                <Label className="text-xs">Photo URL</Label>
-                <Input className="mt-1" value={crab.photo_url || ""} onChange={set("photo_url")} />
-              </div>
-            </div>
+            )}
           </div>
 
           {/* Residential Address */}
