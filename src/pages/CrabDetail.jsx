@@ -300,97 +300,110 @@ export default function CrabDetail() {
             )}
           </div>
 
-          {/* Residential Address */}
+          {/* Addresses */}
           <div className="bg-card border rounded-xl p-5 space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground">Residential Address</h2>
+              <h2 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground">Address</h2>
               {!editing && <button onClick={() => setEditing(true)} className="text-muted-foreground hover:text-foreground"><Pencil className="h-3.5 w-3.5" /></button>}
             </div>
-            {editing ? (
-              <div className="grid grid-cols-2 gap-3">
-                <div className="col-span-2">
-                  <Label className="text-xs">Address Line 1</Label>
-                  <Input className="mt-1" value={crab.address1 || ""} onChange={setTitle("address1")} placeholder="Street number and name" />
-                </div>
-                <div className="col-span-2">
-                  <Label className="text-xs">Address Line 2</Label>
-                  <Input className="mt-1" value={crab.address2 || ""} onChange={setTitle("address2")} placeholder="Unit, apartment, floor…" />
-                </div>
-                <div>
-                  <Label className="text-xs">Suburb</Label>
-                  <Input className="mt-1" value={crab.suburb || ""} onChange={e => setCrab(c => ({ ...c, suburb: e.target.value.toUpperCase() }))} />
-                </div>
-                <div>
-                  <Label className="text-xs">State</Label>
-                  <Input className="mt-1" value={crab.state || ""} onChange={setTitle("state")} />
-                </div>
-                <div>
-                  <Label className="text-xs">Postcode</Label>
-                  <Input className="mt-1" value={crab.postcode || ""} onChange={set("postcode")} />
-                </div>
-                <div>
-                  <Label className="text-xs">Country</Label>
-                  <Input className="mt-1" value={crab.country || "Australia"} onChange={setTitle("country")} />
-                </div>
-              </div>
-            ) : (
-              <div className="text-sm text-muted-foreground space-y-0.5">
-                {crab.address1 && <p>{crab.address1}</p>}
-                {crab.address2 && <p>{crab.address2}</p>}
-                {(crab.suburb || crab.state || crab.postcode) && (
-                  <p>{[crab.suburb, crab.state, crab.postcode].filter(Boolean).join("  ")}</p>
-                )}
-                {crab.country && crab.country !== "Australia" && <p>{crab.country}</p>}
-                {!crab.address1 && !crab.suburb && <p className="italic">No address recorded</p>}
-              </div>
-            )}
-          </div>
 
-          {/* Mailing Address */}
-          <div className="bg-card border rounded-xl p-5 space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground">Mailing Address</h2>
-              <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={crab.mailing_same_as_residential ?? true}
-                  onChange={e => setCrab(c => ({ ...c, mailing_same_as_residential: e.target.checked }))}
-                  className="rounded"
-                />
-                Same as residential
-              </label>
+            {/* Residential */}
+            <div>
+              <p className="text-xs font-medium text-muted-foreground mb-2">Residential</p>
+              {editing ? (
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="col-span-2">
+                    <Label className="text-xs">Address Line 1</Label>
+                    <Input className="mt-1" value={crab.address1 || ""} onChange={setTitle("address1")} placeholder="Street number and name" />
+                  </div>
+                  <div className="col-span-2">
+                    <Label className="text-xs">Address Line 2</Label>
+                    <Input className="mt-1" value={crab.address2 || ""} onChange={setTitle("address2")} placeholder="Unit, apartment, floor…" />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Suburb</Label>
+                    <Input className="mt-1" value={crab.suburb || ""} onChange={e => setCrab(c => ({ ...c, suburb: e.target.value.toUpperCase() }))} />
+                  </div>
+                  <div>
+                    <Label className="text-xs">State</Label>
+                    <Input className="mt-1" value={crab.state || ""} onChange={setTitle("state")} />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Postcode</Label>
+                    <Input className="mt-1" value={crab.postcode || ""} onChange={set("postcode")} />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Country</Label>
+                    <Input className="mt-1" value={crab.country || "Australia"} onChange={setTitle("country")} />
+                  </div>
+                </div>
+              ) : (
+                <div className="text-sm text-muted-foreground space-y-0.5">
+                  {crab.address1 && <p>{crab.address1}</p>}
+                  {crab.address2 && <p>{crab.address2}</p>}
+                  {(crab.suburb || crab.state || crab.postcode) && (
+                    <p>{[crab.suburb, crab.state, crab.postcode].filter(Boolean).join("  ")}</p>
+                  )}
+                  {crab.country && crab.country !== "Australia" && <p>{crab.country}</p>}
+                  {!crab.address1 && !crab.suburb && <p className="italic">No address recorded</p>}
+                </div>
+              )}
             </div>
-            {!(crab.mailing_same_as_residential ?? true) && (
-              <div className="grid grid-cols-2 gap-3">
-                <div className="col-span-2">
-                  <Label className="text-xs">Address Line 1</Label>
-                  <Input className="mt-1" value={crab.mailing_address1 || ""} onChange={setTitle("mailing_address1")} placeholder="Street number and name" />
-                </div>
-                <div className="col-span-2">
-                  <Label className="text-xs">Address Line 2</Label>
-                  <Input className="mt-1" value={crab.mailing_address2 || ""} onChange={setTitle("mailing_address2")} placeholder="Unit, PO Box, locked bag…" />
-                </div>
-                <div>
-                  <Label className="text-xs">Suburb</Label>
-                  <Input className="mt-1" value={crab.mailing_suburb || ""} onChange={e => setCrab(c => ({ ...c, mailing_suburb: e.target.value.toUpperCase() }))} />
-                </div>
-                <div>
-                  <Label className="text-xs">State</Label>
-                  <Input className="mt-1" value={crab.mailing_state || ""} onChange={setTitle("mailing_state")} />
-                </div>
-                <div>
-                  <Label className="text-xs">Postcode</Label>
-                  <Input className="mt-1" value={crab.mailing_postcode || ""} onChange={set("mailing_postcode")} />
-                </div>
-                <div>
-                  <Label className="text-xs">Country</Label>
-                  <Input className="mt-1" value={crab.mailing_country || "Australia"} onChange={setTitle("mailing_country")} />
-                </div>
+
+            {/* Mailing */}
+            <div className="border-t pt-4">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-medium text-muted-foreground">Mailing</p>
+                <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={crab.mailing_same_as_residential ?? true}
+                    onChange={e => setCrab(c => ({ ...c, mailing_same_as_residential: e.target.checked }))}
+                    className="rounded"
+                  />
+                  Same as residential
+                </label>
               </div>
-            )}
-            {(crab.mailing_same_as_residential ?? true) && (
-              <p className="text-xs text-muted-foreground italic">Using residential address for mail</p>
-            )}
+              {(crab.mailing_same_as_residential ?? true) ? (
+                <p className="text-xs text-muted-foreground italic">Using residential address for mail</p>
+              ) : editing ? (
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="col-span-2">
+                    <Label className="text-xs">Address Line 1</Label>
+                    <Input className="mt-1" value={crab.mailing_address1 || ""} onChange={setTitle("mailing_address1")} placeholder="Street number and name" />
+                  </div>
+                  <div className="col-span-2">
+                    <Label className="text-xs">Address Line 2</Label>
+                    <Input className="mt-1" value={crab.mailing_address2 || ""} onChange={setTitle("mailing_address2")} placeholder="Unit, PO Box, locked bag…" />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Suburb</Label>
+                    <Input className="mt-1" value={crab.mailing_suburb || ""} onChange={e => setCrab(c => ({ ...c, mailing_suburb: e.target.value.toUpperCase() }))} />
+                  </div>
+                  <div>
+                    <Label className="text-xs">State</Label>
+                    <Input className="mt-1" value={crab.mailing_state || ""} onChange={setTitle("mailing_state")} />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Postcode</Label>
+                    <Input className="mt-1" value={crab.mailing_postcode || ""} onChange={set("mailing_postcode")} />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Country</Label>
+                    <Input className="mt-1" value={crab.mailing_country || "Australia"} onChange={setTitle("mailing_country")} />
+                  </div>
+                </div>
+              ) : (
+                <div className="text-sm text-muted-foreground space-y-0.5">
+                  {crab.mailing_address1 && <p>{crab.mailing_address1}</p>}
+                  {crab.mailing_address2 && <p>{crab.mailing_address2}</p>}
+                  {(crab.mailing_suburb || crab.mailing_state || crab.mailing_postcode) && (
+                    <p>{[crab.mailing_suburb, crab.mailing_state, crab.mailing_postcode].filter(Boolean).join("  ")}</p>
+                  )}
+                  {crab.mailing_country && crab.mailing_country !== "Australia" && <p>{crab.mailing_country}</p>}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* ID Numbers */}
