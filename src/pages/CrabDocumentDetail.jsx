@@ -118,6 +118,7 @@ export default function CrabDocumentDetail() {
   const [editCrabIds, setEditCrabIds] = useState([]);
   const [showAddProfile, setShowAddProfile] = useState(false);
   const [selectedProfileId, setSelectedProfileId] = useState("");
+  const [editIdCardSide, setEditIdCardSide] = useState("");
 
   const [versions, setVersions] = useState([]);
 
@@ -131,6 +132,7 @@ export default function CrabDocumentDetail() {
       setEditTitle(d?.title || "");
       setEditNotes(d?.notes || "");
       setEditCrabIds(d?.crab_ids || []);
+      setEditIdCardSide(d?.id_card_side || "");
       // Default to creation date if no document_date set
       const defaultDate = d?.document_date || (d?.created_date ? d.created_date.slice(0, 10) : "");
       setEditDocDate(defaultDate);
@@ -263,6 +265,11 @@ export default function CrabDocumentDetail() {
       document_date: editDocDate,
       crab_ids: editCrabIds,
     };
+
+    // Add id_card_side if category is "id" and side is set
+    if (doc.category === "id" && editIdCardSide) {
+      updateData.id_card_side = editIdCardSide;
+    }
 
     if (doc.processing_status === "needs_review") {
       updateData.processing_status = "completed";
@@ -482,6 +489,21 @@ export default function CrabDocumentDetail() {
                   onChange={e => { setEditDocDate(e.target.value); setDirty(true); }}
                 />
               </div>
+              {doc.category === "id" && (
+                <div className="flex gap-3 items-center">
+                  <span className="text-xs text-muted-foreground w-28 shrink-0">Card Side</span>
+                  <Select value={editIdCardSide || "__none__"} onValueChange={v => { setEditIdCardSide(v === "__none__" ? "" : v); setDirty(true); }}>
+                    <SelectTrigger className="h-7 text-xs w-36">
+                      <SelectValue placeholder="Select side…" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none__">— Not Set —</SelectItem>
+                      <SelectItem value="front">Front</SelectItem>
+                      <SelectItem value="back">Back</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               <MetaRow label="File Size" value={doc.file_size ? `${(doc.file_size / 1024).toFixed(1)} KB` : null} />
               <MetaRow label="Vault Path" value={doc.vault_path} />
               {doc.synced_to_vault !== undefined && (
