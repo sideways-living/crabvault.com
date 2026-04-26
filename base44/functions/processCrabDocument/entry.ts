@@ -36,13 +36,14 @@ Please analyse this document and return structured data:
 - suggested_title: A clean, descriptive title. Format: "YYYY-MM-DD - Description" if you can identify a date, otherwise just a clean description. Keep it concise.
 - summary: 2-3 sentence summary of what this document is and its key details.
 - category: One of: correspondence, evidence, receipt, id, legal, medical, financial, Pay Slip, other
+- id_card_side: If this is an ID document (category "id"), specify "front" or "back" based on the document content or filename hints. Otherwise null.
 - is_payslip: Boolean - true if this is a payslip/pay advice/salary statement
 - pay_period_end_date: If payslip, the end date of the pay period in YYYY-MM-DD format, otherwise null
 - pay_date: If payslip, the actual pay/payment date in YYYY-MM-DD format, otherwise null
 - document_date: The date of the document in YYYY-MM-DD format if identifiable, otherwise null. For payslips, use the later of pay_date or pay_period_end_date.
 - tags: Array of relevant keyword tags (e.g. ["passport", "identity", "uk"])
 
-Be precise. If this is an ID document, include the ID type. If it's correspondence, note who it's from/to. For payslips, always extract both pay period end date and payment date.`,
+Be precise. If this is an ID document, include the ID type and specify front/back side. If it's correspondence, note who it's from/to. For payslips, always extract both pay period end date and payment date.`,
     file_urls: isVisual ? [fileUrl] : undefined,
     response_json_schema: {
       type: 'object',
@@ -50,6 +51,7 @@ Be precise. If this is an ID document, include the ID type. If it's corresponden
         suggested_title: { type: 'string' },
         summary: { type: 'string' },
         category: { type: 'string' },
+        id_card_side: { type: ['string', 'null'] },
         is_payslip: { type: 'boolean' },
         pay_period_end_date: { type: ['string', 'null'] },
         pay_date: { type: ['string', 'null'] },
@@ -62,6 +64,7 @@ Be precise. If this is an ID document, include the ID type. If it's corresponden
   // For payslips, force category to "Pay Slip" and ensure document_date uses the correct logic
   let finalCategory = result.category || doc.category || 'other';
   let finalDocDate = result.document_date || doc.document_date || null;
+  let finalIdCardSide = result.id_card_side || null;
   
   if (result.is_payslip) {
     finalCategory = 'Pay Slip';
@@ -75,14 +78,21 @@ Be precise. If this is an ID document, include the ID type. If it's corresponden
     }
   }
   
-  await db.entities.CrabDocument.update(doc.id, {
+  const updatePayload = {
     title: result.suggested_title || doc.title,
     summary: result.summary || '',
     category: finalCategory,
     document_date: finalDocDate,
     tags: result.tags || [],
     processing_status: 'needs_review',
-  });
+  };
+
+  // Only set id_card_side if category is "id" and side was detected
+  if (finalCategory === 'id' && finalIdCardSide) {
+    updatePayload.id_card_side = finalIdCardSide;
+  }
+
+  await db.entities.CrabDocument.update(doc.id, updatePayload);
 
   console.log(`✅ Processed: ${doc.id} → "${result.suggested_title}"`);
   return { documentId: doc.id, title: result.suggested_title, success: true };
