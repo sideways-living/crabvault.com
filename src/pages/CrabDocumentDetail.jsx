@@ -275,13 +275,25 @@ export default function CrabDocumentDetail() {
       updateData.processing_status = "completed";
     }
 
-    // Compute vault path based on primary linked crab if crab_ids changed
-
-    if (JSON.stringify(editCrabIds) !== JSON.stringify(doc.crab_ids || [])) {
-      const primaryCrab = editCrabIds.length > 0 ? crabs.find(c => c.id === editCrabIds[0]) : null;
-      if (primaryCrab) {
-        const crabFolder = [primaryCrab.first_name, primaryCrab.middle_name, primaryCrab.surname?.toUpperCase()].filter(Boolean).join(" ");
-        updateData.vault_path = `/crabs/${crabFolder}/documents/${doc.original_filename || "document"}`;
+    // Compute vault path and filename based on primary linked crab and metadata
+    const primaryCrab = editCrabIds.length > 0 ? crabs.find(c => c.id === editCrabIds[0]) : null;
+    if (primaryCrab) {
+      const crabFolder = [primaryCrab.first_name, primaryCrab.middle_name, primaryCrab.surname?.toUpperCase()].filter(Boolean).join(" ");
+      const crabName = [primaryCrab.first_name, primaryCrab.surname?.toUpperCase()].filter(Boolean).join(" ");
+      
+      // Build standardized filename: <crab name> - <state/country> <category> - <card side>.<ext>
+      const stateOrCountry = primaryCrab.state || primaryCrab.country || '';
+      const docType = doc.category || 'Document';
+      const cardSide = editIdCardSide ? ` - ${editIdCardSide === 'front' ? 'Front' : editIdCardSide === 'back' ? 'Back' : 'Both Sides'}` : '';
+      const ext = doc.original_filename?.split('.').pop() || 'pdf';
+      
+      const newFilename = `${crabName} - ${stateOrCountry} ${docType}${cardSide}.${ext}`;
+      updateData.vault_path = `/crabs/${crabFolder}/documents/${newFilename}`;
+      updateData.original_filename = newFilename;
+    } else if (JSON.stringify(editCrabIds) !== JSON.stringify(doc.crab_ids || [])) {
+      // Crab was removed, just use original filename
+      if (doc.original_filename) {
+        updateData.vault_path = `/documents/${doc.original_filename}`;
       }
     }
 
