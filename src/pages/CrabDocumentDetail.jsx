@@ -168,6 +168,16 @@ export default function CrabDocumentDetail() {
     }
   };
 
+  const formatNameCase = (value) => {
+    if (!value) return "";
+    return value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
+  };
+
+  const formatSurnameCase = (value) => {
+    if (!value) return "";
+    return value.toUpperCase();
+  };
+
   const handleCreateProfile = async () => {
     if (!newProfileForm.surname.trim()) {
       toast.error("Surname is required");
@@ -465,19 +475,19 @@ export default function CrabDocumentDetail() {
                       placeholder="First Name"
                       className="h-6 text-xs"
                       value={newProfileForm.first_name}
-                      onChange={e => setNewProfileForm(f => ({ ...f, first_name: e.target.value }))}
+                      onChange={e => setNewProfileForm(f => ({ ...f, first_name: formatNameCase(e.target.value) }))}
                     />
                     <Input
                       placeholder="Middle Name"
                       className="h-6 text-xs"
                       value={newProfileForm.middle_name}
-                      onChange={e => setNewProfileForm(f => ({ ...f, middle_name: e.target.value }))}
+                      onChange={e => setNewProfileForm(f => ({ ...f, middle_name: formatNameCase(e.target.value) }))}
                     />
                     <Input
                       placeholder="Surname (required)"
-                      className="h-6 text-xs"
+                      className="h-6 text-xs uppercase"
                       value={newProfileForm.surname}
-                      onChange={e => setNewProfileForm(f => ({ ...f, surname: e.target.value }))}
+                      onChange={e => setNewProfileForm(f => ({ ...f, surname: formatSurnameCase(e.target.value) }))}
                     />
                     <div className="flex gap-1">
                       <Button size="sm" className="h-6 text-xs px-2 flex-1" onClick={handleCreateProfile}>Create</Button>
