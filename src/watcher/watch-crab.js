@@ -77,6 +77,8 @@ if (!WATCH_FOLDER || !INGEST_URL || !API_KEY) {
 const UPLOADED_LOG = path.join(__dirname, '.crab-uploaded.json');
 let uploadedFiles = new Set();
 
+const SCAN_MODE = process.argv.includes('--scan');
+
 // --reset flag clears the uploaded log so all files are re-processed
 if (process.argv.includes('--reset')) {
   console.log('🔄  --reset: clearing uploaded log, all files will be re-processed');
@@ -370,10 +372,18 @@ async function sendHeartbeat() {
   });
 }
 
-setInterval(poll, POLL_INTERVAL);
-poll();
+if (SCAN_MODE) {
+  console.log('🔍  --scan: uploading any files not yet in the log, then exiting');
+  poll().then(() => {
+    console.log('✅  Scan complete');
+    process.exit(0);
+  });
+} else {
+  setInterval(poll, POLL_INTERVAL);
+  poll();
 
-if (HEARTBEAT_URL) {
-  sendHeartbeat();
-  setInterval(sendHeartbeat, HEARTBEAT_INTERVAL);
+  if (HEARTBEAT_URL) {
+    sendHeartbeat();
+    setInterval(sendHeartbeat, HEARTBEAT_INTERVAL);
+  }
 }
