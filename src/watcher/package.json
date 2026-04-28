@@ -1,12 +1,11 @@
 {
-  "name": "docvault-watcher",
+  "name": "crabvault-watcher",
   "version": "1.0.0",
-  "description": "Local folder watcher that auto-uploads files to DocVault",
-  "main": "watch.js",
+  "description": "Local folder watcher that auto-uploads files to CrabVault",
+  "main": "watch-crab.js",
   "scripts": {
-    "start": "node watch.js",
+    "start": "node watch-crab.js",
     "sync": "node sync-to-vault.js",
-    "start:all": "node watch.js & node sync-to-vault.js"
+    "start:all": "node watch-crab.js & node sync-to-vault.js"
   }
-}
 }
