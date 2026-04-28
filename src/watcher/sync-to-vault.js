@@ -30,7 +30,7 @@ if (fs.existsSync(envPath)) {
   });
 }
 
-const BASE_URL        = (process.env.INGEST_URL || '').replace(/\/ingestDocument$/, '').replace(/\/$/, '');
+const BASE_URL        = (process.env.CRAB_INGEST_URL || process.env.INGEST_URL || '').replace(/\/ingestCrabDocument$/, '').replace(/\/ingestDocument$/, '').replace(/\/$/, '');
 const API_KEY         = process.env.INGEST_API_KEY;
 const VAULT_PATH      = process.env.VAULT_PATH;
 const POLL_INTERVAL   = parseInt(process.env.POLL_INTERVAL_MS || '60000', 10);
@@ -39,7 +39,7 @@ const HEARTBEAT_KEY   = process.env.HEARTBEAT_KEY || API_KEY;
 const HEARTBEAT_INTERVAL = parseInt(process.env.HEARTBEAT_INTERVAL_MS || '60000', 10);
 
 if (!BASE_URL || !API_KEY || !VAULT_PATH) {
-  console.error('❌  Missing required env vars: INGEST_URL, INGEST_API_KEY, VAULT_PATH');
+  console.error('❌  Missing required env vars: CRAB_INGEST_URL, INGEST_API_KEY, VAULT_PATH');
   process.exit(1);
 }
 
