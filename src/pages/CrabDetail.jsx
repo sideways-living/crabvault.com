@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   ArrowLeft, Save, Trash2, Plus, X, FileText,
-  Phone, Mail, MapPin, User, Loader2, Pencil
+  Phone, Mail, MapPin, User, Loader2, Pencil, Printer
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import RedBankModule from "@/components/modules/RedBankModule";
@@ -222,6 +222,11 @@ export default function CrabDetail() {
           {!creating && (
             <Button variant="ghost" size="icon" onClick={handleDelete} className="text-destructive hover:bg-destructive/10">
               <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
+          {!creating && (
+            <Button variant="outline" onClick={() => window.open(`/cheat-sheet?id=${id}`, '_blank')} className="gap-2">
+              <Printer className="h-4 w-4" /> Cheat Sheet
             </Button>
           )}
           {!editing && (
