@@ -85,6 +85,14 @@
       "type": "string",
       "title": "Override Postcode"
     },
+    "identification_used": {
+      "type": "array",
+      "title": "Identification Used",
+      "description": "List of ID type labels used when setting up this module",
+      "items": {
+        "type": "string"
+      }
+    },
     "redbank_customer_number": {
       "type": "string",
       "title": "RedBank Customer Number"

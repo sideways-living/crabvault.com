@@ -8,13 +8,14 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import {
   Plus, Pencil, Trash2, CreditCard, Landmark, Smartphone,
   WalletCards, Lock, LockOpen, Link2, KeyRound, Hash, Phone, Building2,
-  ShieldQuestion, MapPin, Eye, EyeOff, AtSign, X, Check
+  ShieldQuestion, ShieldCheck, MapPin, Eye, EyeOff, AtSign, X, Check
 } from "lucide-react";
 import { getCardImage } from "@/lib/cardImages";
 import { toast } from "sonner";
 import YellowBankAccountForm from "./YellowBankAccountForm";
 import YellowBankCardForm from "./YellowBankCardForm";
 import { PhoneSelector, EmailSelector, AddressSelector } from "@/components/ContactSelector";
+import IdentificationUsedSelector from "./IdentificationUsedSelector";
 
 
 
@@ -189,6 +190,7 @@ export default function YellowBankModule({ crabId }) {
   const [loading, setLoading] = useState(true);
   const [loginEditing, setLoginEditing] = useState(false);
   const [shown, setShown] = useState({ password: false, app_pin: false, tel_pin: false, a1: false, a2: false });
+  const [identificationUsed, setIdentificationUsed] = useState([]);
   const toggleShown = (key) => setShown(s => ({ ...s, [key]: !s[key] }));
 
   const [loginEdit, setLoginEdit] = useState({
@@ -243,6 +245,7 @@ export default function YellowBankModule({ crabId }) {
     setAccounts(accs);
     setCards(cds);
     setPayids(mod?.yellowbank_payids || []);
+    setIdentificationUsed(mod?.identification_used || []);
     setLoading(false);
   };
 
@@ -261,7 +264,7 @@ export default function YellowBankModule({ crabId }) {
   const saveLogin = async () => {
     setSavingLogin(true);
     const mod = await ensureModule();
-    await base44.entities.CrabModule.update(mod.id, loginEdit);
+    await base44.entities.CrabModule.update(mod.id, { ...loginEdit, identification_used: identificationUsed });
     toast.success("Login details saved");
     setLoginDirty(false);
     setSavingLogin(false);
@@ -484,6 +487,11 @@ export default function YellowBankModule({ crabId }) {
                 </div>
               </div>
 
+              <IdentificationUsedSelector
+                crab={crab}
+                selected={identificationUsed}
+                onChange={setIdentificationUsed}
+              />
               <Button size="sm" onClick={saveLogin} disabled={savingLogin} className="gap-1">
                 {savingLogin ? "Saving…" : "Save Login Details"}
               </Button>
@@ -576,6 +584,19 @@ export default function YellowBankModule({ crabId }) {
                   )}
                 </div>
               )}
+            </div>
+          )}
+          {/* Identification Used — view mode */}
+          {identificationUsed.length > 0 && (
+            <div className="pt-2 border-t space-y-1.5">
+              <p className="text-xs text-muted-foreground font-medium flex items-center gap-1">
+                <ShieldCheck className="h-3 w-3" /> Identification Used
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {identificationUsed.map(t => (
+                  <span key={t} className="text-xs px-2.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 font-medium">{t}</span>
+                ))}
+              </div>
             </div>
           )}
         </div>

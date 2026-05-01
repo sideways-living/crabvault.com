@@ -7,13 +7,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Plus, Pencil, Trash2, CreditCard, Landmark, Smartphone,
-  WalletCards, Lock, Link2, KeyRound, Users, Hash, Phone, BadgeCheck, AtSign, Check
+  WalletCards, Lock, Link2, KeyRound, Users, Hash, Phone, BadgeCheck, AtSign, Check, ShieldCheck
 } from "lucide-react";
 import { getCardImage } from "@/lib/cardImages";
 import { toast } from "sonner";
 import RedBankAccountForm from "./RedBankAccountForm";
 import RedBankCardForm from "./RedBankCardForm";
 import { PhoneSelector, EmailSelector, AddressSelector } from "@/components/ContactSelector";
+import IdentificationUsedSelector from "./IdentificationUsedSelector";
 
 const CARD_FEATURE_DEFS = [
   { key: "is_digital", label: "Digital Card", icon: Smartphone, tip: "A virtual/digital-only card (no physical card issued)" },
@@ -91,6 +92,7 @@ export default function RedBankModule({ crabId }) {
   const [loginEdit, setLoginEdit] = useState({});
   const [loginDirty, setLoginDirty] = useState(false);
   const [savingLogin, setSavingLogin] = useState(false);
+  const [identificationUsed, setIdentificationUsed] = useState([]);
 
   const [addingAccount, setAddingAccount] = useState(false);
   const [editingAccount, setEditingAccount] = useState(null);
@@ -127,6 +129,7 @@ export default function RedBankModule({ crabId }) {
     setAccounts(accs);
     setCards(cds);
     setPayids(mod?.redbank_payids || []);
+    setIdentificationUsed(mod?.identification_used || []);
     setLoading(false);
   };
 
@@ -150,6 +153,7 @@ export default function RedBankModule({ crabId }) {
       has_joint_accounts: loginEdit.has_joint_accounts,
       redbank_joint_holder_name: loginEdit.has_joint_accounts ? loginEdit.redbank_joint_holder_name : "",
       redbank_joint_accounts: loginEdit.has_joint_accounts ? (Number(loginEdit.redbank_joint_accounts) || 0) : 0,
+      identification_used: identificationUsed,
     });
     toast.success("Login details saved");
     setLoginDirty(false);
@@ -382,6 +386,23 @@ export default function RedBankModule({ crabId }) {
               )}
             </div>
           </div>
+          <IdentificationUsedSelector
+            crab={crab}
+            selected={identificationUsed}
+            onChange={(updated) => { setIdentificationUsed(updated); setLoginDirty(true); }}
+          />
+          {identificationUsed.length > 0 && !loginDirty && (
+            <div className="space-y-1.5">
+              <p className="text-xs text-muted-foreground font-medium flex items-center gap-1">
+                <ShieldCheck className="h-3 w-3" /> Identification Used
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {identificationUsed.map(t => (
+                  <span key={t} className="text-xs px-2.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 font-medium">{t}</span>
+                ))}
+              </div>
+            </div>
+          )}
           {loginDirty && (
             <Button size="sm" onClick={saveLogin} disabled={savingLogin} className="gap-1">
               {savingLogin ? "Saving…" : "Save Login Details"}
