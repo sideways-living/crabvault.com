@@ -15,6 +15,7 @@ import YellowBankModule from "@/components/modules/YellowBankModule";
 import ModuleSelector from "@/components/modules/ModuleSelector";
 import CollapsibleModuleCard from "@/components/modules/CollapsibleModuleCard";
 import CrabAIExtractPanel from "@/components/CrabAIExtractPanel";
+import AddIdentificationDialog from "@/components/AddIdentificationDialog";
 import { toast } from "sonner";
 
 const isNew = (id) => id === "new";
@@ -42,6 +43,7 @@ export default function CrabDetail() {
   const [tagInput, setTagInput] = useState("");
   const [editing, setEditing] = useState(creating);
   const [editingAddressIdx, setEditingAddressIdx] = useState(null);
+  const [showAddIdDialog, setShowAddIdDialog] = useState(false);
 
   useEffect(() => {
     if (creating) return;
@@ -185,7 +187,8 @@ export default function CrabDetail() {
     }
   };
 
-  const addIdNumber = () => setCrab(c => ({ ...c, id_numbers: [...(c.id_numbers || []), { label: "", value: "" }] }));
+  const addIdNumber = () => setShowAddIdDialog(true);
+  const handleAddIdEntries = (entries) => setCrab(c => ({ ...c, id_numbers: [...(c.id_numbers || []), ...entries] }));
   const updateIdNumber = (i, field, val) =>
     setCrab(c => ({ ...c, id_numbers: c.id_numbers.map((n, idx) => idx === i ? { ...n, [field]: val } : n) }));
   const removeIdNumber = (i) =>
@@ -690,6 +693,14 @@ export default function CrabDetail() {
         </div>
       </div>
     </div>
+
+    <AddIdentificationDialog
+      open={showAddIdDialog}
+      onClose={() => setShowAddIdDialog(false)}
+      crabId={id}
+      documents={documents}
+      onAdd={handleAddIdEntries}
+    />
     </TooltipProvider>
   );
 }
