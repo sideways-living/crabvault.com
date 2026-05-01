@@ -1,32 +1,34 @@
-import { MapPin, Calendar, CreditCard, Hash, Fingerprint, Trash2 } from "lucide-react";
+import { MapPin, Calendar, CreditCard, Hash, Fingerprint, Trash2, FileText } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Link } from "react-router-dom";
 
 // Groups consecutive id_number entries that share the same ID type prefix
 function groupIdEntries(idNumbers) {
   const groups = [];
   idNumbers.forEach((entry, i) => {
-    // Detect ID type from label prefix pattern "TYPE: Field"
     const colonIdx = entry.label.indexOf(": ");
     const idType = colonIdx > -1 ? entry.label.slice(0, colonIdx) : null;
     const fieldLabel = colonIdx > -1 ? entry.label.slice(colonIdx + 2) : entry.label;
 
     const last = groups[groups.length - 1];
     if (last && last.idType === idType) {
-      last.entries.push({ fieldLabel, value: entry.value, originalIndex: i });
+      last.entries.push({ fieldLabel, value: entry.value, originalIndex: i, linked_document_id: entry.linked_document_id });
     } else {
-      groups.push({ idType, entries: [{ fieldLabel, value: entry.value, originalIndex: i }] });
+      groups.push({
+        idType,
+        entries: [{ fieldLabel, value: entry.value, originalIndex: i, linked_document_id: entry.linked_document_id }],
+      });
     }
   });
   return groups;
 }
 
-function IconTooltip({ icon: Icon, tip, className = "" }) {
+function IconTooltip({ icon: Icon, tip }) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <span className={`inline-flex items-center shrink-0 ${className}`}>
+        <span className="inline-flex items-center shrink-0">
           <Icon className="h-3.5 w-3.5 text-muted-foreground" />
         </span>
       </TooltipTrigger>
@@ -38,7 +40,6 @@ function IconTooltip({ icon: Icon, tip, className = "" }) {
 function formatDate(value) {
   if (!value) return value;
   const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-  // Try parse common formats: YYYY-MM-DD or DD/MM/YYYY
   let d;
   if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
     const [y, m, day] = value.split("-").map(Number);
@@ -69,80 +70,140 @@ function getFieldValue(entries, label) {
   return e?.value || "";
 }
 
-function PhotoCardCard({ group, onRemove }) {
-  const state = getFieldValue(group.entries, "State") || "";
-  const address = getFieldValue(group.entries, "Address");
-  const dob = getFieldValue(group.entries, "Date of Birth");
-  const pcNumber = getFieldValue(group.entries, "PC Number");
-  const cardNumber = getFieldValue(group.entries, "Card Number");
+function getLinkedDocId(group) {
+  return group.entries.find(e => e.linked_document_id)?.linked_document_id || null;
+}
 
+function DocLink({ docId, documents }) {
+  if (!docId || !documents) return null;
+  const doc = documents.find(d => d.id === docId);
+  if (!doc) return null;
   return (
-    <div className="border rounded-lg p-3 bg-muted/20 space-y-1.5 relative group">
-      <div className="flex items-start justify-between">
-        <p className="text-sm font-semibold">{state ? `${state} ` : ""}Photo Card</p>
-        <button
-          onClick={onRemove}
-          className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive p-0.5"
-        >
-          <Trash2 className="h-3.5 w-3.5" />
-        </button>
-      </div>
-      <div className="flex flex-wrap gap-x-4 gap-y-1">
-        <FieldPill icon={MapPin} tip="Address" value={address} />
-        <FieldPill icon={Calendar} tip="Date of Birth" value={dob} isDate />
-      </div>
-      <div className="flex flex-wrap gap-x-4 gap-y-1">
-        <FieldPill icon={Hash} tip="PC Number" value={pcNumber} />
-        <FieldPill icon={CreditCard} tip="Card Number" value={cardNumber} />
-      </div>
-    </div>
+    <Link
+      to={`/crab-documents/${docId}`}
+      className="flex items-center gap-1 text-xs text-primary hover:underline shrink-0"
+      onClick={e => e.stopPropagation()}
+    >
+      <FileText className="h-3 w-3" />
+      <span className="max-w-[140px] truncate">{doc.title}</span>
+    </Link>
   );
 }
 
-function DriversLicenceCard({ group, onRemove }) {
-  const state = getFieldValue(group.entries, "State") || "";
-  const address = getFieldValue(group.entries, "Address");
-  const dob = getFieldValue(group.entries, "Date of Birth");
-  const licenceNumber = getFieldValue(group.entries, "Licence Number");
-  const cardNumber = getFieldValue(group.entries, "Card Number");
-  const expiry = getFieldValue(group.entries, "Expiry");
-
+function CardShell({ title, docId, documents, onRemove, children }) {
   return (
     <div className="border rounded-lg p-3 bg-muted/20 space-y-1.5 relative group">
-      <div className="flex items-start justify-between">
-        <p className="text-sm font-semibold">{state ? `${state} ` : ""}Drivers Licence</p>
-        <button
-          onClick={onRemove}
-          className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive p-0.5"
-        >
-          <Trash2 className="h-3.5 w-3.5" />
-        </button>
-      </div>
-      <div className="flex flex-wrap gap-x-4 gap-y-1">
-        <FieldPill icon={MapPin} tip="Address" value={address} />
-        <FieldPill icon={Calendar} tip="Date of Birth" value={dob} isDate />
-      </div>
-      <div className="flex flex-wrap gap-x-4 gap-y-1">
-        <FieldPill icon={Fingerprint} tip="Licence Number" value={licenceNumber} />
-        <FieldPill icon={CreditCard} tip="Card Number" value={cardNumber} />
-        {expiry && <FieldPill icon={Calendar} tip="Expiry" value={expiry} isDate />}
-      </div>
-    </div>
-  );
-}
-
-function GenericIdCard({ group, onRemove, onUpdateEntry }) {
-  return (
-    <div className="border rounded-lg p-3 bg-muted/20 space-y-1.5 relative group">
-      {group.idType && (
-        <div className="flex items-start justify-between">
-          <p className="text-sm font-semibold">{group.idType}</p>
+      {/* Line 1: title left, doc link right */}
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-sm font-semibold">{title}</p>
+        <div className="flex items-center gap-2">
+          <DocLink docId={docId} documents={documents} />
           <button
             onClick={onRemove}
             className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive p-0.5"
           >
             <Trash2 className="h-3.5 w-3.5" />
           </button>
+        </div>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function PhotoCardCard({ group, onRemove, documents }) {
+  const state = getFieldValue(group.entries, "State");
+  const dob = getFieldValue(group.entries, "Date of Birth");
+  const pcNumber = getFieldValue(group.entries, "PC Number");
+  const cardNumber = getFieldValue(group.entries, "Card Number");
+  const address = getFieldValue(group.entries, "Address");
+  const docId = getLinkedDocId(group);
+
+  return (
+    <CardShell title={`${state ? state + " " : ""}Photo Card`} docId={docId} documents={documents} onRemove={onRemove}>
+      {/* Line 2: DOB, PC Number, Card Number */}
+      <div className="flex flex-wrap gap-x-4 gap-y-1">
+        <FieldPill icon={Calendar} tip="Date of Birth" value={dob} isDate />
+        <FieldPill icon={Hash} tip="PC Number" value={pcNumber} />
+        <FieldPill icon={CreditCard} tip="Card Number" value={cardNumber} />
+      </div>
+      {/* Line 3: Address */}
+      {address && (
+        <div className="flex flex-wrap gap-x-4 gap-y-1">
+          <FieldPill icon={MapPin} tip="Address" value={address} />
+        </div>
+      )}
+    </CardShell>
+  );
+}
+
+function DriversLicenceCard({ group, onRemove, documents }) {
+  const state = getFieldValue(group.entries, "State");
+  const dob = getFieldValue(group.entries, "Date of Birth");
+  const licenceNumber = getFieldValue(group.entries, "Licence Number");
+  const cardNumber = getFieldValue(group.entries, "Card Number");
+  const address = getFieldValue(group.entries, "Address");
+  const expiry = getFieldValue(group.entries, "Expiry");
+  const docId = getLinkedDocId(group);
+
+  return (
+    <CardShell title={`${state ? state + " " : ""}Drivers Licence`} docId={docId} documents={documents} onRemove={onRemove}>
+      {/* Line 2: DOB, Licence Number, Card Number */}
+      <div className="flex flex-wrap gap-x-4 gap-y-1">
+        <FieldPill icon={Calendar} tip="Date of Birth" value={dob} isDate />
+        <FieldPill icon={Fingerprint} tip="Licence Number" value={licenceNumber} />
+        <FieldPill icon={CreditCard} tip="Card Number" value={cardNumber} />
+        {expiry && <FieldPill icon={Calendar} tip="Expiry" value={expiry} isDate />}
+      </div>
+      {/* Line 3: Address */}
+      {address && (
+        <div className="flex flex-wrap gap-x-4 gap-y-1">
+          <FieldPill icon={MapPin} tip="Address" value={address} />
+        </div>
+      )}
+    </CardShell>
+  );
+}
+
+function NoticeOfAssessmentCard({ group, onRemove, documents }) {
+  const tfn = getFieldValue(group.entries, "TFN");
+  const address = getFieldValue(group.entries, "Address");
+  const docId = getLinkedDocId(group);
+
+  return (
+    <CardShell title="Notice of Assessment" docId={docId} documents={documents} onRemove={onRemove}>
+      {/* Line 2: TFN */}
+      {tfn && (
+        <div className="flex flex-wrap gap-x-4 gap-y-1">
+          <FieldPill icon={Hash} tip="Tax File Number" value={tfn} />
+        </div>
+      )}
+      {/* Line 3: Address */}
+      {address && (
+        <div className="flex flex-wrap gap-x-4 gap-y-1">
+          <FieldPill icon={MapPin} tip="Address" value={address} />
+        </div>
+      )}
+    </CardShell>
+  );
+}
+
+function GenericIdCard({ group, onRemove, onUpdateEntry, documents }) {
+  const docId = getLinkedDocId(group);
+  return (
+    <div className="border rounded-lg p-3 bg-muted/20 space-y-1.5 relative group">
+      {group.idType && (
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-sm font-semibold">{group.idType}</p>
+          <div className="flex items-center gap-2">
+            <DocLink docId={docId} documents={documents} />
+            <button
+              onClick={onRemove}
+              className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive p-0.5"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          </div>
         </div>
       )}
       {group.entries.map((e, i) => (
@@ -170,7 +231,7 @@ function GenericIdCard({ group, onRemove, onUpdateEntry }) {
   );
 }
 
-export default function IdentificationSection({ idNumbers, onUpdate, onRemoveGroup }) {
+export default function IdentificationSection({ idNumbers, onUpdate, onRemoveGroup, documents }) {
   const groups = groupIdEntries(idNumbers || []);
 
   if (groups.length === 0) return null;
@@ -186,10 +247,13 @@ export default function IdentificationSection({ idNumbers, onUpdate, onRemoveGro
         };
 
         if (group.idType === "Photo Card") {
-          return <PhotoCardCard key={gi} group={group} onRemove={handleRemove} />;
+          return <PhotoCardCard key={gi} group={group} onRemove={handleRemove} documents={documents} />;
         }
         if (group.idType === "Drivers Licence") {
-          return <DriversLicenceCard key={gi} group={group} onRemove={handleRemove} />;
+          return <DriversLicenceCard key={gi} group={group} onRemove={handleRemove} documents={documents} />;
+        }
+        if (group.idType === "Notice of Assessment") {
+          return <NoticeOfAssessmentCard key={gi} group={group} onRemove={handleRemove} documents={documents} />;
         }
         return (
           <GenericIdCard
@@ -197,6 +261,7 @@ export default function IdentificationSection({ idNumbers, onUpdate, onRemoveGro
             group={group}
             onRemove={handleRemove}
             onUpdateEntry={handleUpdateEntry}
+            documents={documents}
           />
         );
       })}

@@ -596,6 +596,7 @@ export default function CrabDetail() {
             </div>
             <IdentificationSection
               idNumbers={crab.id_numbers || []}
+              documents={documents}
               onUpdate={(updated) => setCrab(c => ({ ...c, id_numbers: updated }))}
               onRemoveGroup={(indices) => {
                 const set = new Set(indices);
