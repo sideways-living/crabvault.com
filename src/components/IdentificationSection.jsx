@@ -35,12 +35,31 @@ function IconTooltip({ icon: Icon, tip, className = "" }) {
   );
 }
 
-function FieldPill({ icon, tip, value }) {
+function formatDate(value) {
+  if (!value) return value;
+  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  // Try parse common formats: YYYY-MM-DD or DD/MM/YYYY
+  let d;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const [y, m, day] = value.split("-").map(Number);
+    d = new Date(y, m - 1, day);
+  } else if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(value)) {
+    const [day, m, y] = value.split("/").map(Number);
+    d = new Date(y, m - 1, day);
+  } else {
+    return value;
+  }
+  if (isNaN(d)) return value;
+  return `${String(d.getDate()).padStart(2,"0")}${months[d.getMonth()]}${d.getFullYear()}`;
+}
+
+function FieldPill({ icon, tip, value, isDate = false }) {
   if (!value) return null;
+  const display = isDate ? formatDate(value) : value;
   return (
     <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
       <IconTooltip icon={icon} tip={tip} />
-      <span>{value}</span>
+      <span>{display}</span>
     </span>
   );
 }
@@ -70,7 +89,9 @@ function PhotoCardCard({ group, onRemove }) {
       </div>
       <div className="flex flex-wrap gap-x-4 gap-y-1">
         <FieldPill icon={MapPin} tip="Address" value={address} />
-        <FieldPill icon={Calendar} tip="Date of Birth" value={dob} />
+        <FieldPill icon={Calendar} tip="Date of Birth" value={dob} isDate />
+      </div>
+      <div className="flex flex-wrap gap-x-4 gap-y-1">
         <FieldPill icon={Hash} tip="PC Number" value={pcNumber} />
         <FieldPill icon={CreditCard} tip="Card Number" value={cardNumber} />
       </div>
@@ -99,10 +120,12 @@ function DriversLicenceCard({ group, onRemove }) {
       </div>
       <div className="flex flex-wrap gap-x-4 gap-y-1">
         <FieldPill icon={MapPin} tip="Address" value={address} />
-        <FieldPill icon={Calendar} tip="Date of Birth" value={dob} />
+        <FieldPill icon={Calendar} tip="Date of Birth" value={dob} isDate />
+      </div>
+      <div className="flex flex-wrap gap-x-4 gap-y-1">
         <FieldPill icon={Fingerprint} tip="Licence Number" value={licenceNumber} />
         <FieldPill icon={CreditCard} tip="Card Number" value={cardNumber} />
-        {expiry && <FieldPill icon={Calendar} tip="Expiry" value={expiry} />}
+        {expiry && <FieldPill icon={Calendar} tip="Expiry" value={expiry} isDate />}
       </div>
     </div>
   );
