@@ -133,14 +133,17 @@ export default function CrabsPage() {
                         <h3 className="font-semibold truncate">{crab.full_name}</h3>
                         {(() => {
                           const badge = getActivityBadge(crab);
-                          return badge ? (
-                            <span className={`text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded shrink-0 ${badge.cls}`}>
-                              {badge.label}
-                            </span>
-                          ) : (
-                            <span className={`text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded shrink-0 ${STATUS_COLORS[crab.status] || ""}`}>
-                              {crab.status}
-                            </span>
+                          return (
+                            <>
+                              <span className={`text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded shrink-0 ${STATUS_COLORS[crab.status] || ""}`}>
+                                {crab.status}
+                              </span>
+                              {badge && (
+                                <span className={`text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded shrink-0 ${badge.cls}`}>
+                                  {badge.label}
+                                </span>
+                              )}
+                            </>
                           );
                         })()}
                       </div>
