@@ -271,6 +271,7 @@ export default function CrabDetail() {
                     <Label className="text-xs">Date of Birth</Label>
                     <Input type="date" className="mt-1" value={crab.date_of_birth || ""} onChange={set("date_of_birth")} />
                   </div>
+                  {creating && (
                   <div>
                     <Label className="text-xs">Status</Label>
                     <Select value={crab.status} onValueChange={v => setCrab(c => ({ ...c, status: v }))}>
@@ -281,9 +282,10 @@ export default function CrabDetail() {
                         <SelectItem value="banned">Banned</SelectItem>
                         <SelectItem value="watch">Watch</SelectItem>
                         <SelectItem value="nathan">Nathan</SelectItem>
-                        </SelectContent>
+                      </SelectContent>
                     </Select>
                   </div>
+                  )}
                   <div>
                     <Label className="text-xs">Main Phone</Label>
                     <Input className="mt-1" value={crab.phone || ""} onChange={set("phone")} onBlur={handlePhoneBlur} placeholder="+61 XXX XXX XXX" />
@@ -336,13 +338,30 @@ export default function CrabDetail() {
               </>
             ) : (
               <div className="space-y-1.5">
-                {/* Row 1: Name + badges right */}
-                <div className="flex items-center justify-between gap-4">
-                  <p className="text-lg font-semibold">{computedFullName || <span className="text-muted-foreground italic">No name</span>}</p>
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full border capitalize ${STATUS_COLORS[crab.status] || STATUS_COLORS.active}`}>
-                      {crab.status || "active"}
-                    </span>
+              {/* Row 1: Name + badges right */}
+              <div className="flex items-center justify-between gap-4">
+                <p className="text-lg font-semibold">{computedFullName || <span className="text-muted-foreground italic">No name</span>}</p>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {/* Inline status selector — always editable */}
+                  <div className="relative">
+                    <Select value={crab.status || "active"} onValueChange={async v => {
+                      setCrab(c => ({ ...c, status: v }));
+                      if (!creating) {
+                        await base44.entities.Crab.update(id, { status: v });
+                      }
+                    }}>
+                      <SelectTrigger className={`h-6 text-xs font-medium px-2 py-0 rounded-full border gap-1 shadow-none focus:ring-0 capitalize ${STATUS_COLORS[crab.status] || STATUS_COLORS.active}`}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="active">Active</SelectItem>
+                        <SelectItem value="inactive">Inactive</SelectItem>
+                        <SelectItem value="banned">Banned</SelectItem>
+                        <SelectItem value="watch">Watch</SelectItem>
+                        <SelectItem value="nathan">Nathan</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                     {enabledModules.includes("redbank") && (
                       <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-700 border border-red-200">RedBank</span>
                     )}
