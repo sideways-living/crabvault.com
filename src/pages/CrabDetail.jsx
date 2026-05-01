@@ -16,6 +16,7 @@ import ModuleSelector from "@/components/modules/ModuleSelector";
 import CollapsibleModuleCard from "@/components/modules/CollapsibleModuleCard";
 import CrabAIExtractPanel from "@/components/CrabAIExtractPanel";
 import AddIdentificationDialog from "@/components/AddIdentificationDialog";
+import IdentificationSection from "@/components/IdentificationSection";
 import { toast } from "sonner";
 
 const isNew = (id) => id === "new";
@@ -593,13 +594,14 @@ export default function CrabDetail() {
               <h2 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground">Identification</h2>
               <Button variant="outline" size="sm" onClick={addIdNumber} className="gap-1"><Plus className="h-3 w-3" /> Add</Button>
             </div>
-            {(crab.id_numbers || []).map((n, i) => (
-              <div key={i} className="flex gap-2 items-center">
-                <Input placeholder="Label (e.g. Passport)" className="w-40" value={n.label} onChange={e => updateIdNumber(i, "label", e.target.value)} />
-                <Input placeholder="Value" className="flex-1" value={n.value} onChange={e => updateIdNumber(i, "value", e.target.value)} />
-                <button onClick={() => removeIdNumber(i)} className="text-muted-foreground hover:text-destructive"><X className="h-4 w-4" /></button>
-              </div>
-            ))}
+            <IdentificationSection
+              idNumbers={crab.id_numbers || []}
+              onUpdate={(updated) => setCrab(c => ({ ...c, id_numbers: updated }))}
+              onRemoveGroup={(indices) => {
+                const set = new Set(indices);
+                setCrab(c => ({ ...c, id_numbers: (c.id_numbers || []).filter((_, i) => !set.has(i)) }));
+              }}
+            />
           </div>
 
           {/* AI Extraction */}
