@@ -17,11 +17,15 @@ const STATUS_COLORS = {
   watch: "bg-amber-100 text-amber-700",
 };
 
+const FIVE_DAYS_MS = 5 * 24 * 60 * 60 * 1000;
 const FOURTEEN_DAYS_MS = 14 * 24 * 60 * 60 * 1000;
 
-function isRecentlyActive(crab) {
-  if (!crab.updated_date) return false;
-  return Date.now() - new Date(crab.updated_date).getTime() < FOURTEEN_DAYS_MS;
+function getActivityBadge(crab) {
+  if (!crab.updated_date) return null;
+  const elapsed = Date.now() - new Date(crab.updated_date).getTime();
+  if (elapsed < FIVE_DAYS_MS) return { label: "hot", cls: "bg-orange-100 text-orange-700" };
+  if (elapsed < FOURTEEN_DAYS_MS) return { label: "active", cls: "bg-emerald-100 text-emerald-700" };
+  return null;
 }
 
 function buildAddress(crab) {
@@ -126,9 +130,18 @@ export default function CrabsPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <h3 className="font-semibold truncate">{crab.full_name}</h3>
-                        <span className={`text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded shrink-0 ${isRecentlyActive(crab) ? "bg-emerald-100 text-emerald-700" : (STATUS_COLORS[crab.status] || "")}`}>
-                          {crab.status}
-                        </span>
+                        {(() => {
+                          const badge = getActivityBadge(crab);
+                          return badge ? (
+                            <span className={`text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded shrink-0 ${badge.cls}`}>
+                              {badge.label}
+                            </span>
+                          ) : (
+                            <span className={`text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded shrink-0 ${STATUS_COLORS[crab.status] || ""}`}>
+                              {crab.status}
+                            </span>
+                          );
+                        })()}
                       </div>
                       {(crab.aliases || []).length > 0 && (
                         <p className="text-xs text-muted-foreground mt-0.5 truncate">aka {crab.aliases.join(", ")}</p>
