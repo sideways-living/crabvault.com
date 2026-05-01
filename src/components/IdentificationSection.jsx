@@ -165,6 +165,24 @@ function DriversLicenceCard({ group, onRemove, documents }) {
   );
 }
 
+function BirthCertificateCard({ group, onRemove, documents }) {
+  const dob = getFieldValue(group.entries, "Date of Birth");
+  const placeOfBirth = getFieldValue(group.entries, "Place of Birth");
+  const countryOfBirth = getFieldValue(group.entries, "Country of Birth");
+  const docId = getLinkedDocId(group);
+
+  return (
+    <CardShell title="Birth Certificate" docId={docId} documents={documents} onRemove={onRemove}>
+      {/* Line 2: DOB, Place of Birth, Country of Birth */}
+      <div className="flex flex-wrap gap-x-4 gap-y-1">
+        <FieldPill icon={Calendar} tip="Date of Birth" value={dob} isDate />
+        <FieldPill icon={MapPin} tip="Place of Birth" value={placeOfBirth} />
+        <FieldPill icon={MapPin} tip="Country of Birth" value={countryOfBirth} />
+      </div>
+    </CardShell>
+  );
+}
+
 function NoticeOfAssessmentCard({ group, onRemove, documents }) {
   const tfn = getFieldValue(group.entries, "TFN");
   const address = getFieldValue(group.entries, "Address");
@@ -251,6 +269,9 @@ export default function IdentificationSection({ idNumbers, onUpdate, onRemoveGro
         }
         if (group.idType === "Drivers Licence") {
           return <DriversLicenceCard key={gi} group={group} onRemove={handleRemove} documents={documents} />;
+        }
+        if (group.idType === "Birth Certificate") {
+          return <BirthCertificateCard key={gi} group={group} onRemove={handleRemove} documents={documents} />;
         }
         if (group.idType === "Notice of Assessment") {
           return <NoticeOfAssessmentCard key={gi} group={group} onRemove={handleRemove} documents={documents} />;
