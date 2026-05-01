@@ -11,11 +11,18 @@ const MODULE_STYLES = {
 };
 
 const STATUS_COLORS = {
-  active: "bg-emerald-100 text-emerald-700",
+  active: "bg-gray-100 text-gray-600",
   inactive: "bg-gray-100 text-gray-600",
   banned: "bg-red-100 text-red-700",
   watch: "bg-amber-100 text-amber-700",
 };
+
+const FOURTEEN_DAYS_MS = 14 * 24 * 60 * 60 * 1000;
+
+function isRecentlyActive(crab) {
+  if (!crab.updated_date) return false;
+  return Date.now() - new Date(crab.updated_date).getTime() < FOURTEEN_DAYS_MS;
+}
 
 function buildAddress(crab) {
   const parts = [crab.address1, crab.address2, crab.suburb, crab.state, crab.postcode].filter(Boolean);
@@ -119,7 +126,7 @@ export default function CrabsPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <h3 className="font-semibold truncate">{crab.full_name}</h3>
-                        <span className={`text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded shrink-0 ${STATUS_COLORS[crab.status] || ""}`}>
+                        <span className={`text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded shrink-0 ${isRecentlyActive(crab) ? "bg-emerald-100 text-emerald-700" : (STATUS_COLORS[crab.status] || "")}`}>
                           {crab.status}
                         </span>
                       </div>
