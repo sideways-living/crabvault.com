@@ -50,7 +50,7 @@ function formatDate(value) {
     return value;
   }
   if (isNaN(d)) return value;
-  return `${String(d.getDate()).padStart(2,"0")}${months[d.getMonth()]}${d.getFullYear()}`;
+  return `${String(d.getDate()).padStart(2,"0")} ${months[d.getMonth()]} ${d.getFullYear()}`;
 }
 
 function FieldPill({ icon, tip, value, isDate = false }) {
