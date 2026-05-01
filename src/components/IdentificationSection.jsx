@@ -81,11 +81,11 @@ function DocLink({ docId, documents }) {
   return (
     <Link
       to={`/crab-documents/${docId}`}
-      className="flex items-center gap-1 text-xs text-primary hover:underline shrink-0"
+      title={doc.title}
+      className="text-primary hover:text-primary/70 shrink-0"
       onClick={e => e.stopPropagation()}
     >
-      <FileText className="h-3 w-3" />
-      <span className="max-w-[140px] truncate">{doc.title}</span>
+      <FileText className="h-5 w-5" />
     </Link>
   );
 }
