@@ -20,12 +20,15 @@ const STATUS_COLORS = {
   ben: "bg-teal-100 text-teal-700",
 };
 
-const FIVE_DAYS_MS = 5 * 24 * 60 * 60 * 1000;
+const PRIORITY_STATUSES = new Set(["nathan", "tony", "nigel", "ben"]);
+const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
+const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 
 function getActivityBadge(crab) {
   if (!crab.updated_date) return null;
   const elapsed = Date.now() - new Date(crab.updated_date).getTime();
-  if (elapsed < FIVE_DAYS_MS) return { label: "active", cls: "bg-emerald-100 text-emerald-700" };
+  const window = PRIORITY_STATUSES.has(crab.status) ? THREE_DAYS_MS : SEVEN_DAYS_MS;
+  if (elapsed < window) return { label: "active", cls: "bg-emerald-100 text-emerald-700" };
   return null;
 }
 

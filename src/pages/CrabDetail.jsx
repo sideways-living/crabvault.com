@@ -128,8 +128,9 @@ export default function CrabDetail() {
     ben: "text-teal-700 bg-teal-50 border-teal-200",
   };
 
-  const FIVE_DAYS_MS = 5 * 24 * 60 * 60 * 1000;
-  const isRecentlyActive = crab.updated_date && (Date.now() - new Date(crab.updated_date).getTime()) < FIVE_DAYS_MS;
+  const PRIORITY_STATUSES = new Set(["nathan", "tony", "nigel", "ben"]);
+  const activeWindow = PRIORITY_STATUSES.has(crab.status) ? 3 * 24 * 60 * 60 * 1000 : 7 * 24 * 60 * 60 * 1000;
+  const isRecentlyActive = crab.updated_date && (Date.now() - new Date(crab.updated_date).getTime()) < activeWindow;
 
   const handleSave = async () => {
     if (!crab.surname?.trim()) { toast.error("Surname is required"); return; }
