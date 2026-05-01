@@ -197,13 +197,15 @@
       "type": "string",
       "title": "Status",
       "enum": [
-        "active",
         "inactive",
         "banned",
         "watch",
-        "nathan"
+        "nathan",
+        "tony",
+        "nigel",
+        "ben"
       ],
-      "default": "active"
+      "default": "nathan"
     },
     "tags": {
       "type": "array",

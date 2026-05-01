@@ -11,21 +11,21 @@ const MODULE_STYLES = {
 };
 
 const STATUS_COLORS = {
-  active: "bg-gray-100 text-gray-600",
   inactive: "bg-gray-100 text-gray-600",
   banned: "bg-red-100 text-red-700",
   watch: "bg-amber-100 text-amber-700",
   nathan: "bg-blue-100 text-blue-700",
+  tony: "bg-purple-100 text-purple-700",
+  nigel: "bg-orange-100 text-orange-700",
+  ben: "bg-teal-100 text-teal-700",
 };
 
 const FIVE_DAYS_MS = 5 * 24 * 60 * 60 * 1000;
-const FOURTEEN_DAYS_MS = 14 * 24 * 60 * 60 * 1000;
 
 function getActivityBadge(crab) {
   if (!crab.updated_date) return null;
   const elapsed = Date.now() - new Date(crab.updated_date).getTime();
-  const threshold = crab.status === "nathan" ? FIVE_DAYS_MS : FOURTEEN_DAYS_MS;
-  if (elapsed < threshold) return { label: "active", cls: "bg-emerald-100 text-emerald-700" };
+  if (elapsed < FIVE_DAYS_MS) return { label: "active", cls: "bg-emerald-100 text-emerald-700" };
   return null;
 }
 
@@ -129,22 +129,20 @@ export default function CrabsPage() {
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="font-semibold truncate">{crab.full_name}</h3>
+                      <h3 className="font-semibold truncate">{crab.full_name}</h3>
+                      <div className="flex items-center gap-1.5 flex-wrap mt-1">
+                        {crab.status && (
+                          <span className={`text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded shrink-0 ${STATUS_COLORS[crab.status] || "bg-gray-100 text-gray-600"}`}>
+                            {crab.status}
+                          </span>
+                        )}
                         {(() => {
                           const badge = getActivityBadge(crab);
-                          return (
-                            <>
-                              <span className={`text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded shrink-0 ${STATUS_COLORS[crab.status] || ""}`}>
-                                {crab.status}
-                              </span>
-                              {badge && (
-                                <span className={`text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded shrink-0 ${badge.cls}`}>
-                                  {badge.label}
-                                </span>
-                              )}
-                            </>
-                          );
+                          return badge ? (
+                            <span className={`text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded shrink-0 ${badge.cls}`}>
+                              {badge.label}
+                            </span>
+                          ) : null;
                         })()}
                       </div>
                       {(crab.aliases || []).length > 0 && (
