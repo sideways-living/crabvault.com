@@ -15,6 +15,7 @@ const STATUS_COLORS = {
   inactive: "bg-gray-100 text-gray-600",
   banned: "bg-red-100 text-red-700",
   watch: "bg-amber-100 text-amber-700",
+  nathan: "bg-blue-100 text-blue-700",
 };
 
 const FIVE_DAYS_MS = 5 * 24 * 60 * 60 * 1000;
@@ -23,8 +24,8 @@ const FOURTEEN_DAYS_MS = 14 * 24 * 60 * 60 * 1000;
 function getActivityBadge(crab) {
   if (!crab.updated_date) return null;
   const elapsed = Date.now() - new Date(crab.updated_date).getTime();
-  if (elapsed < FIVE_DAYS_MS) return { label: "hot", cls: "bg-orange-100 text-orange-700" };
-  if (elapsed < FOURTEEN_DAYS_MS) return { label: "active", cls: "bg-emerald-100 text-emerald-700" };
+  const threshold = crab.status === "nathan" ? FIVE_DAYS_MS : FOURTEEN_DAYS_MS;
+  if (elapsed < threshold) return { label: "active", cls: "bg-emerald-100 text-emerald-700" };
   return null;
 }
 

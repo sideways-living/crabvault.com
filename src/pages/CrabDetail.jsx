@@ -123,6 +123,7 @@ export default function CrabDetail() {
     inactive: "text-gray-600 bg-gray-50 border-gray-200",
     banned: "text-red-700 bg-red-50 border-red-200",
     watch: "text-amber-700 bg-amber-50 border-amber-200",
+    nathan: "text-blue-700 bg-blue-50 border-blue-200",
   };
 
   const handleSave = async () => {
@@ -279,7 +280,8 @@ export default function CrabDetail() {
                         <SelectItem value="inactive">Inactive</SelectItem>
                         <SelectItem value="banned">Banned</SelectItem>
                         <SelectItem value="watch">Watch</SelectItem>
-                      </SelectContent>
+                        <SelectItem value="nathan">Nathan</SelectItem>
+                        </SelectContent>
                     </Select>
                   </div>
                   <div>

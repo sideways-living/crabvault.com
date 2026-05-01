@@ -200,7 +200,8 @@
         "active",
         "inactive",
         "banned",
-        "watch"
+        "watch",
+        "nathan"
       ],
       "default": "active"
     },
