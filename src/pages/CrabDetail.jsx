@@ -362,6 +362,12 @@ export default function CrabDetail() {
                       </SelectContent>
                     </Select>
                   </div>
+                  {/* Show active badge alongside Nathan if updated within 5 days */}
+                  {crab.status === "nathan" && crab.updated_date && (Date.now() - new Date(crab.updated_date).getTime()) < 5 * 24 * 60 * 60 * 1000 && (
+                    <span className="text-xs font-medium px-2 py-0.5 rounded-full border text-emerald-700 bg-emerald-50 border-emerald-200">
+                      active
+                    </span>
+                  )}
                     {enabledModules.includes("redbank") && (
                       <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-700 border border-red-200">RedBank</span>
                     )}
