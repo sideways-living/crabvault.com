@@ -201,14 +201,18 @@ Return JSON with: first_name, middle_name, surname, document_title, document_typ
             console.log(`🤖  AI could not identify crab — storing as unassigned`);
             if (!surname) surname = 'UNASSIGNED';
           }
-          // Build standardised filename: "Firstname Middlename SURNAME - Document Type.ext"
-          if (result.document_type) {
+          // Only build an AI filename if the original doesn't already follow "Name - Something.ext" format
+          const filenameBase = filename.replace(/\.[^/.]+$/, '');
+          const alreadyFormatted = /^.+ - .+/.test(filenameBase);
+          if (!alreadyFormatted && result.document_type) {
             const namePart = [result.first_name, result.middle_name, result.surname?.toUpperCase()].filter(Boolean).join(' ');
             const aiFilename = namePart
               ? `${namePart} - ${result.document_type}`
               : result.document_type;
             formData.set('ai_filename', aiFilename);
             console.log(`🤖  AI filename: ${aiFilename}`);
+          } else if (alreadyFormatted) {
+            console.log(`🤖  Filename already formatted, keeping original: ${filename}`);
           }
           if (result.document_title) {
             formData.set('ai_title', result.document_title);
