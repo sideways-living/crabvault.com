@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Link } from "react-router-dom";
-import { FileText, Search, Upload, Loader2, CheckCircle2, Clock, AlertTriangle, Trash2 } from "lucide-react";
+import { FileText, Search, Upload, Loader2, CheckCircle2, Clock, AlertTriangle, Trash2, ChevronUp, ChevronDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -33,6 +33,17 @@ export default function CrabDocumentsPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [uploadOpen, setUploadOpen] = useState(false);
+  const [sortKey, setSortKey] = useState("created_date");
+  const [sortDir, setSortDir] = useState("desc");
+
+  const handleSort = (key) => {
+    if (sortKey === key) {
+      setSortDir(d => d === "asc" ? "desc" : "asc");
+    } else {
+      setSortKey(key);
+      setSortDir("asc");
+    }
+  };
 
   const load = () => {
     setLoading(true);
@@ -51,14 +62,41 @@ export default function CrabDocumentsPage() {
 
   useEffect(() => { load(); }, []);
 
-  const filtered = documents.filter(d => {
-    const q = search.toLowerCase();
-    if (!q) return true;
-    return d.title?.toLowerCase().includes(q) ||
-      d.original_filename?.toLowerCase().includes(q) ||
-      d.summary?.toLowerCase().includes(q) ||
-      (d.tags || []).some(t => t.toLowerCase().includes(q));
-  });
+  const filtered = documents
+    .filter(d => {
+      const q = search.toLowerCase();
+      if (!q) return true;
+      return d.title?.toLowerCase().includes(q) ||
+        d.original_filename?.toLowerCase().includes(q) ||
+        d.summary?.toLowerCase().includes(q) ||
+        (d.tags || []).some(t => t.toLowerCase().includes(q));
+    })
+    .sort((a, b) => {
+      let aVal, bVal;
+      if (sortKey === "title") {
+        aVal = (a.title || "").toLowerCase();
+        bVal = (b.title || "").toLowerCase();
+      } else if (sortKey === "category") {
+        aVal = (a.category || "").toLowerCase();
+        bVal = (b.category || "").toLowerCase();
+      } else if (sortKey === "linked_crabs") {
+        aVal = getCrabNames(a.crab_ids).join(", ").toLowerCase();
+        bVal = getCrabNames(b.crab_ids).join(", ").toLowerCase();
+      } else if (sortKey === "document_date") {
+        aVal = a.document_date || "";
+        bVal = b.document_date || "";
+      } else if (sortKey === "processing_status") {
+        aVal = a.processing_status || "";
+        bVal = b.processing_status || "";
+      } else {
+        // default: created_date
+        aVal = a.created_date || "";
+        bVal = b.created_date || "";
+      }
+      if (aVal < bVal) return sortDir === "asc" ? -1 : 1;
+      if (aVal > bVal) return sortDir === "asc" ? 1 : -1;
+      return 0;
+    });
 
   const getCrabNames = (crabIds = []) =>
     crabIds.map(id => crabs.find(c => c.id === id)?.full_name).filter(Boolean);
@@ -116,11 +154,28 @@ export default function CrabDocumentsPage() {
           <table className="w-full text-sm">
             <thead className="bg-muted/50 text-xs text-muted-foreground uppercase tracking-wide">
               <tr>
-                <th className="text-left px-4 py-3 font-medium">Document</th>
-                <th className="text-left px-4 py-3 font-medium">Category</th>
-                <th className="text-left px-4 py-3 font-medium">Linked Crabs</th>
-                <th className="text-left px-4 py-3 font-medium">Date</th>
-                <th className="text-center px-4 py-3 font-medium">Status</th>
+                {[
+                  { label: "Document", key: "title" },
+                  { label: "Category", key: "category" },
+                  { label: "Linked Crabs", key: "linked_crabs" },
+                  { label: "Date", key: "document_date" },
+                  { label: "Status", key: "processing_status" },
+                ].map(({ label, key }) => (
+                  <th
+                    key={key}
+                    className="text-left px-4 py-3 font-medium cursor-pointer select-none hover:text-foreground transition-colors"
+                    onClick={() => handleSort(key)}
+                  >
+                    <span className="inline-flex items-center gap-1">
+                      {label}
+                      {sortKey === key
+                        ? sortDir === "asc"
+                          ? <ChevronUp className="h-3 w-3" />
+                          : <ChevronDown className="h-3 w-3" />
+                        : <ChevronUp className="h-3 w-3 opacity-20" />}
+                    </span>
+                  </th>
+                ))}
                 <th className="px-4 py-3" />
               </tr>
             </thead>
