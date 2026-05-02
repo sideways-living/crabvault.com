@@ -125,6 +125,7 @@ export default function CrabDocumentDetail() {
     surname: "",
   });
   const [editIdCardSide, setEditIdCardSide] = useState("");
+  const [titleManuallyEdited, setTitleManuallyEdited] = useState(false);
 
   const [versions, setVersions] = useState([]);
 
@@ -319,19 +320,26 @@ export default function CrabDocumentDetail() {
     }
 
     // Compute vault path and filename based on primary linked crab and metadata
+    // If the user manually edited the title, skip auto-naming and use their title as the filename
     const primaryCrab = editCrabIds.length > 0 ? crabs.find(c => c.id === editCrabIds[0]) : null;
-    if (primaryCrab) {
+    if (primaryCrab && !titleManuallyEdited) {
       const crabFolder = [primaryCrab.first_name, primaryCrab.middle_name, primaryCrab.surname?.toUpperCase()].filter(Boolean).join(" ");
       
-      // Build standardized filename: <Firstname> <Middlename> <SURNAME> - <State/Country> <DocumentType> - <Front/Back>.<ext>
-      const stateOrCountry = primaryCrab.state || primaryCrab.country || '';
+      // Build standardized filename: <Firstname> <Middlename> <SURNAME> - <DocumentType> - <Front/Back>.<ext>
       const docType = doc.category || 'Document';
       const cardSide = editIdCardSide ? `${editIdCardSide === 'front' ? 'Front' : editIdCardSide === 'back' ? 'Back' : 'Both Sides'}` : '';
       const ext = doc.original_filename?.split('.').pop() || 'pdf';
       
       const newFilename = cardSide
-        ? `${crabFolder} - ${stateOrCountry} ${docType} - ${cardSide}.${ext}`
-        : `${crabFolder} - ${stateOrCountry} ${docType}.${ext}`;
+        ? `${crabFolder} - ${docType} - ${cardSide}.${ext}`
+        : `${crabFolder} - ${docType}.${ext}`;
+      updateData.vault_path = `/crabs/${crabFolder}/documents/${newFilename}`;
+      updateData.original_filename = newFilename;
+    } else if (primaryCrab && titleManuallyEdited) {
+      // User typed their own title — use it as the filename as-is
+      const crabFolder = [primaryCrab.first_name, primaryCrab.middle_name, primaryCrab.surname?.toUpperCase()].filter(Boolean).join(" ");
+      const ext = doc.original_filename?.split('.').pop() || 'pdf';
+      const newFilename = `${updatedTitle}.${ext}`;
       updateData.vault_path = `/crabs/${crabFolder}/documents/${newFilename}`;
       updateData.original_filename = newFilename;
     } else if (JSON.stringify(editCrabIds) !== JSON.stringify(doc.crab_ids || [])) {
@@ -344,6 +352,7 @@ export default function CrabDocumentDetail() {
     await base44.entities.CrabDocument.update(doc.id, updateData);
     setDoc(d => ({ ...d, ...updateData }));
     setDirty(false);
+    setTitleManuallyEdited(false);
     toast.success("Changes saved");
 
     // Find and navigate to next pending document
@@ -388,7 +397,7 @@ export default function CrabDocumentDetail() {
             <Input
               className="text-xl font-semibold h-auto py-0.5 px-1.5 border-transparent hover:border-input focus:border-input bg-transparent"
               value={editTitle}
-              onChange={e => { setEditTitle(e.target.value); setDirty(true); }}
+              onChange={e => { setEditTitle(e.target.value); setDirty(true); setTitleManuallyEdited(true); }}
             />
             {doc.version > 1 && (
               <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 shrink-0">v{doc.version}</span>
