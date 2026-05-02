@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Link } from "react-router-dom";
-import { FileText, Search, Upload, Loader2, CheckCircle2, Clock, AlertTriangle } from "lucide-react";
+import { FileText, Search, Upload, Loader2, CheckCircle2, Clock, AlertTriangle, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -63,6 +63,15 @@ export default function CrabDocumentsPage() {
   const getCrabNames = (crabIds = []) =>
     crabIds.map(id => crabs.find(c => c.id === id)?.full_name).filter(Boolean);
 
+  const handleDelete = async (doc, e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!confirm(`Delete "${doc.title}"? This cannot be undone.`)) return;
+    await base44.entities.CrabDocument.update(doc.id, { is_deleted: true });
+    toast.success("Document deleted");
+    load();
+  };
+
   const handleProcessAll = () => {
     const pending = documents.filter(d => ["needs_review", "pending", "processing"].includes(d.processing_status));
     if (pending.length === 0) {
@@ -112,6 +121,7 @@ export default function CrabDocumentsPage() {
                 <th className="text-left px-4 py-3 font-medium">Linked Crabs</th>
                 <th className="text-left px-4 py-3 font-medium">Date</th>
                 <th className="text-center px-4 py-3 font-medium">Status</th>
+                <th className="px-4 py-3" />
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -143,6 +153,15 @@ export default function CrabDocumentsPage() {
                   </td>
                   <td className="px-4 py-3 text-center">
                     <span title={doc.processing_status}>{STATUS_ICONS[doc.processing_status]}</span>
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <button
+                      onClick={(e) => handleDelete(doc, e)}
+                      className="text-muted-foreground hover:text-destructive transition-colors p-1"
+                      title="Delete document"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
                   </td>
                 </tr>
               ))}

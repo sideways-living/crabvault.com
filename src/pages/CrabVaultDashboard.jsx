@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Link } from "react-router-dom";
-import { Users, FileText, Building2, AlertTriangle, Clock, CheckCircle2, ArrowRight, Settings } from "lucide-react";
+import { Users, FileText, Building2, AlertTriangle, Clock, CheckCircle2, ArrowRight, Settings, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
@@ -45,6 +45,15 @@ export default function CrabVaultDashboard() {
     inactive: "bg-gray-100 text-gray-600",
     banned: "bg-red-100 text-red-700",
     watch: "bg-amber-100 text-amber-700",
+  };
+
+  const handleDeleteDoc = async (doc, e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!confirm(`Delete "${doc.title}"? This cannot be undone.`)) return;
+    await base44.entities.CrabDocument.update(doc.id, { is_deleted: true });
+    toast.success("Document deleted");
+    setPendingDocs(prev => prev.filter(d => d.id !== doc.id));
   };
 
   const handleUpdateVaultPaths = async () => {
@@ -146,15 +155,24 @@ export default function CrabVaultDashboard() {
           ) : (
             <div className="space-y-2">
               {pendingDocs.map(doc => (
-                <Link key={doc.id} to={`/crab-documents/${doc.id}`}>
-                  <div className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-muted/40 transition-colors">
-                    <Clock className="h-4 w-4 text-amber-500 shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{doc.title}</p>
-                      <p className="text-xs text-muted-foreground capitalize">{doc.processing_status?.replace("_", " ")}</p>
+                <div key={doc.id} className="flex items-center gap-1 group">
+                  <Link to={`/crab-documents/${doc.id}`} className="flex-1 min-w-0">
+                    <div className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-muted/40 transition-colors">
+                      <Clock className="h-4 w-4 text-amber-500 shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{doc.title}</p>
+                        <p className="text-xs text-muted-foreground capitalize">{doc.processing_status?.replace("_", " ")}</p>
+                      </div>
                     </div>
-                  </div>
-                </Link>
+                  </Link>
+                  <button
+                    onClick={(e) => handleDeleteDoc(doc, e)}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive p-1.5 shrink-0"
+                    title="Delete document"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
               ))}
             </div>
           )}
