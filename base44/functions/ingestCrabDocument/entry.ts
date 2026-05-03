@@ -242,6 +242,17 @@ Return JSON with: first_name, middle_name, surname, document_title, document_typ
 
     // Build vault path: /crabs/Firstname Middlename SURNAME/documents/filename
     const folderName = [firstName, middleName, surname?.toUpperCase()].filter(Boolean).join(' ');
+
+    // If filename doesn't already start with the crab's name, prepend it
+    const filenameBase = filename.replace(/\.[^/.]+$/, '');
+    const fileExt2 = filename.includes('.') ? filename.slice(filename.lastIndexOf('.')) : '';
+    const startsWithName = filenameBase.toLowerCase().startsWith(folderName.toLowerCase() + ' - ');
+    if (!startsWithName && folderName) {
+      const prefixed = `${folderName} - ${filename}`;
+      formData.set('filename_override', prefixed);
+      console.log(`📝  Prepending crab name to filename: ${prefixed}`);
+    }
+
     const vaultPath = `/crabs/${folderName}/documents/${filename}`;
 
     // Check for existing versions of this filename for this crab (check both original and canonical)
@@ -274,9 +285,11 @@ Return JSON with: first_name, middle_name, surname, document_title, document_typ
 
     const aiTitle = formData.get('ai_title') || '';
     const aiFilename = formData.get('ai_filename') || '';
-    // Use AI filename for vault path if available, otherwise fall back to original filename (without ext)
+    const filenameOverride = formData.get('filename_override') || '';
+    // Use AI filename > filename_override > original filename (without ext) for the canonical base
     const fileExt = filename.includes('.') ? filename.slice(filename.lastIndexOf('.')) : '';
-    const canonicalBase = aiFilename || filename.replace(/\.[^/.]+$/, '');
+    const effectiveFilename = filenameOverride || filename;
+    const canonicalBase = aiFilename || effectiveFilename.replace(/\.[^/.]+$/, '');
     const canonicalFilename = `${canonicalBase}${fileExt}`;
     // Rebuild vault path with canonical filename
     const canonicalVaultPath = `/crabs/${folderName}/documents/${canonicalFilename}`;

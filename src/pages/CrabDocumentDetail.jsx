@@ -325,9 +325,9 @@ export default function CrabDocumentDetail() {
       const crabFolder = [primaryCrab.first_name, primaryCrab.middle_name, primaryCrab.surname?.toUpperCase()].filter(Boolean).join(" ");
       const ext = doc.original_filename?.split('.').pop() || 'pdf';
 
-      // Check if current filename is already in the prescribed format: "<Name> - <Type>..." 
+      // Check if filename already starts with the crab's name followed by " - " (prescribed format)
       const currentFilenameBase = doc.original_filename?.replace(/\.[^.]+$/, '') || '';
-      const alreadyFormatted = currentFilenameBase.startsWith(crabFolder + ' - ');
+      const alreadyFormatted = currentFilenameBase.toLowerCase().startsWith((crabFolder + ' - ').toLowerCase());
 
       let newFilename;
       if (alreadyFormatted && !titleManuallyEdited) {
