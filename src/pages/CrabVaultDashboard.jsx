@@ -143,7 +143,7 @@ export default function CrabVaultDashboard() {
         <div className="bg-card border rounded-xl p-5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-semibold">Needs Attention</h2>
-            <Link to="/crab-documents" className="text-xs text-primary hover:underline flex items-center gap-1">
+            <Link to="/needs-attention" className="text-xs text-primary hover:underline flex items-center gap-1">
               View all <ArrowRight className="h-3 w-3" />
             </Link>
           </div>
