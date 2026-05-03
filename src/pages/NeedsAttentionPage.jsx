@@ -95,6 +95,8 @@ export default function NeedsAttentionPage() {
           vault_path: newVaultPath,
         });
         fixed++;
+        // Small delay to avoid rate limiting
+        await new Promise(r => setTimeout(r, 150));
       }
     }
     setFixingFilenames(false);
