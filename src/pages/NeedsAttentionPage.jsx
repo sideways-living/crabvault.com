@@ -19,6 +19,7 @@ export default function NeedsAttentionPage() {
   const [loading, setLoading] = useState(true);
   const [processingAll, setProcessingAll] = useState(false);
   const [processingId, setProcessingId] = useState(null);
+  const [fixingFilenames, setFixingFilenames] = useState(false);
 
   const load = useCallback(async () => {
     const [allDocs, allCrabs] = await Promise.all([
@@ -71,6 +72,33 @@ export default function NeedsAttentionPage() {
     }
   };
 
+  const fixAllFilenames = async () => {
+    setFixingFilenames(true);
+    let fixed = 0;
+    // Run across ALL crab documents, not just attention ones
+    const allDocs = await base44.entities.CrabDocument.list("-created_date", 1000);
+    const active = allDocs.filter(d => !d.is_deleted && d.crab_ids?.length && d.original_filename);
+    for (const doc of active) {
+      const primaryCrab = crabs.find(c => c.id === doc.crab_ids[0]);
+      if (!primaryCrab?.full_name) continue;
+      const prefix = primaryCrab.full_name + " - ";
+      if (!doc.original_filename.toLowerCase().startsWith(prefix.toLowerCase())) {
+        const newFilename = prefix + doc.original_filename;
+        const newVaultPath = doc.vault_path
+          ? doc.vault_path.replace(doc.original_filename, newFilename)
+          : `/crabs/${primaryCrab.full_name}/documents/${newFilename}`;
+        await base44.entities.CrabDocument.update(doc.id, {
+          original_filename: newFilename,
+          vault_path: newVaultPath,
+        });
+        fixed++;
+      }
+    }
+    setFixingFilenames(false);
+    toast.success(`Fixed ${fixed} filename${fixed !== 1 ? "s" : ""}`);
+    await load();
+  };
+
   const processAll = async () => {
     const pending = docs.filter(d => d.processing_status === "pending");
     if (pending.length === 0) {
@@ -119,12 +147,18 @@ export default function NeedsAttentionPage() {
             </p>
           </div>
         </div>
-        {pendingCount > 0 && (
-          <Button onClick={processAll} disabled={processingAll} className="gap-2">
-            {processingAll ? <Loader2 className="h-4 w-4 animate-spin" /> : <Cpu className="h-4 w-4" />}
-            Process All ({pendingCount})
+        <div className="flex gap-2">
+          <Button onClick={fixAllFilenames} disabled={fixingFilenames} variant="outline" className="gap-2">
+            {fixingFilenames ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
+            Fix Filenames
           </Button>
-        )}
+          {pendingCount > 0 && (
+            <Button onClick={processAll} disabled={processingAll} className="gap-2">
+              {processingAll ? <Loader2 className="h-4 w-4 animate-spin" /> : <Cpu className="h-4 w-4" />}
+              Process All ({pendingCount})
+            </Button>
+          )}
+        </div>
       </div>
 
       {docs.length === 0 ? (
