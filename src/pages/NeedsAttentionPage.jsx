@@ -75,11 +75,14 @@ export default function NeedsAttentionPage() {
   const fixAllFilenames = async () => {
     setFixingFilenames(true);
     let fixed = 0;
-    // Run across ALL crab documents, not just attention ones
-    const allDocs = await base44.entities.CrabDocument.list("-created_date", 1000);
+    // Fetch fresh full lists to ensure we have all crabs and docs
+    const [allDocs, allCrabs] = await Promise.all([
+      base44.entities.CrabDocument.list("-created_date", 2000),
+      base44.entities.Crab.list("full_name", 1000),
+    ]);
     const active = allDocs.filter(d => !d.is_deleted && d.crab_ids?.length && d.original_filename);
     for (const doc of active) {
-      const primaryCrab = crabs.find(c => c.id === doc.crab_ids[0]);
+      const primaryCrab = allCrabs.find(c => c.id === doc.crab_ids[0]);
       if (!primaryCrab?.full_name) continue;
       const prefix = primaryCrab.full_name + " - ";
       if (!doc.original_filename.toLowerCase().startsWith(prefix.toLowerCase())) {
