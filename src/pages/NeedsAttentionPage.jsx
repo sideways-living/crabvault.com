@@ -38,9 +38,29 @@ export default function NeedsAttentionPage() {
   const getCrabNames = (crabIds = []) =>
     crabIds.map(id => crabs.find(c => c.id === id)?.full_name).filter(Boolean);
 
+  // Ensure filename starts with the linked crab's full name followed by " - "
+  const ensureFilenamePrefix = async (doc) => {
+    if (!doc.crab_ids?.length || !doc.original_filename) return;
+    const primaryCrab = crabs.find(c => c.id === doc.crab_ids[0]);
+    if (!primaryCrab?.full_name) return;
+    const crabName = primaryCrab.full_name;
+    const prefix = crabName + " - ";
+    if (!doc.original_filename.toLowerCase().startsWith(prefix.toLowerCase())) {
+      const newFilename = prefix + doc.original_filename;
+      const newVaultPath = doc.vault_path
+        ? doc.vault_path.replace(doc.original_filename, newFilename)
+        : `/crabs/${crabName}/documents/${newFilename}`;
+      await base44.entities.CrabDocument.update(doc.id, {
+        original_filename: newFilename,
+        vault_path: newVaultPath,
+      });
+    }
+  };
+
   const processOne = async (doc) => {
     setProcessingId(doc.id);
     try {
+      await ensureFilenamePrefix(doc);
       await base44.functions.invoke("processCrabDocument", { document_id: doc.id });
       toast.success(`Processed: ${doc.title}`);
       await load();
@@ -61,6 +81,7 @@ export default function NeedsAttentionPage() {
     for (const doc of pending) {
       setProcessingId(doc.id);
       try {
+        await ensureFilenamePrefix(doc);
         await base44.functions.invoke("processCrabDocument", { document_id: doc.id });
       } catch {
         // continue
