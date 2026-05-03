@@ -320,26 +320,31 @@ export default function CrabDocumentDetail() {
     }
 
     // Compute vault path and filename based on primary linked crab and metadata
-    // If the user manually edited the title, skip auto-naming and use their title as the filename
     const primaryCrab = editCrabIds.length > 0 ? crabs.find(c => c.id === editCrabIds[0]) : null;
-    if (primaryCrab && !titleManuallyEdited) {
-      const crabFolder = [primaryCrab.first_name, primaryCrab.middle_name, primaryCrab.surname?.toUpperCase()].filter(Boolean).join(" ");
-      
-      // Build standardized filename: <Firstname> <Middlename> <SURNAME> - <DocumentType> - <Front/Back>.<ext>
-      const docType = doc.category || 'Document';
-      const cardSide = editIdCardSide ? `${editIdCardSide === 'front' ? 'Front' : editIdCardSide === 'back' ? 'Back' : 'Both Sides'}` : '';
-      const ext = doc.original_filename?.split('.').pop() || 'pdf';
-      
-      const newFilename = cardSide
-        ? `${crabFolder} - ${docType} - ${cardSide}.${ext}`
-        : `${crabFolder} - ${docType}.${ext}`;
-      updateData.vault_path = `/crabs/${crabFolder}/documents/${newFilename}`;
-      updateData.original_filename = newFilename;
-    } else if (primaryCrab && titleManuallyEdited) {
-      // User typed their own title — use it as the filename as-is
+    if (primaryCrab) {
       const crabFolder = [primaryCrab.first_name, primaryCrab.middle_name, primaryCrab.surname?.toUpperCase()].filter(Boolean).join(" ");
       const ext = doc.original_filename?.split('.').pop() || 'pdf';
-      const newFilename = `${updatedTitle}.${ext}`;
+
+      // Check if current filename is already in the prescribed format: "<Name> - <Type>..." 
+      const currentFilenameBase = doc.original_filename?.replace(/\.[^.]+$/, '') || '';
+      const alreadyFormatted = currentFilenameBase.startsWith(crabFolder + ' - ');
+
+      let newFilename;
+      if (alreadyFormatted && !titleManuallyEdited) {
+        // Already in correct format — leave it as-is
+        newFilename = doc.original_filename;
+      } else if (titleManuallyEdited) {
+        // User typed their own title — use it as the filename
+        newFilename = `${updatedTitle}.${ext}`;
+      } else {
+        // Build standardized filename: <Name> - <DocumentType> - [Side].<ext>
+        const docType = doc.category || 'Document';
+        const cardSide = editIdCardSide ? (editIdCardSide === 'front' ? 'Front' : editIdCardSide === 'back' ? 'Back' : 'Both Sides') : '';
+        newFilename = cardSide
+          ? `${crabFolder} - ${docType} - ${cardSide}.${ext}`
+          : `${crabFolder} - ${docType}.${ext}`;
+      }
+
       updateData.vault_path = `/crabs/${crabFolder}/documents/${newFilename}`;
       updateData.original_filename = newFilename;
     } else if (JSON.stringify(editCrabIds) !== JSON.stringify(doc.crab_ids || [])) {
