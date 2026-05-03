@@ -45,29 +45,33 @@ export default function CrabsPage() {
   const [search, setSearch] = useState("");
 
   useEffect(() => {
-    Promise.all([
-      base44.entities.Crab.filter({ is_deleted: false }, "full_name", 500),
-      base44.entities.CrabDocument.list("-updated_date", 500),
-      base44.entities.CrabModule.list("created_date", 1000),
-    ]).then(([crbs, docs, mods]) => {
-      setCrabs(crbs);
-      // Build map: crabId → up to 2 most recent docs (not deleted)
-      const map = {};
-      docs.filter(d => !d.is_deleted).forEach(doc => {
-        (doc.crab_ids || []).forEach(cid => {
-          if (!map[cid]) map[cid] = [];
-          if (map[cid].length < 2) map[cid].push(doc);
+    // Load crabs first so the page renders immediately
+    base44.entities.Crab.filter({ is_deleted: false }, "full_name", 500)
+      .then(crbs => {
+        setCrabs(crbs);
+        setLoading(false);
+        // Then load supplementary data in the background
+        return Promise.all([
+          base44.entities.CrabDocument.list("-updated_date", 500),
+          base44.entities.CrabModule.list("created_date", 1000),
+        ]);
+      })
+      .then(([docs, mods]) => {
+        const map = {};
+        docs.filter(d => !d.is_deleted).forEach(doc => {
+          (doc.crab_ids || []).forEach(cid => {
+            if (!map[cid]) map[cid] = [];
+            if (map[cid].length < 2) map[cid].push(doc);
+          });
         });
+        setDocsByCrab(map);
+        const modMap = {};
+        mods.forEach(m => {
+          if (!modMap[m.crab_id]) modMap[m.crab_id] = [];
+          modMap[m.crab_id].push(m.module_type);
+        });
+        setModulesByCrab(modMap);
       });
-      setDocsByCrab(map);
-      // Build map: crabId → array of module_types
-      const modMap = {};
-      mods.forEach(m => {
-        if (!modMap[m.crab_id]) modMap[m.crab_id] = [];
-        modMap[m.crab_id].push(m.module_type);
-      });
-      setModulesByCrab(modMap);
-    }).finally(() => setLoading(false));
   }, []);
 
   const filtered = crabs.filter(c => {
