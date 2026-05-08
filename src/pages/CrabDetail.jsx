@@ -414,7 +414,7 @@ export default function CrabDetail() {
             </div>
 
             {/* All addresses in tiles grid */}
-             <div className="grid grid-cols-3 gap-3">
+             <div className="grid grid-cols-2 gap-3">
                {/* Residential Tile */}
                <div className={`border rounded-lg p-3 transition-colors ${editingAddressIdx === "residential" ? 'bg-muted/40 border-primary' : 'bg-muted/20'}`}>
                  {editingAddressIdx === "residential" ? (
