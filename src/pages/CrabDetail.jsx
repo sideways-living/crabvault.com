@@ -303,7 +303,22 @@ export default function CrabDetail() {
                     <Label className="text-xs">Date of Birth</Label>
                     <Input type="date" className="mt-1" value={crab.date_of_birth || ""} onChange={set("date_of_birth")} />
                   </div>
-
+                  <div>
+                    <Label className="text-xs">Status</Label>
+                    <Select value={crab.status || "__none__"} onValueChange={v => setCrab(c => ({ ...c, status: v === "__none__" ? "" : v }))}>
+                      <SelectTrigger className="mt-1"><SelectValue placeholder="No status" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__none__">No status</SelectItem>
+                        <SelectItem value="inactive">Inactive</SelectItem>
+                        <SelectItem value="banned">Banned</SelectItem>
+                        <SelectItem value="watch">Watch</SelectItem>
+                        <SelectItem value="nathan">Nathan</SelectItem>
+                        <SelectItem value="tony">Tony</SelectItem>
+                        <SelectItem value="nigel">Nigel</SelectItem>
+                        <SelectItem value="ben">Ben</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <div>
                     <Label className="text-xs">Main Phone</Label>
                     <Input className="mt-1" value={crab.phone || ""} onChange={set("phone")} onBlur={handlePhoneBlur} placeholder="+61 XXX XXX XXX" />
