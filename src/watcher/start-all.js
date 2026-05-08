@@ -10,8 +10,10 @@
 const { spawn } = require('child_process');
 const path = require('path');
 
+const NODE = process.execPath; // full path to the node binary that's running this script
+
 function launch(script, prefix) {
-  const child = spawn('node', [path.join(__dirname, script)], {
+  const child = spawn(NODE, [path.join(__dirname, script)], {
     stdio: ['ignore', 'pipe', 'pipe'],
     env: process.env,
   });
