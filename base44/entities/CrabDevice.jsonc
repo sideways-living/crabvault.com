@@ -22,6 +22,10 @@
       "type": "string",
       "title": "Colour"
     },
+    "image_url": {
+      "type": "string",
+      "title": "Device Image URL"
+    },
     "used_for": {
       "type": "array",
       "title": "Used For (modules)",
