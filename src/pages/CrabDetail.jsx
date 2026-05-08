@@ -212,7 +212,26 @@ export default function CrabDetail() {
   const updateAdditionalAddress = (i, field, val) =>
     setCrab(c => ({ ...c, additional_addresses: c.additional_addresses.map((a, idx) => idx === i ? { ...a, [field]: val } : a) }));
   const removeAdditionalAddress = (i) =>
-    setCrab(c => ({ ...c, additional_addresses: c.additional_addresses.filter((_, idx) => idx !== i) }));
+    setCrab(c => ({ ...c, additional_addresses: c.additional_addresses.map((a, idx) => idx === i ? { ...a, is_old: true } : a) }));
+  const archiveResidentialAddress = () => {
+    setCrab(c => {
+      const oldEntry = {
+        label: "Old Residential",
+        address1: c.address1 || "",
+        address2: c.address2 || "",
+        suburb: c.suburb || "",
+        state: c.state || "",
+        postcode: c.postcode || "",
+        country: c.country || "Australia",
+        is_old: true,
+      };
+      return {
+        ...c,
+        address1: "", address2: "", suburb: "", state: "", postcode: "", country: "Australia",
+        additional_addresses: [...(c.additional_addresses || []), oldEntry],
+      };
+    });
+  };
 
   if (loading) return (
     <div className="flex justify-center py-16">
@@ -414,115 +433,159 @@ export default function CrabDetail() {
             </div>
 
             {/* All addresses in tiles grid */}
-             <div className="grid grid-cols-2 gap-3">
-               {/* Residential Tile */}
-               <div className={`border rounded-lg p-3 transition-colors ${editingAddressIdx === "residential" ? 'bg-muted/40 border-primary' : 'bg-muted/20'}`}>
-                 {editingAddressIdx === "residential" ? (
-                   <div className="space-y-2">
-                     <p className="font-medium text-xs">Residential</p>
-                     <Input placeholder="Address Line 1" className="h-7 text-xs" value={crab.address1 || ""} onChange={setTitle("address1")} autoFocus />
-                     <Input placeholder="Address Line 2" className="h-7 text-xs" value={crab.address2 || ""} onChange={setTitle("address2")} />
-                     <div className="grid grid-cols-2 gap-2">
-                       <Input placeholder="Suburb" className="h-7 text-xs" value={crab.suburb || ""} onChange={e => setCrab(c => ({ ...c, suburb: e.target.value.toUpperCase() }))} />
-                       <Select value={crab.state || ""} onValueChange={v => setCrab(c => ({ ...c, state: v }))}>
-                         <SelectTrigger className="h-7 text-xs"><SelectValue placeholder="State" /></SelectTrigger>
-                         <SelectContent>
-                           <SelectItem value="NSW">NSW</SelectItem>
-                           <SelectItem value="VIC">VIC</SelectItem>
-                           <SelectItem value="QLD">QLD</SelectItem>
-                           <SelectItem value="WA">WA</SelectItem>
-                           <SelectItem value="SA">SA</SelectItem>
-                           <SelectItem value="TAS">TAS</SelectItem>
-                           <SelectItem value="NT">NT</SelectItem>
-                           <SelectItem value="ACT">ACT</SelectItem>
-                         </SelectContent>
-                       </Select>
-                       <Input placeholder="Postcode" className="h-7 text-xs" value={crab.postcode || ""} onChange={set("postcode")} />
-                       <Input placeholder="Country" className="h-7 text-xs" value={crab.country || "Australia"} onChange={setTitle("country")} />
-                     </div>
-                     <div className="flex gap-2 pt-1">
-                       <Button size="sm" onClick={() => setEditingAddressIdx(null)} className="h-6 text-xs flex-1">Done</Button>
-                       <Button size="sm" variant="outline" onClick={() => setEditingAddressIdx(null)} className="h-6 text-xs flex-1">Cancel</Button>
-                     </div>
-                   </div>
-                 ) : (
-                   <div className="space-y-1">
-                     <div className="flex items-start justify-between gap-2">
-                       <p className="font-medium text-xs">Residential</p>
-                       <button onClick={() => setEditingAddressIdx("residential")} className="text-muted-foreground hover:text-foreground p-1 shrink-0"><Pencil className="h-3 w-3" /></button>
-                     </div>
-                     <div className="text-xs text-muted-foreground space-y-0.5">
-                       {crab.address1 && <p>{crab.address1}</p>}
-                       {crab.address2 && <p>{crab.address2}</p>}
-                       {(crab.suburb || crab.state || crab.postcode) && (
-                         <p>{[crab.suburb, crab.state, crab.postcode].filter(Boolean).join("  ")}</p>
-                       )}
-                       {crab.country && crab.country !== "Australia" && <p>{crab.country}</p>}
-                       {!crab.address1 && !crab.suburb && <p className="italic">No address</p>}
-                     </div>
-                   </div>
-                 )}
-               </div>
+            {(() => {
+              const activeAdditional = (crab.additional_addresses || []).filter(a => !a.is_old);
+              const oldAdditional = (crab.additional_addresses || []).filter(a => a.is_old);
+              const totalActive = 1 + activeAdditional.length; // residential + active additionals
+              const hasResidential = !!(crab.address1 || crab.suburb);
 
-            {/* Additional Address Tiles */}
-            {(crab.additional_addresses || []).map((addr, i) => (
-              <div key={i} className={`border rounded-lg p-3 transition-colors ${editingAddressIdx === i ? 'bg-muted/40 border-primary' : 'bg-muted/20'}`}>
-                {editingAddressIdx === i ? (
-                  <div className="space-y-2">
-                    <Input placeholder="Label" className="h-7 text-xs" value={addr.label} onChange={e => updateAdditionalAddress(i, "label", e.target.value)} autoFocus />
-                    <Input placeholder="Address Line 1" className="h-7 text-xs" value={addr.address1} onChange={e => updateAdditionalAddress(i, "address1", e.target.value)} />
-                    <Input placeholder="Address Line 2" className="h-7 text-xs" value={addr.address2} onChange={e => updateAdditionalAddress(i, "address2", e.target.value)} />
-                    <div className="grid grid-cols-2 gap-2">
-                      <Input placeholder="Suburb" className="h-7 text-xs" value={addr.suburb} onChange={e => updateAdditionalAddress(i, "suburb", e.target.value.toUpperCase())} />
-                      <Select value={addr.state || ""} onValueChange={v => updateAdditionalAddress(i, "state", v)}>
-                        <SelectTrigger className="h-7 text-xs"><SelectValue placeholder="State" /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="NSW">NSW</SelectItem>
-                          <SelectItem value="VIC">VIC</SelectItem>
-                          <SelectItem value="QLD">QLD</SelectItem>
-                          <SelectItem value="WA">WA</SelectItem>
-                          <SelectItem value="SA">SA</SelectItem>
-                          <SelectItem value="TAS">TAS</SelectItem>
-                          <SelectItem value="NT">NT</SelectItem>
-                          <SelectItem value="ACT">ACT</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <Input placeholder="Postcode" className="h-7 text-xs" value={addr.postcode} onChange={e => updateAdditionalAddress(i, "postcode", e.target.value)} />
-                      <Input placeholder="Country" className="h-7 text-xs" value={addr.country} onChange={e => updateAdditionalAddress(i, "country", e.target.value)} />
-                    </div>
-                    <div className="flex gap-2 pt-1">
-                      <Button size="sm" onClick={() => setEditingAddressIdx(null)} className="h-6 text-xs flex-1">Done</Button>
-                      <Button size="sm" variant="outline" onClick={() => setEditingAddressIdx(null)} className="h-6 text-xs flex-1">Cancel</Button>
-                    </div>
+              return (
+                <div className="grid grid-cols-2 gap-3">
+                  {/* Residential Tile */}
+                  <div className={`border rounded-lg p-3 transition-colors ${editingAddressIdx === "residential" ? 'bg-muted/40 border-primary' : 'bg-muted/20'}`}>
+                    {editingAddressIdx === "residential" ? (
+                      <div className="space-y-2">
+                        <p className="font-medium text-xs">Residential</p>
+                        <Input placeholder="Address Line 1" className="h-7 text-xs" value={crab.address1 || ""} onChange={setTitle("address1")} autoFocus />
+                        <Input placeholder="Address Line 2" className="h-7 text-xs" value={crab.address2 || ""} onChange={setTitle("address2")} />
+                        <div className="grid grid-cols-2 gap-2">
+                          <Input placeholder="Suburb" className="h-7 text-xs" value={crab.suburb || ""} onChange={e => setCrab(c => ({ ...c, suburb: e.target.value.toUpperCase() }))} />
+                          <Select value={crab.state || ""} onValueChange={v => setCrab(c => ({ ...c, state: v }))}>
+                            <SelectTrigger className="h-7 text-xs"><SelectValue placeholder="State" /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="NSW">NSW</SelectItem>
+                              <SelectItem value="VIC">VIC</SelectItem>
+                              <SelectItem value="QLD">QLD</SelectItem>
+                              <SelectItem value="WA">WA</SelectItem>
+                              <SelectItem value="SA">SA</SelectItem>
+                              <SelectItem value="TAS">TAS</SelectItem>
+                              <SelectItem value="NT">NT</SelectItem>
+                              <SelectItem value="ACT">ACT</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <Input placeholder="Postcode" className="h-7 text-xs" value={crab.postcode || ""} onChange={set("postcode")} />
+                          <Input placeholder="Country" className="h-7 text-xs" value={crab.country || "Australia"} onChange={setTitle("country")} />
+                        </div>
+                        <div className="flex gap-2 pt-1">
+                          <Button size="sm" onClick={() => setEditingAddressIdx(null)} className="h-6 text-xs flex-1">Done</Button>
+                          <Button size="sm" variant="outline" onClick={() => setEditingAddressIdx(null)} className="h-6 text-xs flex-1">Cancel</Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-1">
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="font-medium text-xs">Residential</p>
+                          <div className="flex gap-1 shrink-0">
+                            <button onClick={() => setEditingAddressIdx("residential")} className="text-muted-foreground hover:text-foreground p-1"><Pencil className="h-3 w-3" /></button>
+                            {totalActive > 1 && hasResidential && (
+                              <button onClick={() => { if (confirm("Archive this residential address? It will be saved as history.")) archiveResidentialAddress(); }} className="text-muted-foreground hover:text-destructive p-1"><Trash2 className="h-3 w-3" /></button>
+                            )}
+                          </div>
+                        </div>
+                        <div className="text-xs text-muted-foreground space-y-0.5">
+                          {crab.address1 && <p>{crab.address1}</p>}
+                          {crab.address2 && <p>{crab.address2}</p>}
+                          {(crab.suburb || crab.state || crab.postcode) && (
+                            <p>{[crab.suburb, crab.state, crab.postcode].filter(Boolean).join("  ")}</p>
+                          )}
+                          {crab.country && crab.country !== "Australia" && <p>{crab.country}</p>}
+                          {!hasResidential && <p className="italic">No address</p>}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                ) : (
-                  <div className="space-y-1">
-                    <div className="flex items-start justify-between gap-2">
-                      <p className="font-medium text-xs">{addr.label || <span className="text-muted-foreground italic">No label</span>}</p>
-                      <div className="flex gap-1 shrink-0">
-                        <button onClick={() => setEditingAddressIdx(i)} className="text-muted-foreground hover:text-foreground p-1"><Pencil className="h-3 w-3" /></button>
-                        <button onClick={() => { if (confirm(`Delete address "${addr.label || 'Untitled'}"?`)) removeAdditionalAddress(i); }} className="text-muted-foreground hover:text-destructive p-1"><Trash2 className="h-3 w-3" /></button>
+
+                  {/* Active Additional Address Tiles */}
+                  {(crab.additional_addresses || []).map((addr, i) => {
+                    if (addr.is_old) return null;
+                    return (
+                      <div key={i} className={`border rounded-lg p-3 transition-colors ${editingAddressIdx === i ? 'bg-muted/40 border-primary' : 'bg-muted/20'}`}>
+                        {editingAddressIdx === i ? (
+                          <div className="space-y-2">
+                            <Input placeholder="Label" className="h-7 text-xs" value={addr.label} onChange={e => updateAdditionalAddress(i, "label", e.target.value)} autoFocus />
+                            <Input placeholder="Address Line 1" className="h-7 text-xs" value={addr.address1} onChange={e => updateAdditionalAddress(i, "address1", e.target.value)} />
+                            <Input placeholder="Address Line 2" className="h-7 text-xs" value={addr.address2} onChange={e => updateAdditionalAddress(i, "address2", e.target.value)} />
+                            <div className="grid grid-cols-2 gap-2">
+                              <Input placeholder="Suburb" className="h-7 text-xs" value={addr.suburb} onChange={e => updateAdditionalAddress(i, "suburb", e.target.value.toUpperCase())} />
+                              <Select value={addr.state || ""} onValueChange={v => updateAdditionalAddress(i, "state", v)}>
+                                <SelectTrigger className="h-7 text-xs"><SelectValue placeholder="State" /></SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="NSW">NSW</SelectItem>
+                                  <SelectItem value="VIC">VIC</SelectItem>
+                                  <SelectItem value="QLD">QLD</SelectItem>
+                                  <SelectItem value="WA">WA</SelectItem>
+                                  <SelectItem value="SA">SA</SelectItem>
+                                  <SelectItem value="TAS">TAS</SelectItem>
+                                  <SelectItem value="NT">NT</SelectItem>
+                                  <SelectItem value="ACT">ACT</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <Input placeholder="Postcode" className="h-7 text-xs" value={addr.postcode} onChange={e => updateAdditionalAddress(i, "postcode", e.target.value)} />
+                              <Input placeholder="Country" className="h-7 text-xs" value={addr.country} onChange={e => updateAdditionalAddress(i, "country", e.target.value)} />
+                            </div>
+                            <div className="flex gap-2 pt-1">
+                              <Button size="sm" onClick={() => setEditingAddressIdx(null)} className="h-6 text-xs flex-1">Done</Button>
+                              <Button size="sm" variant="outline" onClick={() => setEditingAddressIdx(null)} className="h-6 text-xs flex-1">Cancel</Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="space-y-1">
+                            <div className="flex items-start justify-between gap-2">
+                              <p className="font-medium text-xs">{addr.label || <span className="text-muted-foreground italic">No label</span>}</p>
+                              <div className="flex gap-1 shrink-0">
+                                <button onClick={() => setEditingAddressIdx(i)} className="text-muted-foreground hover:text-foreground p-1"><Pencil className="h-3 w-3" /></button>
+                                {totalActive > 1 && (
+                                  <button onClick={() => { if (confirm(`Archive "${addr.label || 'this address'}"? It will be saved as history.`)) removeAdditionalAddress(i); }} className="text-muted-foreground hover:text-destructive p-1"><Trash2 className="h-3 w-3" /></button>
+                                )}
+                              </div>
+                            </div>
+                            <div className="text-xs text-muted-foreground space-y-0.5">
+                              {addr.address1 && <p>{addr.address1}</p>}
+                              {addr.address2 && <p>{addr.address2}</p>}
+                              {(addr.suburb || addr.state || addr.postcode) && <p>{[addr.suburb, addr.state, addr.postcode].filter(Boolean).join("  ")}</p>}
+                              {addr.country && addr.country !== "Australia" && <p>{addr.country}</p>}
+                              {!addr.address1 && !addr.suburb && <p className="italic text-muted-foreground">No address</p>}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+
+                  {/* Add new address tile */}
+                  <button onClick={addAdditionalAddress} className="border border-dashed rounded-lg p-3 flex items-center justify-center gap-1.5 text-xs text-muted-foreground hover:text-primary hover:border-primary transition-colors">
+                    <Plus className="h-3.5 w-3.5" /> Add Address
+                  </button>
+
+                  {/* Old / archived address tiles */}
+                  {oldAdditional.length > 0 && (
+                    <div className="col-span-2 border-t pt-3 space-y-2">
+                      <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Address History</p>
+                      <div className="grid grid-cols-2 gap-3">
+                        {(crab.additional_addresses || []).map((addr, i) => {
+                          if (!addr.is_old) return null;
+                          return (
+                            <div key={i} className="border rounded-lg p-3 bg-muted/10 opacity-70">
+                              <div className="flex items-start justify-between gap-2 mb-1">
+                                <p className="font-medium text-xs text-muted-foreground">{addr.label || "Old Address"}</p>
+                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground border">old</span>
+                              </div>
+                              <div className="text-xs text-muted-foreground space-y-0.5">
+                                {addr.address1 && <p>{addr.address1}</p>}
+                                {addr.address2 && <p>{addr.address2}</p>}
+                                {(addr.suburb || addr.state || addr.postcode) && <p>{[addr.suburb, addr.state, addr.postcode].filter(Boolean).join("  ")}</p>}
+                                {addr.country && addr.country !== "Australia" && <p>{addr.country}</p>}
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
-                    <div className="text-xs text-muted-foreground space-y-0.5">
-                      {addr.address1 && <p>{addr.address1}</p>}
-                      {addr.address2 && <p>{addr.address2}</p>}
-                      {(addr.suburb || addr.state || addr.postcode) && <p>{[addr.suburb, addr.state, addr.postcode].filter(Boolean).join("  ")}</p>}
-                      {addr.country && addr.country !== "Australia" && <p>{addr.country}</p>}
-                      {!addr.address1 && !addr.suburb && <p className="italic text-muted-foreground">No address</p>}
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
+                  )}
+                </div>
+              );
+            })()}
 
-            {/* Add new address tile */}
-            {(crab.additional_addresses || []).length < 2 && (
-              <button onClick={addAdditionalAddress} className="border border-dashed rounded-lg p-3 flex items-center justify-center gap-1.5 text-xs text-muted-foreground hover:text-primary hover:border-primary transition-colors">
-                <Plus className="h-3.5 w-3.5" /> Add Address
-              </button>
-            )}
-            </div>
 
             {/* Mailing */}
             <div className="border-t pt-4">

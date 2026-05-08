@@ -134,6 +134,11 @@
           "country": {
             "type": "string",
             "title": "Country"
+          },
+          "is_old": {
+            "type": "boolean",
+            "title": "Archived (Old Address)",
+            "default": false
           }
         }
       }
