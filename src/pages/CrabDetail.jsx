@@ -35,7 +35,7 @@ export default function CrabDetail() {
     additional_addresses: [],
     mailing_same_as_residential: true,
     mailing_address1: "", mailing_address2: "", mailing_suburb: "", mailing_state: "", mailing_postcode: "", mailing_country: "Australia",
-    id_numbers: [], emergency_summary: "", notes: "", status: "nathan", tags: [],
+    id_numbers: [], emergency_summary: "", notes: "", status: "", tags: [],
   });
   const [documents, setDocuments] = useState([]);
   const [enabledModules, setEnabledModules] = useState([]);
@@ -135,6 +135,8 @@ export default function CrabDetail() {
   const PRIORITY_STATUSES = new Set(["nathan", "tony", "nigel", "ben"]);
   const activeWindow = PRIORITY_STATUSES.has(crab.status) ? 3 * 24 * 60 * 60 * 1000 : 7 * 24 * 60 * 60 * 1000;
   const isRecentlyActive = crab.updated_date && (Date.now() - new Date(crab.updated_date).getTime()) < activeWindow;
+  // A new profile with no status assigned is considered "active" if created within 7 days
+  const isNewUnassigned = !crab.status && crab.created_date && (Date.now() - new Date(crab.created_date).getTime()) < 7 * 24 * 60 * 60 * 1000;
 
   const handleSave = async () => {
     if (!crab.surname?.trim()) { toast.error("Surname is required"); return; }
@@ -301,23 +303,7 @@ export default function CrabDetail() {
                     <Label className="text-xs">Date of Birth</Label>
                     <Input type="date" className="mt-1" value={crab.date_of_birth || ""} onChange={set("date_of_birth")} />
                   </div>
-                  {creating && (
-                  <div>
-                    <Label className="text-xs">Status</Label>
-                    <Select value={crab.status} onValueChange={v => setCrab(c => ({ ...c, status: v }))}>
-                      <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="inactive">Inactive</SelectItem>
-                        <SelectItem value="banned">Banned</SelectItem>
-                        <SelectItem value="watch">Watch</SelectItem>
-                        <SelectItem value="nathan">Nathan</SelectItem>
-                        <SelectItem value="tony">Tony</SelectItem>
-                        <SelectItem value="nigel">Nigel</SelectItem>
-                        <SelectItem value="ben">Ben</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  )}
+
                   <div>
                     <Label className="text-xs">Main Phone</Label>
                     <Input className="mt-1" value={crab.phone || ""} onChange={set("phone")} onBlur={handlePhoneBlur} placeholder="+61 XXX XXX XXX" />
@@ -387,16 +373,18 @@ export default function CrabDetail() {
               </div>
               {/* Row 2: Status selector + active badge */}
               <div className="flex items-center gap-1.5">
-                <Select value={crab.status || "nathan"} onValueChange={async v => {
-                  setCrab(c => ({ ...c, status: v }));
+                <Select value={crab.status || "__none__"} onValueChange={async v => {
+                  const newStatus = v === "__none__" ? "" : v;
+                  setCrab(c => ({ ...c, status: newStatus }));
                   if (!creating) {
-                    await base44.entities.Crab.update(id, { status: v });
+                    await base44.entities.Crab.update(id, { status: newStatus });
                   }
                 }}>
-                  <SelectTrigger className={`h-6 text-xs font-medium px-2 py-0 rounded-full border gap-1 shadow-none focus:ring-0 capitalize w-auto ${STATUS_COLORS[crab.status] || STATUS_COLORS.inactive}`}>
-                    <SelectValue />
+                  <SelectTrigger className={`h-6 text-xs font-medium px-2 py-0 rounded-full border gap-1 shadow-none focus:ring-0 capitalize w-auto ${STATUS_COLORS[crab.status] || "text-muted-foreground bg-muted border-border"}`}>
+                    <SelectValue placeholder="No status" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="__none__">No status</SelectItem>
                     <SelectItem value="inactive">Inactive</SelectItem>
                     <SelectItem value="banned">Banned</SelectItem>
                     <SelectItem value="watch">Watch</SelectItem>
@@ -406,7 +394,7 @@ export default function CrabDetail() {
                     <SelectItem value="ben">Ben</SelectItem>
                   </SelectContent>
                 </Select>
-                {isRecentlyActive && (
+                {(isRecentlyActive || isNewUnassigned) && (
                   <span className="text-xs font-medium px-2 py-0.5 rounded-full border text-emerald-700 bg-emerald-50 border-emerald-200">
                     active
                   </span>

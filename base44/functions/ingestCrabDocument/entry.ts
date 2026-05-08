@@ -78,7 +78,7 @@ async function findOrCreateCrab(db, { firstName, middleName, surname }) {
       middle_name: middleName,
       surname: surname,
       full_name: fullName,
-      status: 'active',
+      status: '',
       aliases: [],
       tags: [],
       id_numbers: [],
