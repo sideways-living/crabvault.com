@@ -140,7 +140,7 @@ function DeviceRow({ device, onEdit, onDelete }) {
       <div className="flex items-start gap-3">
         {/* Image */}
         {device.image_url ? (
-          <img src={device.image_url} alt="Device" className="w-14 h-14 object-cover rounded-lg border shrink-0" />
+          <img src={device.image_url} alt="Device" className="w-14 h-14 object-contain rounded-lg border shrink-0 bg-white" />
         ) : (
           <div className="w-14 h-14 rounded-lg border bg-muted/60 flex items-center justify-center shrink-0">
             <Smartphone className="h-5 w-5 text-muted-foreground" />
