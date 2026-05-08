@@ -28,9 +28,14 @@ function normStr(s) {
 
 /**
  * Find-or-create a Crab profile by name.
- * Searches for existing profiles matching surname + firstName + middleName.
- * If multiple exist (race duplicates), merges them into the oldest and cleans up.
- * Returns { crabId, crabName, isNew }
+ * Matching rules:
+ * 1. Exact match on first + middle + surname → use it.
+ * 2. If incoming has NO middle name: find crabs with same first + surname (any middle name).
+ *    - Exactly one match → use it (the middle name just wasn't in the document).
+ *    - Multiple matches → leave crab_ids blank (needs_review), return { crabId: null, ambiguous: true }.
+ * 3. No match at all → create new profile.
+ * If multiple exact duplicates exist (race condition), merge into oldest.
+ * Returns { crabId, crabName, isNew, ambiguous }
  */
 async function findOrCreateCrab(db, { firstName, middleName, surname }) {
   const fullName = buildFullName(firstName, middleName, surname);
@@ -38,7 +43,7 @@ async function findOrCreateCrab(db, { firstName, middleName, surname }) {
   // Search by surname (most selective field available)
   const matches = await db.entities.Crab.filter({ surname: surname, is_deleted: false });
 
-  // Filter to exact name match
+  // Filter to exact name match (all three fields must match)
   const exact = matches.filter(c =>
     normStr(c.first_name) === normStr(firstName) &&
     normStr(c.middle_name) === normStr(middleName) &&
@@ -46,7 +51,28 @@ async function findOrCreateCrab(db, { firstName, middleName, surname }) {
   );
 
   if (exact.length === 0) {
-    // No existing profile — create one
+    // No exact match — if we have no middle name, try partial match (first + surname only)
+    if (!middleName) {
+      const partial = matches.filter(c =>
+        normStr(c.first_name) === normStr(firstName) &&
+        normStr(c.surname) === normStr(surname)
+      );
+
+      if (partial.length === 1) {
+        // Unambiguous partial match — use existing profile
+        const keeper = partial[0];
+        console.log(`✅  Partial name match (no middle name in doc) → using existing Crab: ${keeper.full_name} (${keeper.id})`);
+        return { crabId: keeper.id, crabName: keeper.full_name || fullName, isNew: false, ambiguous: false };
+      }
+
+      if (partial.length > 1) {
+        // Ambiguous — multiple crabs match first + surname, can't determine which one
+        console.log(`⚠️  Ambiguous partial match for ${firstName} ${surname} — ${partial.length} candidates, leaving unassigned for review`);
+        return { crabId: null, crabName: fullName, isNew: false, ambiguous: true };
+      }
+    }
+
+    // No match at all — create a new profile
     const newCrab = await db.entities.Crab.create({
       first_name: firstName,
       middle_name: middleName,
@@ -60,7 +86,7 @@ async function findOrCreateCrab(db, { firstName, middleName, surname }) {
       is_deleted: false,
     });
     console.log(`✅  Created new Crab profile: ${fullName} (${newCrab.id})`);
-    return { crabId: newCrab.id, crabName: fullName, isNew: true };
+    return { crabId: newCrab.id, crabName: fullName, isNew: true, ambiguous: false };
   }
 
   // Sort by created_date ascending — keep the oldest
@@ -111,7 +137,7 @@ async function findOrCreateCrab(db, { firstName, middleName, surname }) {
   }
 
   console.log(`✅  Using existing Crab profile: ${fullName} (${keeper.id})`);
-  return { crabId: keeper.id, crabName: keeper.full_name || fullName, isNew: false };
+  return { crabId: keeper.id, crabName: keeper.full_name || fullName, isNew: false, ambiguous: false };
 }
 
 Deno.serve(async (req) => {
@@ -227,7 +253,7 @@ Return JSON with: first_name, middle_name, surname, document_title, document_typ
       }
     }
 
-    let crabId, crabName, isNew;
+    let crabId, crabName, isNew, ambiguous;
 
     if (existingCrabId) {
       // Explicit crab_id provided — use directly
@@ -235,9 +261,10 @@ Return JSON with: first_name, middle_name, surname, document_title, document_typ
       crabId = existingCrabId;
       crabName = existing[0]?.full_name || surname;
       isNew = false;
+      ambiguous = false;
     } else {
       // Find-or-create with dedup/merge logic
-      ({ crabId, crabName, isNew } = await findOrCreateCrab(db, { firstName, middleName, surname }));
+      ({ crabId, crabName, isNew, ambiguous } = await findOrCreateCrab(db, { firstName, middleName, surname }));
     }
 
     // Build vault path: /crabs/Firstname Middlename SURNAME/documents/filename
@@ -305,10 +332,12 @@ Return JSON with: first_name, middle_name, surname, document_title, document_typ
       original_filename: canonicalFilename,
       file_type: fileType,
       file_size: file.size || 0,
-      crab_ids: [crabId],
+      crab_ids: crabId ? [crabId] : [],
       category,
-      processing_status: 'pending',
-      vault_path: versionedVaultPath,
+      // Ambiguous name match → force needs_review so user can assign the correct crab
+      processing_status: ambiguous ? 'needs_review' : 'pending',
+      notes: ambiguous ? `Ambiguous name match: "${buildFullName(firstName, middleName, surname)}" — multiple crab profiles found with the same first name and surname. Please assign the correct crab profile.` : undefined,
+      vault_path: crabId ? versionedVaultPath : '',
       ingress_deleted: false,
       synced_to_vault: false,
       version: newVersion,
@@ -322,8 +351,9 @@ Return JSON with: first_name, middle_name, surname, document_title, document_typ
       document_id: doc.id,
       crab_id: crabId,
       crab_name: crabName,
-      vault_path: versionedVaultPath,
+      vault_path: crabId ? versionedVaultPath : '',
       is_new_crab: isNew,
+      ambiguous_crab: ambiguous || false,
       version: newVersion,
       is_new_version: newVersion > 1,
     });
