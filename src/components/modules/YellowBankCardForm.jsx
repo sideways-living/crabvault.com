@@ -6,8 +6,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2 } from "lucide-react";
 
 function formatCardNumber(raw) {
-  const digits = raw.replace(/\D/g, "").slice(0, 16);
-  return digits.replace(/(.{4})/g, "$1 ").trim();
+  const chars = raw.toUpperCase().replace(/[^0-9X]/g, "").slice(0, 16);
+  return chars.replace(/(.{4})/g, "$1 ").trim();
 }
 
 function formatExpiry(raw) {
