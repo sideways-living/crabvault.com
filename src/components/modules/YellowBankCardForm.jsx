@@ -20,9 +20,13 @@ function accountLabel(acc) {
   return `${acc.account_type || "Account"} ${acc.account_number || ""}`.trim();
 }
 
+function isCreditCard(cardNumber) {
+  return (cardNumber || "").replace(/\s/g, "").startsWith("5523");
+}
+
 export default function YellowBankCardForm({ initial, onSave, onCancel, accounts = [] }) {
   const [form, setForm] = useState(
-    initial || { card_number: "", expiry: "", ccv: "", pin: "", linked_account_id: "" }
+    initial || { card_number: "", expiry: "", ccv: "", pin: "", linked_account_id: "", credit_limit: "" }
   );
   const [saving, setSaving] = useState(false);
 
@@ -75,6 +79,18 @@ export default function YellowBankCardForm({ initial, onSave, onCancel, accounts
             maxLength={6}
           />
         </div>
+        {isCreditCard(form.card_number) && (
+          <div className="col-span-3">
+            <Label className="text-xs">Credit Limit ($)</Label>
+            <Input
+              className="mt-1 font-mono"
+              placeholder="e.g. 5000"
+              type="number"
+              value={form.credit_limit || ""}
+              onChange={e => setForm(f => ({ ...f, credit_limit: e.target.value ? Number(e.target.value) : "" }))}
+            />
+          </div>
+        )}
         {accounts.length > 0 && (
           <div className="col-span-3">
             <Label className="text-xs">Linked Account</Label>

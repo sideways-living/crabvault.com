@@ -26,6 +26,10 @@
       "type": "string",
       "title": "PIN"
     },
+    "credit_limit": {
+      "type": "number",
+      "title": "Credit Limit ($)"
+    },
     "is_digital": {
       "type": "boolean",
       "title": "Digital Card",
