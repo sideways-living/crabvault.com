@@ -433,7 +433,7 @@ export default function YellowBankModule({ crabId }) {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <KeyRound className="h-4 w-4 text-yellow-600" />
-              <h3 className="font-semibold text-sm">Yellow Bank Login &amp; Security</h3>
+              <h3 className="font-semibold text-sm">YellowBank Login &amp; Security</h3>
             </div>
             {!loginEditing && (
               <button onClick={() => setLoginEditing(true)} className="text-muted-foreground hover:text-foreground"><Pencil className="h-3.5 w-3.5" /></button>
@@ -610,7 +610,7 @@ export default function YellowBankModule({ crabId }) {
         {/* Contact Selection */}
         {crab && (
           <div className="bg-card border rounded-xl p-5 space-y-3">
-            <h3 className="font-semibold text-sm text-muted-foreground">Contact Information for Yellow Bank</h3>
+            <h3 className="font-semibold text-sm text-muted-foreground">Contact Information for YellowBank</h3>
             <div className="space-y-3">
               <div>
                 <Label className="text-xs mb-2 block">Phone Number</Label>
@@ -633,14 +633,14 @@ export default function YellowBankModule({ crabId }) {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Landmark className="h-4 w-4 text-yellow-600" />
-              <h3 className="font-semibold text-sm">Yellow Bank Accounts</h3>
+              <h3 className="font-semibold text-sm">YellowBank Accounts</h3>
             </div>
             <div className="flex gap-2">
               <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => { setAddingAccount(true); setAddingCard(false); setAddingPayid(false); }}>
-                <Plus className="h-3 w-3" /> Add Account
+                <Plus className="h-3 w-3" /> Account
               </Button>
               <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => { setAddingCard(true); setAddingAccount(false); setAddingPayid(false); }}>
-                <Plus className="h-3 w-3" /> Add Card
+                <Plus className="h-3 w-3" /> Card
               </Button>
               <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => { setAddingPayid(true); setAddingAccount(false); setAddingCard(false); setPayidForm({ payid: "", linked_account_id: "" }); }}>
                 <Plus className="h-3 w-3" /> PayID
