@@ -135,8 +135,14 @@ function CardRow({ card, editing, accounts, onEdit, onDelete, onSave, onCancel, 
                   {showPin ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
                 </button>
               </div>
-              {/* Linked Account */}
-              {accounts.length > 0 && (
+              {/* Linked Account or Credit Limit */}
+              {(card.card_number || "").replace(/\s/g, "").startsWith("5523") ? (
+                card.credit_limit ? (
+                  <div className="flex items-center gap-1.5 pl-[22px] text-xs text-muted-foreground">
+                    <span>Credit Limit: ${card.credit_limit.toLocaleString()}</span>
+                  </div>
+                ) : null
+              ) : accounts.length > 0 && (
                 <div className="pl-0">
                   <Select
                     value={card.linked_account_id || "__none__"}

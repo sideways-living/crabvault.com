@@ -79,7 +79,7 @@ export default function YellowBankCardForm({ initial, onSave, onCancel, accounts
             maxLength={6}
           />
         </div>
-        {isCreditCard(form.card_number) && (
+        {isCreditCard(form.card_number) ? (
           <div className="col-span-3">
             <Label className="text-xs">Credit Limit ($)</Label>
             <Input
@@ -90,8 +90,7 @@ export default function YellowBankCardForm({ initial, onSave, onCancel, accounts
               onChange={e => setForm(f => ({ ...f, credit_limit: e.target.value ? Number(e.target.value) : "" }))}
             />
           </div>
-        )}
-        {accounts.length > 0 && (
+        ) : accounts.length > 0 && (
           <div className="col-span-3">
             <Label className="text-xs">Linked Account</Label>
             <Select
