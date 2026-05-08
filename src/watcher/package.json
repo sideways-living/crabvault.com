@@ -1,11 +1,11 @@
 {
   "name": "crabvault-watcher",
-  "version": "1.0.0",
-  "description": "Local folder watcher that auto-uploads files to CrabVault",
+  "version": "2.0.0",
+  "description": "CrabVault local folder watcher and vault sync — macOS",
   "main": "watch-crab.js",
   "scripts": {
     "start": "node watch-crab.js",
     "sync": "node sync-to-vault.js",
-    "start:all": "node watch-crab.js & node sync-to-vault.js"
+    "start:all": "node start-all.js"
   }
 }

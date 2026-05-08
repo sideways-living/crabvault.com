@@ -10,10 +10,17 @@
  *   3. node sync-to-vault.js
  *
  * Required .env vars:
- *   INGEST_URL        - same base URL as watch.js (e.g. https://your-app.base44.app/api/functions)
- *   INGEST_API_KEY    - same API key
+ *   CRAB_INGEST_URL   - e.g. https://your-app.base44.app/api/functions/ingestCrabDocument
+ *   INGEST_API_KEY    - same API key as the watcher
  *   VAULT_PATH        - absolute path to your unlocked Cryptomator vault folder
+ *                       On Mac: /Volumes/YourVaultName  (shown in Cryptomator after unlocking)
  *   POLL_INTERVAL_MS  - optional, default 60000 (1 minute)
+ *
+ * Mac setup:
+ *   1. Open Cryptomator and unlock your vault
+ *   2. Note the mount path shown (e.g. /Volumes/CrabVault)
+ *   3. Set VAULT_PATH=/Volumes/CrabVault in .env
+ *   4. node sync-to-vault.js  (or: npm run sync)
  */
 
 const fs   = require('fs');
@@ -140,8 +147,13 @@ async function sendHeartbeat(currentFile = null, pendingCount = 0) {
 }
 
 function sanitizeName(name) {
-  // Remove characters not allowed in most filesystems
-  return name.replace(/[<>:"/\\|?*\x00-\x1F]/g, '_').trim();
+  // macOS (APFS/HFS+) only forbids ':' and '/' in filenames
+  // Also strip leading dots to avoid hidden files, and trim spaces
+  return name
+    .replace(/[:/]/g, '-')
+    .replace(/[\x00-\x1F]/g, '')
+    .replace(/^\.+/, '')
+    .trim();
 }
 
 async function syncDocument(doc) {

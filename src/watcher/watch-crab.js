@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 /* eslint-disable no-undef */
 /**
- * CrabVault Local Folder Watcher
+ * CrabVault Local Folder Watcher  (macOS)
  * Watches a folder for new files and ingests them into CrabVault automatically.
  *
- * Setup:
+ * Setup (Mac):
  *   1. cd watcher
- *   2. npm install  (already done if you used the other watcher)
- *   3. Copy .env to .env (or add these vars to your existing .env):
- *        CRAB_WATCH_FOLDER=/path/to/your/drop/folder
+ *   2. npm install
+ *   3. Create a .env file (copy .env.example):
+ *        CRAB_WATCH_FOLDER=/Users/yourname/Desktop/CrabDrop
  *        CRAB_INGEST_URL=https://your-app.base44.app/api/functions/ingestCrabDocument
  *        INGEST_API_KEY=your_api_key
  *
@@ -18,21 +18,24 @@
  *        CRAB_DEFAULT_MIDDLE_NAME=
  *        CRAB_DEFAULT_ID=   # if set, links to existing crab instead of creating
  *
- *        # Optional: move file after upload (leave blank to keep in place)
- *        CRAB_MOVE_AFTER_UPLOAD=
- *
  *   4. node watch-crab.js
+ *      (or: npm start)
+ *
+ * Cryptomator on Mac:
+ *   - Unlock your vault in Cryptomator first
+ *   - The vault mounts at /Volumes/VaultName/  (shown in Cryptomator app)
+ *   - Set VAULT_PATH=/Volumes/YourVaultName in .env for the sync script
  *
  * File naming convention (auto-parsed if CRAB_DEFAULT_SURNAME is not set):
  *   Option A — Subfolder per crab (folder name parsed):
- *     /drop/John SMITH/document.pdf
- *     /drop/John Michael SMITH/document.pdf
+ *     /CrabDrop/John SMITH/document.pdf
+ *     /CrabDrop/John Michael SMITH/document.pdf
  *
  *   Option B — Flat files with crab name embedded in filename (separator " - "):
- *     /drop/John SMITH - document.pdf
- *     /drop/John Michael SMITH - document.pdf
- *     /drop/SMITH John - document.pdf
- *     /drop/SMITH, John Michael - document.pdf
+ *     /CrabDrop/John SMITH - document.pdf
+ *     /CrabDrop/John Michael SMITH - document.pdf
+ *     /CrabDrop/SMITH John - document.pdf
+ *     /CrabDrop/SMITH, John Michael - document.pdf
  *
  *   In both cases, the last word of the name portion is treated as the surname.
  *
@@ -67,6 +70,12 @@ const HEARTBEAT_URL       = process.env.CRAB_HEARTBEAT_URL || '';
 const HEARTBEAT_INTERVAL  = parseInt(process.env.HEARTBEAT_INTERVAL_MS || '60000', 10);
 
 const SUPPORTED = ['.pdf', '.docx', '.xlsx', '.txt', '.jpg', '.jpeg', '.png', '.heic', '.psd'];
+
+// macOS metadata files to always ignore
+const MAC_IGNORE = new Set(['.DS_Store', '.localized', 'Thumbs.db', 'desktop.ini']);
+function isMacJunk(filename) {
+  return MAC_IGNORE.has(filename) || filename.startsWith('._') || filename.startsWith('__MACOSX');
+}
 
 if (!WATCH_FOLDER || !INGEST_URL || !API_KEY) {
   console.error('❌  Missing required env vars: CRAB_WATCH_FOLDER, CRAB_INGEST_URL, INGEST_API_KEY');
@@ -256,6 +265,7 @@ async function poll() {
       try { subFiles = fs.readdirSync(entryPath); } catch { continue; }
 
       for (const filename of subFiles) {
+        if (isMacJunk(filename)) continue;
         const logKey = `${entry}/${filename}`;
         if (uploadedFiles.has(logKey)) continue;
         const ext = path.extname(filename).toLowerCase();
@@ -284,6 +294,7 @@ async function poll() {
 
     } else if (stat.isFile()) {
       const filename = entry;
+      if (isMacJunk(filename)) continue;
       if (uploadedFiles.has(filename)) continue;
       const ext = path.extname(filename).toLowerCase();
       if (!SUPPORTED.includes(ext)) { uploadedFiles.add(filename); continue; }
