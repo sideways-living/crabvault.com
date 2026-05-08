@@ -13,6 +13,12 @@ const AVAILABLE_MODULES = [
     description: "Banking accounts, cards & login",
     color: "bg-yellow-100 text-yellow-700 border-yellow-200",
   },
+  {
+    key: "devices",
+    label: "Devices",
+    description: "Phones & devices linked to modules",
+    color: "bg-slate-100 text-slate-700 border-slate-200",
+  },
 ];
 
 export { AVAILABLE_MODULES };

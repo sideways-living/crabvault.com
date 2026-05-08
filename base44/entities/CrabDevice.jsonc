@@ -1,0 +1,40 @@
+{
+  "name": "CrabDevice",
+  "type": "object",
+  "properties": {
+    "crab_id": {
+      "type": "string",
+      "title": "Crab ID"
+    },
+    "brand": {
+      "type": "string",
+      "title": "Brand"
+    },
+    "model": {
+      "type": "string",
+      "title": "Model"
+    },
+    "imei": {
+      "type": "string",
+      "title": "IMEI"
+    },
+    "colour": {
+      "type": "string",
+      "title": "Colour"
+    },
+    "used_for": {
+      "type": "array",
+      "title": "Used For (modules)",
+      "items": {
+        "type": "string"
+      }
+    },
+    "notes": {
+      "type": "string",
+      "title": "Notes"
+    }
+  },
+  "required": [
+    "crab_id"
+  ]
+}

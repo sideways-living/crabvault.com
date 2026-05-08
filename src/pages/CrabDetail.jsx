@@ -12,6 +12,7 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import RedBankModule from "@/components/modules/RedBankModule";
 import YellowBankModule from "@/components/modules/YellowBankModule";
+import DevicesModule from "@/components/modules/DevicesModule";
 import ModuleSelector from "@/components/modules/ModuleSelector";
 import CollapsibleModuleCard from "@/components/modules/CollapsibleModuleCard";
 import CrabAIExtractPanel from "@/components/CrabAIExtractPanel";
@@ -360,6 +361,9 @@ export default function CrabDetail() {
                   {enabledModules.includes("yellowbank") && (
                     <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700 border border-yellow-200">YellowBank</span>
                   )}
+                  {enabledModules.includes("devices") && (
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">Devices</span>
+                  )}
                 </div>
               </div>
               {/* Row 2: Status selector + active badge */}
@@ -641,6 +645,14 @@ export default function CrabDetail() {
               badgeClass="bg-yellow-100 text-yellow-700 border-yellow-200"
             >
               <YellowBankModule crabId={id} />
+            </CollapsibleModuleCard>
+          )}
+          {!creating && enabledModules.includes("devices") && (
+            <CollapsibleModuleCard
+              label="Devices"
+              badgeClass="bg-slate-100 text-slate-700 border-slate-200"
+            >
+              <DevicesModule crabId={id} />
             </CollapsibleModuleCard>
           )}
         </div>
