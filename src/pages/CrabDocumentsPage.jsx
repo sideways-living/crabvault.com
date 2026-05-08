@@ -62,6 +62,9 @@ export default function CrabDocumentsPage() {
 
   useEffect(() => { load(); }, []);
 
+  const getCrabNames = (crabIds = []) =>
+    crabIds.map(id => crabs.find(c => c.id === id)?.full_name).filter(Boolean);
+
   const filtered = documents
     .filter(d => {
       const q = search.toLowerCase();
@@ -97,9 +100,6 @@ export default function CrabDocumentsPage() {
       if (aVal > bVal) return sortDir === "asc" ? 1 : -1;
       return 0;
     });
-
-  const getCrabNames = (crabIds = []) =>
-    crabIds.map(id => crabs.find(c => c.id === id)?.full_name).filter(Boolean);
 
   const handleDelete = async (doc, e) => {
     e.preventDefault();
