@@ -162,10 +162,10 @@ function CardRow({ card, editing, accounts, onEdit, onDelete, onSave, onCancel, 
                 </div>
               )}
             </div>
-            <div className="flex gap-1 shrink-0 ml-2">
-              <button onClick={onEdit} className="text-muted-foreground hover:text-foreground p-1"><Pencil className="h-3.5 w-3.5" /></button>
-              <button onClick={onDelete} className="text-muted-foreground hover:text-destructive p-1"><Trash2 className="h-3.5 w-3.5" /></button>
-            </div>
+            <div className="flex flex-col gap-0.5 shrink-0 ml-2">
+                      <button onClick={onEdit} className="text-muted-foreground hover:text-foreground p-1"><Pencil className="h-3.5 w-3.5" /></button>
+                      <button onClick={onDelete} className="text-muted-foreground hover:text-destructive p-1"><Trash2 className="h-3.5 w-3.5" /></button>
+                    </div>
           </div>
         </div>
       </div>
@@ -712,7 +712,7 @@ export default function YellowBankModule({ crabId }) {
                       </div>
                     )}
                   </div>
-                  <div className="flex gap-1 shrink-0 ml-2">
+                  <div className="flex flex-col gap-0.5 shrink-0 ml-2">
                     <button onClick={() => setEditingAccount(acc)} className="text-muted-foreground hover:text-foreground p-1"><Pencil className="h-3.5 w-3.5" /></button>
                     <button onClick={() => handleDeleteAccount(acc)} className="text-muted-foreground hover:text-destructive p-1"><Trash2 className="h-3.5 w-3.5" /></button>
                   </div>
@@ -772,7 +772,7 @@ export default function YellowBankModule({ crabId }) {
                           </div>
                         )}
                       </div>
-                      <div className="flex gap-1 shrink-0 ml-2">
+                      <div className="flex flex-col gap-0.5 shrink-0 ml-2">
                         <button onClick={() => { setEditingPayidIdx(idx); setPayidForm({ payid: p.payid, linked_account_id: p.linked_account_id || "" }); setAddingPayid(false); }} className="text-muted-foreground hover:text-foreground p-1"><Pencil className="h-3.5 w-3.5" /></button>
                         <button onClick={() => handleDeletePayid(idx)} className="text-muted-foreground hover:text-destructive p-1"><Trash2 className="h-3.5 w-3.5" /></button>
                       </div>
