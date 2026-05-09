@@ -394,9 +394,7 @@ export default function CrabDocumentDetail() {
     <div className="space-y-6 max-w-5xl">
       {/* Header */}
       <div className="flex items-start gap-4">
-        <Link to="/crab-documents">
-          <Button variant="ghost" size="icon" className="mt-0.5"><ArrowLeft className="h-4 w-4" /></Button>
-        </Link>
+        <Button variant="ghost" size="icon" className="mt-0.5" onClick={() => navigate(-1)}><ArrowLeft className="h-4 w-4" /></Button>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <Input

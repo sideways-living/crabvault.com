@@ -246,7 +246,7 @@ export default function CrabDetail() {
     <div className="max-w-5xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Link to="/crabs"><Button variant="ghost" size="icon"><ArrowLeft className="h-4 w-4" /></Button></Link>
+        <Button variant="ghost" size="icon" onClick={() => navigate(-1)}><ArrowLeft className="h-4 w-4" /></Button>
         <div className="flex-1">
           <h1 className="text-xl font-semibold">{creating ? "New Crab Profile" : (computedFullName || crab.full_name)}</h1>
           {!creating && <p className="text-xs text-muted-foreground">ID: {id}</p>}
