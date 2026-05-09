@@ -26,13 +26,14 @@ function isCreditCard(cardNumber) {
 
 export default function YellowBankCardForm({ initial, onSave, onCancel, accounts = [] }) {
   const [form, setForm] = useState(
-    initial || { card_number: "", expiry: "", ccv: "", pin: "", linked_account_id: "", credit_limit: "" }
+    initial ? { ...initial, credit_limit: initial.credit_limit ?? "" } : { card_number: "", expiry: "", ccv: "", pin: "", linked_account_id: "", credit_limit: "" }
   );
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
     setSaving(true);
-    await onSave(form);
+    const saveData = { ...form, credit_limit: form.credit_limit !== "" ? Number(form.credit_limit) : null };
+    await onSave(saveData);
     setSaving(false);
   };
 
