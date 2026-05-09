@@ -338,10 +338,10 @@ export default function RedBankModule({ crabId }) {
               <Label className="text-xs flex items-center gap-1"><Phone className="h-3 w-3" /> App PIN</Label>
               <Input
                 className="mt-1 font-mono"
-                placeholder="4 digits"
-                maxLength={4}
+                placeholder="4 or 6 digits"
+                maxLength={6}
                 value={loginEdit.redbank_app_pin}
-                onChange={e => { setLoginEdit(l => ({ ...l, redbank_app_pin: e.target.value.replace(/\D/g, "").slice(0, 4) })); setLoginDirty(true); }}
+                onChange={e => { setLoginEdit(l => ({ ...l, redbank_app_pin: e.target.value.replace(/\D/g, "").slice(0, 6) })); setLoginDirty(true); }}
               />
             </div>
             <div>
