@@ -106,6 +106,7 @@ function MetaRow({ label, value }) {
 export default function CrabDocumentDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const fromNeedsAttention = new URLSearchParams(window.location.search).get("from") === "needs-attention";
   const [doc, setDoc] = useState(null);
   const [crabs, setCrabs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -268,7 +269,10 @@ export default function CrabDocumentDetail() {
 
   const findNextPendingDoc = async (currentDocId) => {
     const allDocs = await base44.entities.CrabDocument.list("-created_date", 500);
-    const pending = allDocs.filter(d => !d.is_deleted && ["needs_review", "pending", "processing"].includes(d.processing_status) && d.id !== currentDocId);
+    const statuses = fromNeedsAttention
+      ? ["needs_review", "pending", "processing", "failed"]
+      : ["needs_review", "pending", "processing"];
+    const pending = allDocs.filter(d => !d.is_deleted && statuses.includes(d.processing_status) && d.id !== currentDocId);
     return pending.length > 0 ? pending[0].id : null;
   };
 
@@ -365,10 +369,10 @@ export default function CrabDocumentDetail() {
     setSaving(false);
 
     if (nextDocId) {
-      navigate(`/crab-documents/${nextDocId}`);
+      navigate(`/crab-documents/${nextDocId}${fromNeedsAttention ? "?from=needs-attention" : ""}`);
     } else {
       toast.success("All documents processed!");
-      navigate("/crab-documents");
+      navigate(fromNeedsAttention ? "/needs-attention" : "/crab-documents");
     }
   };
 

@@ -140,9 +140,7 @@ export default function NeedsAttentionPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Link to="/">
-            <Button variant="ghost" size="icon"><ArrowLeft className="h-4 w-4" /></Button>
-          </Link>
+          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}><ArrowLeft className="h-4 w-4" /></Button>
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">Needs Attention</h1>
             <p className="text-sm text-muted-foreground mt-0.5">
@@ -249,7 +247,7 @@ export default function NeedsAttentionPage() {
                           size="sm"
                           variant="ghost"
                           className="h-7 text-xs gap-1 px-2"
-                          onClick={() => navigate(`/crab-documents/${doc.id}`)}
+                          onClick={() => navigate(`/crab-documents/${doc.id}?from=needs-attention`)}
                         >
                           Review <ChevronRight className="h-3 w-3" />
                         </Button>
