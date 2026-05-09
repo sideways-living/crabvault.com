@@ -15,6 +15,7 @@ import CrabIngressPage from './pages/CrabIngressPage';
 import CrabDocumentDetail from './pages/CrabDocumentDetail';
 import CrabCheatSheet from './pages/CrabCheatSheet';
 import NeedsAttentionPage from './pages/NeedsAttentionPage';
+import WatcherStatus from './pages/WatcherStatus';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -51,6 +52,7 @@ const AuthenticatedApp = () => {
         <Route path="/markets" element={<MarketsPage />} />
         <Route path="/ingress" element={<CrabIngressPage />} />
         <Route path="/cheat-sheet" element={<CrabCheatSheet />} />
+        <Route path="/watcher-status" element={<WatcherStatus />} />
         <Route path="/needs-attention" element={<NeedsAttentionPage />} />
         <Route path="*" element={<PageNotFound />} />
       </Route>
