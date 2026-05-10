@@ -44,6 +44,18 @@ function accountLabel(acc) {
   return `${acc.account_type || "Account"} ${acc.account_number || ""}`.trim();
 }
 
+function formatPayid(value) {
+  const trimmed = value.trim();
+  if (trimmed.includes("@") || trimmed.includes(".")) return trimmed;
+  const digits = trimmed.replace(/[^\d]/g, "");
+  if (digits.length < 8) return trimmed;
+  let local = digits;
+  if (local.startsWith("61")) local = local.slice(2);
+  else if (local.startsWith("0")) local = local.slice(1);
+  if (local.length !== 9) return trimmed;
+  return `+61 ${local.slice(0, 3)} ${local.slice(3, 6)} ${local.slice(6)}`;
+}
+
 function PayidForm({ form, setForm, accounts, onSave, onCancel }) {
   return (
     <div className="space-y-2 p-3 bg-muted/30 rounded-lg border">
@@ -55,6 +67,7 @@ function PayidForm({ form, setForm, accounts, onSave, onCancel }) {
           placeholder="e.g. +61 412 345 678 or name@email.com"
           value={form.payid}
           onChange={e => setForm(f => ({ ...f, payid: e.target.value }))}
+          onBlur={e => setForm(f => ({ ...f, payid: formatPayid(f.payid) }))}
           onKeyDown={e => { if (e.key === "Enter") onSave(); if (e.key === "Escape") onCancel(); }}
         />
       </div>
