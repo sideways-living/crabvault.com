@@ -79,6 +79,10 @@
       "type": "string",
       "title": "AI Summary"
     },
+    "extracted_text": {
+      "type": "string",
+      "title": "Extracted Full Text"
+    },
     "tags": {
       "type": "array",
       "title": "Tags",
