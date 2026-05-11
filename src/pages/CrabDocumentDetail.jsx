@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Download, ExternalLink, FileText, Loader2, User, GitBranch, Plus, Save, Cpu, X } from "lucide-react";
+import { ArrowLeft, Download, ExternalLink, FileText, Loader2, User, GitBranch, Plus, Save, Cpu, X, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 const DEFAULT_CATEGORIES = [
@@ -267,6 +267,18 @@ export default function CrabDocumentDetail() {
     }
   };
 
+  const handleDeleteDuplicate = async () => {
+    if (!confirm("Delete this document as a duplicate? This cannot be undone.")) return;
+    await base44.entities.CrabDocument.update(doc.id, { is_deleted: true });
+    toast.success("Duplicate deleted");
+    const nextDocId = await findNextPendingDoc(doc.id);
+    if (nextDocId) {
+      navigate(`/crab-documents/${nextDocId}${fromNeedsAttention ? "?from=needs-attention" : ""}`);
+    } else {
+      navigate(fromNeedsAttention ? "/needs-attention" : "/crab-documents");
+    }
+  };
+
   const findNextPendingDoc = async (currentDocId) => {
     const allDocs = await base44.entities.CrabDocument.list("-created_date", 500);
     const statuses = fromNeedsAttention
@@ -418,6 +430,9 @@ export default function CrabDocumentDetail() {
           )}
         </div>
         <div className="flex gap-2 shrink-0 items-center">
+          <Button size="sm" variant="outline" onClick={handleDeleteDuplicate} className="gap-1.5 text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/30">
+            <Trash2 className="h-3.5 w-3.5" /> Duplicate
+          </Button>
           <Button size="sm" variant="outline" onClick={handleProcess} disabled={processing || saving} className="gap-1.5">
             {processing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Cpu className="h-3.5 w-3.5" />}
             {processing ? "Processing…" : "Process"}
