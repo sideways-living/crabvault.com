@@ -17,7 +17,7 @@ export default function CrabVaultDashboard() {
   useEffect(() => {
     Promise.all([
       base44.entities.Crab.filter({ is_deleted: false }, "-created_date", 500),
-      base44.entities.CrabDocument.filter({ is_deleted: false }, "-created_date", 200),
+      base44.entities.CrabDocument.filter({ is_deleted: false }, "-created_date", 500),
       base44.entities.TargetMarket.list("name", 200),
     ]).then(([crabs, docs, markets]) => {
       setRecentCrabs(crabs.slice(0, 6));

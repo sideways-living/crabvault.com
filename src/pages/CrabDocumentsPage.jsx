@@ -35,6 +35,8 @@ export default function CrabDocumentsPage() {
   const [uploadOpen, setUploadOpen] = useState(false);
   const [sortKey, setSortKey] = useState("created_date");
   const [sortDir, setSortDir] = useState("desc");
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 200;
 
   const handleSort = (key) => {
     if (sortKey === key) {
@@ -48,7 +50,7 @@ export default function CrabDocumentsPage() {
   const load = () => {
     setLoading(true);
     Promise.all([
-      base44.entities.CrabDocument.list("-created_date", 500),
+      base44.entities.CrabDocument.list("-created_date", 500, 0),
       base44.entities.Crab.list("full_name", 500),
     ]).then(([docs, crbs]) => {
       setDocuments(docs.filter(d => !d.is_deleted));
@@ -101,6 +103,9 @@ export default function CrabDocumentsPage() {
       return 0;
     });
 
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+
   const handleDelete = async (doc, e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -125,7 +130,7 @@ export default function CrabDocumentsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Documents</h1>
-          <p className="text-sm text-muted-foreground mt-1">{documents.length} document{documents.length !== 1 ? "s" : ""}</p>
+          <p className="text-sm text-muted-foreground mt-1">{filtered.length} document{filtered.length !== 1 ? "s" : ""}{filtered.length !== documents.length ? ` (filtered from ${documents.length})` : ""}</p>
         </div>
         <div className="flex gap-2">
           <Button onClick={handleProcessAll} variant="outline" className="gap-2">
@@ -180,7 +185,7 @@ export default function CrabDocumentsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {filtered.map(doc => (
+              {paginated.map(doc => (
                 <tr key={doc.id} className="hover:bg-muted/30 transition-colors">
                   <td className="px-4 py-3">
                     <Link to={`/crab-documents/${doc.id}`} className="font-medium hover:text-primary truncate block max-w-xs">
@@ -222,6 +227,14 @@ export default function CrabDocumentsPage() {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-3 pt-2">
+          <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>Previous</Button>
+          <span className="text-sm text-muted-foreground">Page {page} of {totalPages}</span>
+          <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}>Next</Button>
         </div>
       )}
 
