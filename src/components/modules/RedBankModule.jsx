@@ -7,7 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Plus, Pencil, Trash2, CreditCard, Landmark, Smartphone,
-  WalletCards, Lock, Link2, KeyRound, Users, Hash, Phone, BadgeCheck, AtSign, Check, ShieldCheck
+  WalletCards, Lock, LockOpen, Link2, KeyRound, Users, Hash, Phone, BadgeCheck, AtSign, Check, ShieldCheck,
+  Eye, EyeOff
 } from "lucide-react";
 import { getCardImage } from "@/lib/cardImages";
 import { toast } from "sonner";
@@ -31,6 +32,107 @@ function AccountSummary(accounts) {
     counts[t] = (counts[t] || 0) + 1;
   });
   return Object.entries(counts).map(([t, n]) => `${n} × ${t}`).join(", ");
+}
+
+// Shift digits 9-12 (positions 8-11 in the raw digit string) up by 1 (wrapping 9→0)
+function obfuscateCardNumber(cardNumber) {
+  if (!cardNumber) return cardNumber;
+  const digits = cardNumber.replace(/\D/g, "");
+  if (digits.length < 12) return cardNumber;
+  const shifted = digits.slice(0, 8) +
+    digits.slice(8, 12).replace(/\d/g, d => String((parseInt(d) + 1) % 10)) +
+    digits.slice(12);
+  return shifted.replace(/(.{4})/g, "$1 ").trim();
+}
+
+function CardRow({ card, editing, accounts, onEdit, onDelete, onSave, onCancel, onToggleFeature, onLinkAccount }) {
+  const [locked, setLocked] = useState(true);
+  const [showCcv, setShowCcv] = useState(false);
+  const [showPin, setShowPin] = useState(false);
+
+  if (editing) {
+    return <RedBankCardForm initial={card} onSave={onSave} onCancel={onCancel} accounts={accounts} />;
+  }
+
+  const displayCardNumber = locked ? obfuscateCardNumber(card.card_number) : (card.card_number || "—");
+  const cardImg = getCardImage(card.card_number);
+
+  return (
+    <div className="p-3 bg-muted/40 rounded-lg space-y-2">
+      <div className="flex gap-3">
+        {cardImg && (
+          <img src={cardImg.url} alt={cardImg.label} className="rounded-lg object-cover shrink-0 self-start" style={{ width: 108, height: 68 }} />
+        )}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between">
+            <div className="space-y-1">
+              {/* Card number with lock toggle */}
+              <div className="flex items-center gap-2 text-sm font-mono font-medium">
+                <CreditCard className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                <span>{displayCardNumber}</span>
+                <button onClick={() => setLocked(v => !v)} className="text-muted-foreground hover:text-foreground ml-1">
+                  {locked ? <Lock className="h-3.5 w-3.5" /> : <LockOpen className="h-3.5 w-3.5 text-amber-500" />}
+                </button>
+              </div>
+              {/* Expiry | CCV | PIN */}
+              <div className="flex items-center gap-1.5 pl-[22px] font-mono text-xs text-muted-foreground">
+                <span>Exp: {card.expiry || "—"}</span>
+                <span className="opacity-40">|</span>
+                <span>CCV: {showCcv ? (card.ccv || "—") : "•••"}</span>
+                <button onClick={() => setShowCcv(v => !v)} className="text-muted-foreground hover:text-foreground">
+                  {showCcv ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                </button>
+                <span className="opacity-40">|</span>
+                <span>PIN: {showPin ? (card.pin || "—") : "•••"}</span>
+                <button onClick={() => setShowPin(v => !v)} className="text-muted-foreground hover:text-foreground">
+                  {showPin ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                </button>
+              </div>
+              {/* Linked account */}
+              {accounts.length > 0 && (
+                <div className="pl-0">
+                  <Select
+                    value={card.linked_account_id || "__none__"}
+                    onValueChange={v => onLinkAccount(card, v === "__none__" ? "" : v)}
+                  >
+                    <SelectTrigger className="h-6 text-xs border-0 bg-transparent px-0 shadow-none text-muted-foreground gap-2 w-auto focus:ring-0">
+                      <Link2 className="h-3.5 w-3.5 shrink-0" />
+                      <SelectValue placeholder="No account linked" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none__">None</SelectItem>
+                      {accounts.map(acc => (
+                        <SelectItem key={acc.id} value={acc.id}>{accountLabel(acc)}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            </div>
+            <div className="flex flex-col gap-0.5 shrink-0 ml-2">
+              <button onClick={onEdit} className="text-muted-foreground hover:text-foreground p-1"><Pencil className="h-3.5 w-3.5" /></button>
+              <button onClick={onDelete} className="text-muted-foreground hover:text-destructive p-1"><Trash2 className="h-3.5 w-3.5" /></button>
+            </div>
+          </div>
+        </div>
+      </div>
+      {/* Feature checkboxes */}
+      <div className="flex flex-wrap gap-3 pl-1">
+        {CARD_FEATURE_DEFS.map(({ key, label, icon: FeatureIcon, tip }) => (
+          <Tooltip key={key}>
+            <TooltipTrigger asChild>
+              <label className="flex items-center gap-1.5 cursor-pointer select-none">
+                <input type="checkbox" checked={!!card[key]} onChange={() => onToggleFeature(card, key)} className="rounded" />
+                <FeatureIcon className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="text-xs text-muted-foreground">{label}</span>
+              </label>
+            </TooltipTrigger>
+            <TooltipContent><p className="text-xs max-w-xs">{tip}</p></TooltipContent>
+          </Tooltip>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 function cardLabel(card) {
@@ -552,75 +654,18 @@ export default function RedBankModule({ crabId }) {
               )}
 
               {cards.map(card => (
-                <div key={card.id}>
-                  {editingCard?.id === card.id ? (
-                    <RedBankCardForm initial={card} onSave={handleSaveCard} onCancel={() => setEditingCard(null)} accounts={accounts} />
-                  ) : (
-                    <div className="p-3 bg-muted/40 rounded-lg space-y-2">
-                      <div className="flex gap-3">
-                        {/* Card image */}
-                        {(() => { const img = getCardImage(card.card_number); return img ? (
-                          <img src={img.url} alt={img.label} className="rounded-lg object-cover shrink-0 self-start" style={{ width: 108, height: 68 }} />
-                        ) : null; })()}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between">
-                            <div className="space-y-0.5">
-                              <div className="flex items-center gap-2 text-sm font-mono font-medium">
-                                <CreditCard className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                                <span>{card.card_number || "—"}</span>
-                              </div>
-                              <div className="flex items-center gap-1.5 pl-[22px] text-xs text-muted-foreground font-mono">
-                                <span>Exp: {card.expiry || "—"}</span>
-                                <span className="opacity-40">|</span>
-                                <span>CCV: {card.ccv || "—"}</span>
-                                {card.pin && <><span className="opacity-40">|</span><span>PIN: {card.pin}</span></>}
-                              </div>
-                              {/* Linked account */}
-                              {accounts.length > 0 && (
-                                <div className="pl-0">
-                                  <Select
-                                    value={card.linked_account_id || "__none__"}
-                                    onValueChange={v => handleCardAccountLink(card, v === "__none__" ? "" : v)}
-                                  >
-                                    <SelectTrigger className="h-6 text-xs border-0 bg-transparent px-0 shadow-none text-muted-foreground gap-2 w-auto focus:ring-0">
-                                      <Link2 className="h-3.5 w-3.5 shrink-0" />
-                                      <SelectValue placeholder="No account linked" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="__none__">None</SelectItem>
-                                      {accounts.map(acc => (
-                                        <SelectItem key={acc.id} value={acc.id}>{accountLabel(acc)}</SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-                              )}
-                            </div>
-                            <div className="flex flex-col gap-0.5 shrink-0 ml-2">
-                              <button onClick={() => setEditingCard(card)} className="text-muted-foreground hover:text-foreground p-1"><Pencil className="h-3.5 w-3.5" /></button>
-                              <button onClick={() => handleDeleteCard(card)} className="text-muted-foreground hover:text-destructive p-1"><Trash2 className="h-3.5 w-3.5" /></button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      {/* Feature checkboxes */}
-                      <div className="flex flex-wrap gap-3 pl-1">
-                        {CARD_FEATURE_DEFS.map(({ key, label, icon: Icon, tip }) => (
-                          <Tooltip key={key}>
-                            <TooltipTrigger asChild>
-                              <label className="flex items-center gap-1.5 cursor-pointer select-none">
-                                <input type="checkbox" checked={!!card[key]} onChange={() => toggleCardFeature(card, key)} className="rounded" />
-                                <Icon className="h-3.5 w-3.5 text-muted-foreground" />
-                                <span className="text-xs text-muted-foreground">{label}</span>
-                              </label>
-                            </TooltipTrigger>
-                            <TooltipContent><p className="text-xs max-w-xs">{tip}</p></TooltipContent>
-                          </Tooltip>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
+                <CardRow
+                  key={card.id}
+                  card={card}
+                  editing={editingCard?.id === card.id}
+                  accounts={accounts}
+                  onEdit={() => setEditingCard(card)}
+                  onDelete={() => handleDeleteCard(card)}
+                  onSave={handleSaveCard}
+                  onCancel={() => setEditingCard(null)}
+                  onToggleFeature={toggleCardFeature}
+                  onLinkAccount={handleCardAccountLink}
+                />
               ))}
             </div>
           )}
