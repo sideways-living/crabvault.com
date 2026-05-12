@@ -11,6 +11,8 @@ Deno.serve(async (req) => {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  // createClientFromRequest + asServiceRole works for external (non-user) requests
+  // because the app ID is injected via the BASE44_APP_ID env var at runtime
   const base44 = createClientFromRequest(req);
   const db = base44.asServiceRole;
 
