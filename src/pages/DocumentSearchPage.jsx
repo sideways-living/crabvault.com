@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { Search, FileText, Loader2, Tag, CalendarDays, ScanText } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
+import { useToast } from "@/components/ui/use-toast";
 
 const CATEGORY_COLORS = {
   correspondence: "bg-blue-50 text-blue-700",
@@ -36,6 +36,7 @@ export default function DocumentSearchPage() {
   const [loading, setLoading] = useState(false);
   const [extractingId, setExtractingId] = useState(null);
   const inputRef = useRef(null);
+  const { toast } = useToast();
 
   const handleSearch = async (e) => {
     e?.preventDefault();
@@ -46,7 +47,7 @@ export default function DocumentSearchPage() {
       setResults(res.data.results);
       setTotal(res.data.total);
     } catch {
-      toast.error("Search failed");
+      toast({ title: "Search failed", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -56,9 +57,9 @@ export default function DocumentSearchPage() {
     setExtractingId(doc.id);
     try {
       await base44.functions.invoke("extractDocumentText", { document_id: doc.id });
-      toast.success("Text extracted — re-run your search to see updated results");
+      toast({ title: "Text extracted", description: "Re-run your search to see updated results" });
     } catch {
-      toast.error("Text extraction failed");
+      toast({ title: "Text extraction failed", variant: "destructive" });
     } finally {
       setExtractingId(null);
     }
