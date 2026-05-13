@@ -18,6 +18,87 @@
       "type": "string",
       "title": "Full Name (computed / display)"
     },
+    "canonical_name": {
+      "type": "string",
+      "title": "Canonical Name (normalised display name)"
+    },
+    "name_key": {
+      "type": "string",
+      "title": "Name Key (normalised full name for matching)"
+    },
+    "first_key": {
+      "type": "string",
+      "title": "First Name Key (normalised)"
+    },
+    "middle_key": {
+      "type": "string",
+      "title": "Middle Name Key (normalised)"
+    },
+    "surname_key": {
+      "type": "string",
+      "title": "Surname Key (normalised)"
+    },
+    "surname_first_key": {
+      "type": "string",
+      "title": "Surname-First Key (surname, firstname format)"
+    },
+    "folder_slug": {
+      "type": "string",
+      "title": "Folder Slug (current)"
+    },
+    "previous_folder_slugs": {
+      "type": "array",
+      "title": "Previous Folder Slugs",
+      "items": {
+        "type": "string"
+      }
+    },
+    "match_identifiers": {
+      "type": "object",
+      "title": "Match Identifiers",
+      "properties": {
+        "date_of_birth": {
+          "type": "string",
+          "title": "Date of Birth"
+        },
+        "phones": {
+          "type": "array",
+          "title": "Phones",
+          "items": {
+            "type": "string"
+          }
+        },
+        "emails": {
+          "type": "array",
+          "title": "Emails",
+          "items": {
+            "type": "string"
+          }
+        },
+        "addresses": {
+          "type": "array",
+          "title": "Addresses",
+          "items": {
+            "type": "string"
+          }
+        },
+        "id_numbers": {
+          "type": "array",
+          "title": "ID Numbers",
+          "items": {
+            "type": "object",
+            "properties": {
+              "label": {
+                "type": "string"
+              },
+              "value": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
     "aliases": {
       "type": "array",
       "title": "Known Aliases",

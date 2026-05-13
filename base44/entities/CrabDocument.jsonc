@@ -35,7 +35,7 @@
     },
     "crab_ids": {
       "type": "array",
-      "title": "Linked Crab IDs",
+      "title": "Linked Crab IDs (legacy)",
       "items": {
         "type": "string"
       }
@@ -146,6 +146,89 @@
     "version_notes": {
       "type": "string",
       "title": "Version Notes"
+    },
+    "identity_resolution_status": {
+      "type": "string",
+      "title": "Identity Resolution Status",
+      "enum": [
+        "matched",
+        "ambiguous",
+        "unmatched",
+        "manually_assigned"
+      ]
+    },
+    "matched_crab_id": {
+      "type": "string",
+      "title": "Matched Crab ID (primary identity result)"
+    },
+    "identity_confidence": {
+      "type": "string",
+      "title": "Identity Confidence",
+      "enum": [
+        "high",
+        "medium",
+        "low"
+      ]
+    },
+    "identity_match_reason": {
+      "type": "string",
+      "title": "Identity Match Reason"
+    },
+    "candidate_crab_ids": {
+      "type": "array",
+      "title": "Candidate Crab IDs (ambiguous matches)",
+      "items": {
+        "type": "string"
+      }
+    },
+    "extracted_identity": {
+      "type": "object",
+      "title": "Extracted Identity",
+      "properties": {
+        "first_name": {
+          "type": "string",
+          "title": "First Name"
+        },
+        "middle_name": {
+          "type": "string",
+          "title": "Middle Name"
+        },
+        "surname": {
+          "type": "string",
+          "title": "Surname"
+        },
+        "date_of_birth": {
+          "type": "string",
+          "title": "Date of Birth"
+        },
+        "address": {
+          "type": "string",
+          "title": "Address"
+        },
+        "phone": {
+          "type": "string",
+          "title": "Phone"
+        },
+        "email": {
+          "type": "string",
+          "title": "Email"
+        },
+        "id_numbers": {
+          "type": "array",
+          "title": "ID Numbers",
+          "items": {
+            "type": "object",
+            "properties": {
+              "label": {
+                "type": "string"
+              },
+              "value": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
     }
   },
   "required": [
