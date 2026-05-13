@@ -2,7 +2,8 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 /**
  * CrabVault Ingress Function
- * Accepts a file upload, optionally creates a new Crab profile, and saves a CrabDocument.
+ * Accepts a file upload, resolves identity via shared resolver logic,
+ * and saves a CrabDocument with full identity resolution metadata.
  *
  * Payload (multipart form-data):
  *   file           — the file binary
@@ -10,139 +11,235 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
  *   first_name     — (optional) crab first name
  *   middle_name    — (optional) crab middle name
  *   surname        — required if crab_id not provided
- *   crab_id        — (optional) link to existing crab instead of creating one
+ *   crab_id        — (optional) bypass matching, link to existing crab
  *   category       — (optional) document category, defaults to "other"
+ *   ai_identify    — (optional) "true" to run AI extraction before resolving
  */
 
-function buildFullName(first, middle, surname) {
-  const parts = [];
-  if (first) parts.push(first.trim());
-  if (middle) parts.push(middle.trim());
-  if (surname) parts.push(surname.trim().toUpperCase());
-  return parts.join(' ');
+// ---------------------------------------------------------------------------
+// Inlined identity resolver helpers (cannot import from other functions)
+// ---------------------------------------------------------------------------
+
+function normKey(s) {
+  return (s || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[''`.,\-]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
-function normStr(s) {
+function normPhone(s) {
+  return (s || '').replace(/\D/g, '').replace(/^610/, '0').replace(/^61/, '0');
+}
+
+function normEmail(s) {
   return (s || '').trim().toLowerCase();
 }
 
-/**
- * Find-or-create a Crab profile by name.
- * Matching rules:
- * 1. Exact match on first + middle + surname → use it.
- * 2. If incoming has NO middle name: find crabs with same first + surname (any middle name).
- *    - Exactly one match → use it (the middle name just wasn't in the document).
- *    - Multiple matches → leave crab_ids blank (needs_review), return { crabId: null, ambiguous: true }.
- * 3. No match at all → create new profile.
- * If multiple exact duplicates exist (race condition), merge into oldest.
- * Returns { crabId, crabName, isNew, ambiguous }
- */
-async function findOrCreateCrab(db, { firstName, middleName, surname }) {
-  const fullName = buildFullName(firstName, middleName, surname);
-
-  // Search by surname (most selective field available)
-  const matches = await db.entities.Crab.filter({ surname: surname, is_deleted: false });
-
-  // Filter to exact name match (all three fields must match)
-  const exact = matches.filter(c =>
-    normStr(c.first_name) === normStr(firstName) &&
-    normStr(c.middle_name) === normStr(middleName) &&
-    normStr(c.surname) === normStr(surname)
-  );
-
-  if (exact.length === 0) {
-    // No exact match — if we have no middle name, try partial match (first + surname only)
-    if (!middleName) {
-      const partial = matches.filter(c =>
-        normStr(c.first_name) === normStr(firstName) &&
-        normStr(c.surname) === normStr(surname)
-      );
-
-      if (partial.length === 1) {
-        // Unambiguous partial match — use existing profile
-        const keeper = partial[0];
-        console.log(`✅  Partial name match (no middle name in doc) → using existing Crab: ${keeper.full_name} (${keeper.id})`);
-        return { crabId: keeper.id, crabName: keeper.full_name || fullName, isNew: false, ambiguous: false };
-      }
-
-      if (partial.length > 1) {
-        // Ambiguous — multiple crabs match first + surname, can't determine which one
-        console.log(`⚠️  Ambiguous partial match for ${firstName} ${surname} — ${partial.length} candidates, leaving unassigned for review`);
-        return { crabId: null, crabName: fullName, isNew: false, ambiguous: true };
-      }
-    }
-
-    // No match at all — create a new profile
-    const newCrab = await db.entities.Crab.create({
-      first_name: firstName,
-      middle_name: middleName,
-      surname: surname,
-      full_name: fullName,
-      status: '',
-      aliases: [],
-      tags: [],
-      id_numbers: [],
-      mailing_same_as_residential: true,
-      is_deleted: false,
-    });
-    console.log(`✅  Created new Crab profile: ${fullName} (${newCrab.id})`);
-    return { crabId: newCrab.id, crabName: fullName, isNew: true, ambiguous: false };
-  }
-
-  // Sort by created_date ascending — keep the oldest
-  exact.sort((a, b) => new Date(a.created_date) - new Date(b.created_date));
-  const keeper = exact[0];
-
-  if (exact.length > 1) {
-    // Race duplicates found — merge all into the oldest profile
-    console.log(`⚠️  Found ${exact.length} duplicate profiles for ${fullName}, merging into ${keeper.id}`);
-
-    const duplicateIds = exact.slice(1).map(c => c.id);
-
-    // Merge non-empty fields from duplicates into keeper (don't overwrite existing data)
-    const mergedData = {};
-    const mergeFields = ['phone', 'email', 'address1', 'address2', 'suburb', 'state', 'postcode',
-      'date_of_birth', 'photo_url', 'emergency_summary', 'notes'];
-
-    for (const dup of exact.slice(1)) {
-      for (const field of mergeFields) {
-        if (!keeper[field] && !mergedData[field] && dup[field]) {
-          mergedData[field] = dup[field];
-        }
-      }
-      // Merge arrays
-      if (dup.aliases?.length) mergedData.aliases = [...new Set([...(keeper.aliases || []), ...(mergedData.aliases || []), ...dup.aliases])];
-      if (dup.tags?.length) mergedData.tags = [...new Set([...(keeper.tags || []), ...(mergedData.tags || []), ...dup.tags])];
-      if (dup.id_numbers?.length) mergedData.id_numbers = [...(keeper.id_numbers || []), ...(mergedData.id_numbers || []), ...dup.id_numbers];
-    }
-
-    if (Object.keys(mergedData).length > 0) {
-      await db.entities.Crab.update(keeper.id, mergedData);
-    }
-
-    // Re-point all documents from duplicates to the keeper
-    for (const dupId of duplicateIds) {
-      const dupDocs = await db.entities.CrabDocument.filter({ crab_ids: [dupId] });
-      for (const doc of dupDocs) {
-        if (!doc.is_deleted) {
-          const newIds = [...new Set([...(doc.crab_ids || []).filter(id => id !== dupId), keeper.id])];
-          await db.entities.CrabDocument.update(doc.id, { crab_ids: newIds });
-          console.log(`📎  Reassigned doc ${doc.id} from ${dupId} → ${keeper.id}`);
-        }
-      }
-      // Delete the duplicate profile
-      await db.entities.Crab.delete(dupId);
-      console.log(`🗑️   Deleted duplicate Crab profile: ${dupId}`);
-    }
-  }
-
-  console.log(`✅  Using existing Crab profile: ${fullName} (${keeper.id})`);
-  return { crabId: keeper.id, crabName: keeper.full_name || fullName, isNew: false, ambiguous: false };
+function normAddress(s) {
+  return (s || '').trim().toLowerCase().replace(/[,.\-]/g, ' ').replace(/\s+/g, ' ').trim();
 }
+
+function computeKeys(firstName, middleName, surname) {
+  const fk = normKey(firstName);
+  const mk = normKey(middleName);
+  const sk = normKey(surname);
+  const name_key = [fk, mk, sk].filter(Boolean).join('|');
+  const surname_first_key = [sk, fk].filter(Boolean).join('|');
+  return { name_key, surname_first_key, fk, mk, sk };
+}
+
+function buildCanonicalName(first, middle, surname) {
+  const parts = [];
+  if (first?.trim()) parts.push(first.trim());
+  if (middle?.trim()) parts.push(middle.trim());
+  if (surname?.trim()) parts.push(surname.trim().toUpperCase());
+  return parts.join(' ');
+}
+
+function buildFolderSlug(first, middle, surname) {
+  return [first, middle, surname]
+    .filter(Boolean)
+    .map(p => p.trim().replace(/[^a-zA-Z0-9 ]/g, '').replace(/\s+/g, '-'))
+    .join('-')
+    .toLowerCase();
+}
+
+function hasStrongIdentifierMatch(incoming, candidate) {
+  if (incoming.date_of_birth && candidate.date_of_birth) {
+    if (incoming.date_of_birth === candidate.date_of_birth) return true;
+  }
+
+  const candidatePhones = [
+    candidate.phone,
+    ...(candidate.additional_phones || []).map(p => p.number),
+    ...(candidate.match_identifiers?.phones || []),
+  ].map(normPhone).filter(Boolean);
+  for (const p of (incoming.phones || []).map(normPhone).filter(Boolean)) {
+    if (candidatePhones.includes(p)) return true;
+  }
+
+  const candidateEmails = [
+    candidate.email,
+    ...(candidate.additional_emails || []).map(e => e.email),
+    ...(candidate.match_identifiers?.emails || []),
+  ].map(normEmail).filter(Boolean);
+  for (const e of (incoming.emails || []).map(normEmail).filter(Boolean)) {
+    if (candidateEmails.includes(e)) return true;
+  }
+
+  const candidateAddresses = [
+    [candidate.address1, candidate.suburb, candidate.postcode].filter(Boolean).join(' '),
+    ...(candidate.additional_addresses || []).map(a =>
+      [a.address1, a.suburb, a.postcode].filter(Boolean).join(' ')
+    ),
+    ...(candidate.match_identifiers?.addresses || []),
+  ].map(normAddress).filter(Boolean);
+  for (const a of (incoming.addresses || []).map(normAddress).filter(Boolean)) {
+    if (candidateAddresses.some(ca => ca.includes(a) || a.includes(ca))) return true;
+  }
+
+  const candidateIdValues = [
+    ...(candidate.id_numbers || []),
+    ...(candidate.match_identifiers?.id_numbers || []),
+  ].map(n => normKey(n.value)).filter(Boolean);
+  for (const v of (incoming.id_numbers || []).map(n => normKey(n.value)).filter(Boolean)) {
+    if (candidateIdValues.includes(v)) return true;
+  }
+
+  return false;
+}
+
+function buildCanonicalFields(crab) {
+  const first = crab.first_name || '';
+  const middle = crab.middle_name || '';
+  const surname = crab.surname || '';
+  const { name_key, surname_first_key, fk, mk, sk } = computeKeys(first, middle, surname);
+  return {
+    first_name: first,
+    middle_name: middle,
+    surname,
+    canonical_name: crab.canonical_name || buildCanonicalName(first, middle, surname),
+    name_key: crab.name_key || name_key,
+    surname_first_key: crab.surname_first_key || surname_first_key,
+    first_key: crab.first_key || fk,
+    middle_key: crab.middle_key || mk,
+    surname_key: crab.surname_key || sk,
+    folder_slug: crab.folder_slug || buildFolderSlug(first, middle, surname),
+    previous_folder_slugs: crab.previous_folder_slugs || [],
+  };
+}
+
+function buildCanonicalFromInput(first, middle, surname) {
+  const { name_key, surname_first_key, fk, mk, sk } = computeKeys(first, middle, surname);
+  return {
+    first_name: first,
+    middle_name: middle,
+    surname,
+    canonical_name: buildCanonicalName(first, middle, surname),
+    name_key,
+    surname_first_key,
+    first_key: fk,
+    middle_key: mk,
+    surname_key: sk,
+    folder_slug: buildFolderSlug(first, middle, surname),
+    previous_folder_slugs: [],
+  };
+}
+
+async function resolveIdentity(db, payload) {
+  const {
+    first_name: rawFirst = '',
+    middle_name: rawMiddle = '',
+    surname: rawSurname = '',
+    date_of_birth,
+    phones = [],
+    emails = [],
+    addresses = [],
+    id_numbers = [],
+    confidence = 'medium',
+  } = payload;
+
+  const firstName  = rawFirst.trim();
+  const middleName = rawMiddle.trim();
+  const surname    = rawSurname.trim();
+
+  if (!surname || confidence === 'low') {
+    return {
+      status: 'unmatched',
+      crabId: null,
+      candidateCrabIds: [],
+      confidence,
+      reason: !surname ? 'Surname missing — cannot resolve identity' : 'Low confidence — sending to review',
+      canonicalCrab: null,
+      shouldCreateNew: false,
+    };
+  }
+
+  const { name_key, surname_first_key } = computeKeys(firstName, middleName, surname);
+  const allCrabs = await db.entities.Crab.filter({ is_deleted: false });
+
+  const exactMatches = allCrabs.filter(c => computeKeys(c.first_name, c.middle_name, c.surname).name_key === name_key);
+  if (exactMatches.length >= 1) {
+    exactMatches.sort((a, b) => new Date(a.created_date) - new Date(b.created_date));
+    const keeper = exactMatches[0];
+    return { status: 'matched', crabId: keeper.id, candidateCrabIds: [], confidence: 'high',
+      reason: `Exact name_key match: "${name_key}"`, canonicalCrab: buildCanonicalFields(keeper), shouldCreateNew: false };
+  }
+
+  const sfkMatches = allCrabs.filter(c => computeKeys(c.first_name, c.middle_name, c.surname).surname_first_key === surname_first_key);
+
+  if (!middleName && sfkMatches.length === 1) {
+    const keeper = sfkMatches[0];
+    return { status: 'matched', crabId: keeper.id, candidateCrabIds: [], confidence: 'high',
+      reason: `No middle name supplied; unambiguous surname+first match to "${keeper.full_name || keeper.id}"`,
+      canonicalCrab: buildCanonicalFields(keeper), shouldCreateNew: false };
+  }
+
+  if (sfkMatches.length > 1) {
+    const supporting = { date_of_birth, phones, emails, addresses, id_numbers };
+    const strongMatches = sfkMatches.filter(c => hasStrongIdentifierMatch(supporting, c));
+    if (strongMatches.length === 1) {
+      const keeper = strongMatches[0];
+      return { status: 'matched', crabId: keeper.id, candidateCrabIds: [], confidence: 'medium',
+        reason: `Disambiguated via supporting identifier from ${sfkMatches.length} candidates`,
+        canonicalCrab: buildCanonicalFields(keeper), shouldCreateNew: false };
+    }
+    return { status: 'ambiguous', crabId: null, candidateCrabIds: sfkMatches.map(c => c.id), confidence: 'low',
+      reason: `${sfkMatches.length} candidates share first+surname "${firstName} ${surname.toUpperCase()}" — supporting identifiers did not disambiguate`,
+      canonicalCrab: buildCanonicalFromInput(firstName, middleName, surname), shouldCreateNew: false };
+  }
+
+  if (sfkMatches.length === 0) {
+    const shouldCreate = confidence === 'high' || confidence === 'medium';
+    return { status: shouldCreate ? 'matched' : 'unmatched', crabId: null, candidateCrabIds: [], confidence,
+      reason: shouldCreate
+        ? `No existing Crab found — new profile will be created for "${buildCanonicalName(firstName, middleName, surname)}"`
+        : `No existing Crab found and confidence is "${confidence}" — sending to review`,
+      canonicalCrab: buildCanonicalFromInput(firstName, middleName, surname), shouldCreateNew: shouldCreate };
+  }
+
+  // Single sfkMatch with different middle name — check supporting identifiers
+  const candidate = sfkMatches[0];
+  const supporting = { date_of_birth, phones, emails, addresses, id_numbers };
+  if (hasStrongIdentifierMatch(supporting, candidate)) {
+    return { status: 'matched', crabId: candidate.id, candidateCrabIds: [], confidence: 'medium',
+      reason: `Middle name differs but supporting identifier confirms match to "${candidate.full_name || candidate.id}"`,
+      canonicalCrab: buildCanonicalFields(candidate), shouldCreateNew: false };
+  }
+  return { status: 'ambiguous', crabId: null, candidateCrabIds: [candidate.id], confidence: 'low',
+    reason: `Possible match to "${candidate.full_name || candidate.id}" but middle name differs and no supporting identifier confirms`,
+    canonicalCrab: buildCanonicalFromInput(firstName, middleName, surname), shouldCreateNew: false };
+}
+
+// ---------------------------------------------------------------------------
+// Main handler
+// ---------------------------------------------------------------------------
 
 Deno.serve(async (req) => {
   try {
-    // API key auth
+    // API key auth (watcher script)
     const apiKey = req.headers.get('x-api-key');
     if (apiKey !== Deno.env.get('INGEST_API_KEY')) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
@@ -151,9 +248,9 @@ Deno.serve(async (req) => {
     const formData = await req.formData();
     const file = formData.get('file');
     const filename = formData.get('filename') || file?.name || 'document';
-    let firstName = (formData.get('first_name') || '').trim();
+    let firstName  = (formData.get('first_name')  || '').trim();
     let middleName = (formData.get('middle_name') || '').trim();
-    let surname = (formData.get('surname') || '').trim();
+    let surname    = (formData.get('surname')     || '').trim();
     const existingCrabId = (formData.get('crab_id') || '').trim();
     const category = formData.get('category') || 'other';
     const aiIdentify = formData.get('ai_identify') === 'true';
@@ -168,12 +265,18 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const db = base44.asServiceRole;
 
-    // Upload file to storage (do this early so we don't hold the lock)
+    // Upload file early
     const ext = filename.split('.').pop()?.toLowerCase() || 'other';
-    const fileType = ['pdf', 'docx', 'xlsx', 'jpg', 'jpeg', 'png', 'heic', 'txt', 'psd'].includes(ext) ? ext : 'other';
+    const fileType = ['pdf', 'docx', 'xlsx', 'jpg', 'jpeg', 'png', 'heic', 'txt', 'psd'].includes(ext) ? (ext === 'jpeg' ? 'jpg' : ext) : 'other';
     const { file_url } = await db.integrations.Core.UploadFile({ file });
 
-    // AI verification — always run for supported file types to confirm identity and correct filename hint
+    // Accumulated extracted identity from AI (populated if aiIdentify runs)
+    let extractedIdentity = null;
+    let aiConfidence = 'medium';
+    let aiTitle = '';
+    let aiFilename = '';
+
+    // AI extraction — enrich name parts and build extractedIdentity
     if (aiIdentify && !existingCrabId) {
       const isImage = ['jpg', 'jpeg', 'png', 'heic'].includes(ext);
       const isPdf = ext === 'pdf';
@@ -181,181 +284,297 @@ Deno.serve(async (req) => {
         const hint = [firstName, middleName, surname].filter(Boolean).join(' ');
         console.log(`🤖  AI verifying document: ${filename}${hint ? ` (hint: ${hint})` : ''}`);
         try {
-          // Fetch available document types (categories)
           const categories = await db.entities.Category.list();
           const categoryOptions = categories.map(c => c.name).join(', ');
 
           const result = await db.integrations.Core.InvokeLLM({
             prompt: `Analyse this document carefully and extract:
-1. The full name of the primary person it belongs to or is addressed to (e.g. the account holder, recipient, patient, or subject).
+1. The full name of the primary person it belongs to or is addressed to.
 2. A descriptive title for the document.
-3. The document type — MUST choose from the available types below based on what the document actually contains.
+3. The document type — choose from the available types below.
+4. Any date of birth, address, phone, email, or ID numbers visible.
 
 Filename: "${filename}"
-${hint ? `Name hint from filename/folder: "${hint}" — use this as a strong hint but correct it if the document clearly shows a different name.` : 'No name hint available — identify from document content only.'}
+${hint ? `Name hint from filename/folder: "${hint}" — use as strong hint but correct if document shows a different name.` : 'No name hint — identify from document content only.'}
 
 Available document types: ${categoryOptions}
 
-CRITICAL: Read the document content and filename carefully. Match to the category that best describes what this document IS, not a generic label. For example:
-- A photo ID card, driver licence, passport → match to "id" or similar
-- A bank statement, account statement → match to a banking/finance category
-- Medical records, prescriptions → match to a medical category
-- Correspondence, letters → match to a correspondence category
-
-Return JSON with: first_name, middle_name, surname, document_title, document_type.
-- "document_title": a clean descriptive title for this document (e.g. "Westpac Bank Statement March 2024", "Medicare Card", "Centrelink Letter"). Use the document content, not the raw filename.
-- "document_type": MUST be exactly one of the available document types listed above. Choose the single category that best matches what the document actually is.
-- If you cannot confidently identify the person, return first_name/middle_name/surname as empty strings.`,
+Return JSON with:
+- first_name, middle_name, surname
+- document_title (clean descriptive title)
+- document_type (exactly one from available types)
+- date_of_birth (YYYY-MM-DD or empty)
+- address (full address as single string or empty)
+- phone (normalised or empty)
+- email (or empty)
+- id_numbers: array of { label, value } objects
+- confidence: "high" if name is clearly legible, "medium" if inferred, "low" if uncertain`,
             file_urls: [file_url],
             response_json_schema: {
               type: 'object',
               properties: {
-                first_name: { type: 'string' },
-                middle_name: { type: 'string' },
-                surname: { type: 'string' },
+                first_name:     { type: 'string' },
+                middle_name:    { type: 'string' },
+                surname:        { type: 'string' },
                 document_title: { type: 'string' },
-                document_type: { type: 'string' },
+                document_type:  { type: 'string' },
+                date_of_birth:  { type: 'string' },
+                address:        { type: 'string' },
+                phone:          { type: 'string' },
+                email:          { type: 'string' },
+                id_numbers:     { type: 'array', items: { type: 'object' } },
+                confidence:     { type: 'string' },
               },
             },
           });
+
           if (result.surname) {
-            firstName = result.first_name || '';
+            firstName  = result.first_name  || '';
             middleName = result.middle_name || '';
-            surname = result.surname;
-            console.log(`🤖  AI confirmed: ${[firstName, middleName, surname].filter(Boolean).join(' ')}`);
+            surname    = result.surname;
+            console.log(`🤖  AI extracted: ${[firstName, middleName, surname].filter(Boolean).join(' ')}`);
           } else {
             console.log(`🤖  AI could not identify crab — storing as unassigned`);
-            if (!surname) surname = 'UNASSIGNED';
           }
-          // Only build an AI filename if the original doesn't already follow "Name - Something.ext" format
+
+          aiConfidence = result.confidence === 'high' ? 'high' : result.confidence === 'low' ? 'low' : 'medium';
+          aiTitle = result.document_title || '';
+
+          // Build AI filename if original isn't already formatted
           const filenameBase = filename.replace(/\.[^/.]+$/, '');
           const alreadyFormatted = /^.+ - .+/.test(filenameBase);
           if (!alreadyFormatted && result.document_type) {
             const namePart = [result.first_name, result.middle_name, result.surname?.toUpperCase()].filter(Boolean).join(' ');
-            const aiFilename = namePart
-              ? `${namePart} - ${result.document_type}`
-              : result.document_type;
-            formData.set('ai_filename', aiFilename);
+            aiFilename = namePart ? `${namePart} - ${result.document_type}` : result.document_type;
             console.log(`🤖  AI filename: ${aiFilename}`);
-          } else if (alreadyFormatted) {
-            console.log(`🤖  Filename already formatted, keeping original: ${filename}`);
           }
-          if (result.document_title) {
-            formData.set('ai_title', result.document_title);
-          }
+
+          // Build extractedIdentity for storage on the document
+          extractedIdentity = {
+            first_name:    result.first_name   || '',
+            middle_name:   result.middle_name  || '',
+            surname:       result.surname       || '',
+            date_of_birth: result.date_of_birth || '',
+            address:       result.address       || '',
+            phone:         result.phone         || '',
+            email:         result.email         || '',
+            id_numbers:    result.id_numbers    || [],
+          };
+
         } catch (e) {
-          console.warn(`🤖  AI verification failed: ${e.message} — using filename hint or unassigned`);
-          if (!surname) surname = 'UNASSIGNED';
+          console.warn(`🤖  AI verification failed: ${e.message}`);
+          aiConfidence = 'low';
         }
       } else {
-        console.log(`🤖  File type ${ext} not supported for AI — using filename hint`);
-        if (!surname) surname = 'UNASSIGNED';
+        console.log(`🤖  File type ${ext} not supported for AI extraction`);
       }
     }
 
-    let crabId, crabName, isNew, ambiguous;
+    // ---------------------------------------------------------------------------
+    // Identity resolution
+    // ---------------------------------------------------------------------------
+
+    let crabId = null;
+    let resolvedStatus = 'unmatched';
+    let identityResolutionStatus = 'unmatched';
+    let identityConfidence = aiConfidence;
+    let identityMatchReason = '';
+    let candidateCrabIds = [];
+    let canonicalCrab = null;
+    let isNew = false;
 
     if (existingCrabId) {
-      // Explicit crab_id provided — use directly
+      // Explicit crab_id — bypass matching, mark as manually assigned
       const existing = await db.entities.Crab.filter({ id: existingCrabId });
+      const crab = existing[0];
       crabId = existingCrabId;
-      crabName = existing[0]?.full_name || surname;
-      isNew = false;
-      ambiguous = false;
+      identityResolutionStatus = 'manually_assigned';
+      identityConfidence = 'high';
+      identityMatchReason = 'Explicit crab_id provided by uploader';
+      canonicalCrab = crab ? buildCanonicalFields(crab) : null;
+      console.log(`📌  Explicit crab_id: ${crabId}`);
     } else {
-      // Find-or-create with dedup/merge logic
-      ({ crabId, crabName, isNew, ambiguous } = await findOrCreateCrab(db, { firstName, middleName, surname }));
+      // Run shared resolver
+      const resolution = await resolveIdentity(db, {
+        first_name: firstName,
+        middle_name: middleName,
+        surname,
+        date_of_birth: extractedIdentity?.date_of_birth || '',
+        phones:    extractedIdentity?.phone  ? [extractedIdentity.phone]  : [],
+        emails:    extractedIdentity?.email  ? [extractedIdentity.email]  : [],
+        addresses: extractedIdentity?.address ? [extractedIdentity.address] : [],
+        id_numbers: extractedIdentity?.id_numbers || [],
+        confidence: aiConfidence,
+      });
+
+      resolvedStatus         = resolution.status;
+      identityConfidence     = resolution.confidence;
+      identityMatchReason    = resolution.reason;
+      candidateCrabIds       = resolution.candidateCrabIds || [];
+      canonicalCrab          = resolution.canonicalCrab;
+
+      if (resolution.status === 'matched' && !resolution.shouldCreateNew) {
+        crabId = resolution.crabId;
+        identityResolutionStatus = 'matched';
+        console.log(`✅  Matched to Crab: ${crabId} — ${resolution.reason}`);
+      } else if (resolution.status === 'matched' && resolution.shouldCreateNew) {
+        // Create new Crab with canonical fields
+        const cc = resolution.canonicalCrab;
+        const newCrab = await db.entities.Crab.create({
+          first_name:           cc.first_name,
+          middle_name:          cc.middle_name,
+          surname:              cc.surname,
+          full_name:            cc.canonical_name,
+          canonical_name:       cc.canonical_name,
+          name_key:             cc.name_key,
+          surname_first_key:    cc.surname_first_key,
+          first_key:            cc.first_key,
+          middle_key:           cc.middle_key,
+          surname_key:          cc.surname_key,
+          folder_slug:          cc.folder_slug,
+          previous_folder_slugs: [],
+          status:               '',
+          aliases:              [],
+          tags:                 [],
+          id_numbers:           [],
+          mailing_same_as_residential: true,
+          is_deleted:           false,
+        });
+        crabId = newCrab.id;
+        isNew  = true;
+        identityResolutionStatus = 'matched';
+        console.log(`✅  Created new Crab: ${cc.canonical_name} (${crabId})`);
+      } else if (resolution.status === 'ambiguous') {
+        identityResolutionStatus = 'ambiguous';
+        console.log(`⚠️  Ambiguous identity — ${resolution.reason}`);
+      } else {
+        identityResolutionStatus = 'unmatched';
+        console.log(`❓  Unmatched — ${resolution.reason}`);
+      }
     }
 
-    // Build vault path: /crabs/Firstname Middlename SURNAME/documents/filename
-    const folderName = [firstName, middleName, surname?.toUpperCase()].filter(Boolean).join(' ');
+    // ---------------------------------------------------------------------------
+    // Build folder name and vault path from the matched Crab's canonical fields
+    // (never from AI-extracted name fields directly)
+    // ---------------------------------------------------------------------------
 
-    // If filename doesn't already start with the crab's name, prepend it
+    let folderName = '';
+    let vaultPath = '/crabs/_To Review/';
+
+    if (crabId && canonicalCrab) {
+      // Use folder_slug if available, otherwise fall back to canonical_name
+      folderName = canonicalCrab.canonical_name || buildCanonicalName(
+        canonicalCrab.first_name, canonicalCrab.middle_name, canonicalCrab.surname
+      );
+      vaultPath = `/crabs/${folderName}/documents/`;
+    } else if (identityResolutionStatus === 'ambiguous') {
+      vaultPath = '/crabs/_To Review/';
+    }
+
+    // Build canonical filename
+    const fileExt = filename.includes('.') ? filename.slice(filename.lastIndexOf('.')) : '';
     const filenameBase = filename.replace(/\.[^/.]+$/, '');
-    const fileExt2 = filename.includes('.') ? filename.slice(filename.lastIndexOf('.')) : '';
-    const startsWithName = filenameBase.toLowerCase().startsWith(folderName.toLowerCase() + ' - ');
-    if (!startsWithName && folderName) {
-      const prefixed = `${folderName} - ${filename}`;
-      formData.set('filename_override', prefixed);
-      console.log(`📝  Prepending crab name to filename: ${prefixed}`);
+    const alreadyFormatted = /^.+ - .+/.test(filenameBase);
+    let canonicalBase = filenameBase;
+
+    if (!alreadyFormatted) {
+      if (aiFilename) {
+        canonicalBase = aiFilename;
+      } else if (folderName) {
+        // Prefix with the canonical folder name if filename doesn't already start with it
+        const folderLower = folderName.toLowerCase();
+        if (!filenameBase.toLowerCase().startsWith(folderLower + ' - ')) {
+          canonicalBase = `${folderName} - ${filenameBase}`;
+        }
+      }
     }
+    const canonicalFilename = `${canonicalBase}${fileExt}`;
+    const baseTitle = aiTitle || canonicalBase;
 
-    const vaultPath = `/crabs/${folderName}/documents/${filename}`;
-
-    // Check for existing versions of this filename for this crab (check both original and canonical)
-    const existingDocs = await db.entities.CrabDocument.filter({ original_filename: filename });
-    const active = existingDocs.filter(d => !d.is_deleted && (d.crab_ids || []).includes(crabId));
+    // ---------------------------------------------------------------------------
+    // Version detection (check for existing doc with same filename for same crab)
+    // ---------------------------------------------------------------------------
 
     let newVersion = 1;
     let previousVersionId = null;
 
-    if (active.length > 0) {
-      // Sort by version descending to find the latest
-      active.sort((a, b) => (b.version || 1) - (a.version || 1));
-      const latest = active[0];
+    if (crabId) {
+      const existingDocs = await db.entities.CrabDocument.filter({ original_filename: canonicalFilename });
+      const active = existingDocs.filter(d => !d.is_deleted && (d.crab_ids || []).includes(crabId));
 
-      // Check file size — if identical size, treat as true duplicate and skip
-      if (latest.file_size === (file.size || 0)) {
-        console.log(`⚠️  True duplicate (same size): ${filename} already exists for crab ${crabId}`);
-        return Response.json({ success: true, document_id: latest.id, crab_id: crabId, duplicate: true });
+      if (active.length > 0) {
+        active.sort((a, b) => (b.version || 1) - (a.version || 1));
+        const latest = active[0];
+
+        if (latest.file_size === (file.size || 0)) {
+          console.log(`⚠️  True duplicate (same size): ${canonicalFilename} already exists for crab ${crabId}`);
+          return Response.json({ success: true, document_id: latest.id, crab_id: crabId, duplicate: true });
+        }
+
+        newVersion = (latest.version || 1) + 1;
+        previousVersionId = latest.id;
+        await db.entities.CrabDocument.update(latest.id, { is_latest_version: false });
+        console.log(`🔄  New version v${newVersion} of: ${canonicalFilename} for crab ${crabId}`);
       }
-
-      // Different content — create a new version
-      newVersion = (latest.version || 1) + 1;
-      previousVersionId = latest.id;
-
-      // Mark the old version as no longer latest
-      await db.entities.CrabDocument.update(latest.id, { is_latest_version: false });
-
-      console.log(`🔄  New version v${newVersion} of: ${filename} for crab ${crabId}`);
     }
 
-    const aiTitle = formData.get('ai_title') || '';
-    const aiFilename = formData.get('ai_filename') || '';
-    const filenameOverride = formData.get('filename_override') || '';
-    // Use AI filename > filename_override > original filename (without ext) for the canonical base
-    const fileExt = filename.includes('.') ? filename.slice(filename.lastIndexOf('.')) : '';
-    const effectiveFilename = filenameOverride || filename;
-    const canonicalBase = aiFilename || effectiveFilename.replace(/\.[^/.]+$/, '');
-    const canonicalFilename = `${canonicalBase}${fileExt}`;
-    // Rebuild vault path with canonical filename
-    const canonicalVaultPath = `/crabs/${folderName}/documents/${canonicalFilename}`;
-    const baseTitle = aiTitle || canonicalBase;
     const versionedTitle = newVersion > 1 ? `${baseTitle} (v${newVersion})` : baseTitle;
-    const versionedVaultPath = newVersion > 1
-      ? canonicalVaultPath.replace(/(\.[^/.]+)$/, ` (v${newVersion})$1`)
-      : canonicalVaultPath;
+    const versionedVaultPath = crabId
+      ? (newVersion > 1
+          ? `${vaultPath}${canonicalFilename}`.replace(/(\.[^/.]+)$/, ` (v${newVersion})$1`)
+          : `${vaultPath}${canonicalFilename}`)
+      : vaultPath;
+
+    // ---------------------------------------------------------------------------
+    // Create CrabDocument
+    // ---------------------------------------------------------------------------
 
     const doc = await db.entities.CrabDocument.create({
-      title: versionedTitle,
+      title:                    versionedTitle,
       file_url,
-      original_filename: canonicalFilename,
-      file_type: fileType,
-      file_size: file.size || 0,
-      crab_ids: crabId ? [crabId] : [],
+      original_filename:        canonicalFilename,
+      file_type:                fileType,
+      file_size:                file.size || 0,
+      crab_ids:                 crabId ? [crabId] : [],
       category,
-      // Ambiguous name match → force needs_review so user can assign the correct crab
-      processing_status: ambiguous ? 'needs_review' : 'pending',
-      notes: ambiguous ? `Ambiguous name match: "${buildFullName(firstName, middleName, surname)}" — multiple crab profiles found with the same first name and surname. Please assign the correct crab profile.` : undefined,
-      vault_path: crabId ? versionedVaultPath : '',
-      ingress_deleted: false,
-      synced_to_vault: false,
-      version: newVersion,
-      previous_version_id: previousVersionId,
-      is_latest_version: true,
+      processing_status:        (identityResolutionStatus === 'ambiguous' || identityResolutionStatus === 'unmatched')
+                                  ? 'needs_review'
+                                  : 'pending',
+      notes:                    identityResolutionStatus === 'ambiguous'
+                                  ? `Ambiguous identity: ${identityMatchReason}`
+                                  : identityResolutionStatus === 'unmatched'
+                                    ? `Unmatched identity: ${identityMatchReason}`
+                                    : undefined,
+      vault_path:               crabId ? versionedVaultPath : '',
+      ingress_deleted:          false,
+      synced_to_vault:          false,
+      version:                  newVersion,
+      previous_version_id:      previousVersionId,
+      is_latest_version:        true,
+      // Identity resolution fields
+      matched_crab_id:          crabId || undefined,
+      identity_resolution_status: identityResolutionStatus,
+      identity_confidence:      identityConfidence,
+      identity_match_reason:    identityMatchReason,
+      candidate_crab_ids:       candidateCrabIds.length > 0 ? candidateCrabIds : undefined,
+      extracted_identity:       extractedIdentity || undefined,
     });
 
     console.log(`✅  CrabDocument v${newVersion} created: ${doc.id} → ${versionedVaultPath}`);
     return Response.json({
-      success: true,
-      document_id: doc.id,
-      crab_id: crabId,
-      crab_name: crabName,
-      vault_path: crabId ? versionedVaultPath : '',
-      is_new_crab: isNew,
-      ambiguous_crab: ambiguous || false,
-      version: newVersion,
-      is_new_version: newVersion > 1,
+      success:              true,
+      document_id:          doc.id,
+      crab_id:              crabId,
+      crab_name:            canonicalCrab?.canonical_name || '',
+      vault_path:           crabId ? versionedVaultPath : '',
+      is_new_crab:          isNew,
+      identity_status:      identityResolutionStatus,
+      identity_confidence:  identityConfidence,
+      identity_reason:      identityMatchReason,
+      ambiguous_crab:       identityResolutionStatus === 'ambiguous',
+      candidate_crab_ids:   candidateCrabIds,
+      version:              newVersion,
+      is_new_version:       newVersion > 1,
     });
 
   } catch (error) {
