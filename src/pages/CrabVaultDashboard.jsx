@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Link } from "react-router-dom";
-import { Users, FileText, Building2, AlertTriangle, Clock, CheckCircle2, ArrowRight, Settings, Trash2 } from "lucide-react";
+import { Users, FileText, AlertTriangle, Clock, CheckCircle2, ArrowRight, Settings, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
@@ -18,8 +18,7 @@ export default function CrabVaultDashboard() {
     Promise.all([
       base44.entities.Crab.filter({ is_deleted: false }, "-created_date", 500),
       base44.entities.CrabDocument.filter({ is_deleted: false }, "-created_date", 500),
-      base44.entities.TargetMarket.list("name", 200),
-    ]).then(([crabs, docs, markets]) => {
+    ]).then(([crabs, docs]) => {
       setRecentCrabs(crabs.slice(0, 6));
       setPendingDocs(docs.filter(d => ["needs_review", "pending", "processing"].includes(d.processing_status)).slice(0, 5));
       setStats({
@@ -27,7 +26,6 @@ export default function CrabVaultDashboard() {
         activeCrabs: crabs.filter(c => c.status === "active").length,
         totalDocs: docs.length,
         pendingDocs: docs.filter(d => ["pending", "processing", "needs_review"].includes(d.processing_status)).length,
-        totalMarkets: markets.length,
         syncedDocs: docs.filter(d => d.synced_to_vault).length,
       });
       setLoading(false);
@@ -93,7 +91,6 @@ export default function CrabVaultDashboard() {
           { label: "Total Crabs", value: stats.totalCrabs, sub: `${stats.activeCrabs} active`, icon: Users, color: "text-primary" },
           { label: "Documents", value: stats.totalDocs, sub: `${stats.syncedDocs} vaulted`, icon: FileText, color: "text-emerald-600" },
           { label: "Needs Attention", value: stats.pendingDocs, sub: "pending / review", icon: AlertTriangle, color: "text-amber-600" },
-          { label: "Markets", value: stats.totalMarkets, sub: "target sectors", icon: Building2, color: "text-purple-600" },
         ].map(s => (
           <div key={s.label} className="bg-card border rounded-xl p-5">
             <s.icon className={`h-5 w-5 ${s.color} mb-3`} />
