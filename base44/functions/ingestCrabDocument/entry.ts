@@ -234,6 +234,25 @@ async function resolveIdentity(db, payload) {
 }
 
 // ---------------------------------------------------------------------------
+// Filename normalisation (mirrors detectDuplicates)
+// ---------------------------------------------------------------------------
+
+function normFilename(s) {
+  return (s || '')
+    .toLowerCase()
+    .replace(/[_\-]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .replace(/\.(pdf|docx|xlsx|jpg|jpeg|png|heic|txt|psd|other)$/i, '')
+    .trim();
+}
+
+// Compute SHA-256 hex of an ArrayBuffer
+async function sha256Hex(arrayBuffer) {
+  const hashBuf = await crypto.subtle.digest('SHA-256', arrayBuffer);
+  return Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// ---------------------------------------------------------------------------
 // Main handler
 // ---------------------------------------------------------------------------
 
@@ -254,6 +273,7 @@ Deno.serve(async (req) => {
     const existingCrabId = (formData.get('crab_id') || '').trim();
     const category = formData.get('category') || 'other';
     const aiIdentify = formData.get('ai_identify') === 'true';
+    const sourceModifiedAt = formData.get('source_modified_at') || null;
 
     if (!file) {
       return Response.json({ error: 'No file provided' }, { status: 400 });
@@ -268,6 +288,16 @@ Deno.serve(async (req) => {
     // Upload file early
     const ext = filename.split('.').pop()?.toLowerCase() || 'other';
     const fileType = ['pdf', 'docx', 'xlsx', 'jpg', 'jpeg', 'png', 'heic', 'txt', 'psd'].includes(ext) ? (ext === 'jpeg' ? 'jpg' : ext) : 'other';
+
+    // Compute content hash before uploading (read file bytes)
+    let contentHash = null;
+    try {
+      const fileBytes = await file.arrayBuffer();
+      contentHash = await sha256Hex(fileBytes);
+    } catch (e) {
+      console.warn(`⚠️  Could not compute content hash: ${e.message}`);
+    }
+
     const { file_url } = await db.integrations.Core.UploadFile({ file });
 
     // Accumulated extracted identity from AI (populated if aiIdentify runs)
@@ -492,30 +522,61 @@ Return JSON with:
     const baseTitle = aiTitle || canonicalBase;
 
     // ---------------------------------------------------------------------------
-    // Version detection (check for existing doc with same filename for same crab)
+    // Duplicate & version detection
     // ---------------------------------------------------------------------------
 
-    let newVersion = 1;
-    let previousVersionId = null;
+    const normalizedFilename = normFilename(canonicalFilename);
+    const fileSize = file.size || 0;
 
-    if (crabId) {
-      const existingDocs = await db.entities.CrabDocument.filter({ original_filename: canonicalFilename });
-      const active = existingDocs.filter(d => !d.is_deleted && (d.crab_ids || []).includes(crabId));
+    // Run duplicate detection
+    let dupDetection = {
+      duplicate_status: 'none',
+      duplicate_group_id: null,
+      version_group_id: null,
+      version_number: 1,
+      previous_version_id: null,
+      duplicate_candidate_ids: [],
+      duplicate_match_reason: null,
+      suggested_action: null,
+      confidence: 'low',
+      match_reasons: [],
+    };
 
-      if (active.length > 0) {
-        active.sort((a, b) => (b.version || 1) - (a.version || 1));
-        const latest = active[0];
-
-        if (latest.file_size === (file.size || 0)) {
-          console.log(`⚠️  True duplicate (same size): ${canonicalFilename} already exists for crab ${crabId}`);
-          return Response.json({ success: true, document_id: latest.id, crab_id: crabId, duplicate: true });
-        }
-
-        newVersion = (latest.version || 1) + 1;
-        previousVersionId = latest.id;
-        await db.entities.CrabDocument.update(latest.id, { is_latest_version: false });
-        console.log(`🔄  New version v${newVersion} of: ${canonicalFilename} for crab ${crabId}`);
+    try {
+      const dupResponse = await base44.functions.invoke('detectDuplicates', {
+        entity_type: 'CrabDocument',
+        normalized_filename: normalizedFilename,
+        file_size: fileSize,
+        source_modified_at: sourceModifiedAt || null,
+        content_hash: contentHash,
+        category,
+        crab_ids: crabId ? [crabId] : [],
+      });
+      if (dupResponse.data && !dupResponse.data.error) {
+        dupDetection = dupResponse.data;
       }
+    } catch (e) {
+      console.warn(`⚠️  Duplicate detection failed: ${e.message}`);
+    }
+
+    const isDuplicate = ['exact_duplicate', 'renamed_duplicate'].includes(dupDetection.duplicate_status);
+    const isVersion = dupDetection.duplicate_status === 'possible_version';
+
+    // For exact/renamed duplicates — create the doc but flag it, then create a DuplicateReview
+    // For versions — proceed normally with version metadata
+    // No automatic silent rejection
+
+    let newVersion = dupDetection.version_number || 1;
+    let previousVersionId = dupDetection.previous_version_id;
+
+    // Mark the previous latest version as no longer latest (version case)
+    if (isVersion && previousVersionId) {
+      try {
+        await db.entities.CrabDocument.update(previousVersionId, { is_latest_version: false });
+      } catch (e) {
+        console.warn(`Could not update previous version: ${e.message}`);
+      }
+      console.log(`🔄  New version v${newVersion} of: ${canonicalFilename}`);
     }
 
     const versionedTitle = newVersion > 1 ? `${baseTitle} (v${newVersion})` : baseTitle;
@@ -529,28 +590,43 @@ Return JSON with:
     // Create CrabDocument
     // ---------------------------------------------------------------------------
 
+    const processingStatus = (identityResolutionStatus === 'ambiguous' || identityResolutionStatus === 'unmatched' || isDuplicate)
+      ? 'needs_review'
+      : 'pending';
+
     const doc = await db.entities.CrabDocument.create({
       title:                    versionedTitle,
       file_url,
       original_filename:        canonicalFilename,
+      normalized_filename:      normalizedFilename,
       file_type:                fileType,
-      file_size:                file.size || 0,
+      file_size:                fileSize,
+      source_modified_at:       sourceModifiedAt || undefined,
+      content_hash:             contentHash || undefined,
       crab_ids:                 crabId ? [crabId] : [],
       category,
-      processing_status:        (identityResolutionStatus === 'ambiguous' || identityResolutionStatus === 'unmatched')
-                                  ? 'needs_review'
-                                  : 'pending',
+      processing_status:        processingStatus,
       notes:                    identityResolutionStatus === 'ambiguous'
                                   ? `Ambiguous identity: ${identityMatchReason}`
                                   : identityResolutionStatus === 'unmatched'
                                     ? `Unmatched identity: ${identityMatchReason}`
-                                    : undefined,
+                                    : isDuplicate
+                                      ? `Flagged as ${dupDetection.duplicate_status}: ${dupDetection.duplicate_match_reason}`
+                                      : undefined,
       vault_path:               crabId ? versionedVaultPath : '',
       ingress_deleted:          false,
       synced_to_vault:          false,
       version:                  newVersion,
-      previous_version_id:      previousVersionId,
-      is_latest_version:        true,
+      version_number:           newVersion,
+      version_group_id:         dupDetection.version_group_id || undefined,
+      previous_version_id:      previousVersionId || undefined,
+      is_latest_version:        !isDuplicate,
+      // Duplicate detection fields
+      duplicate_status:         dupDetection.duplicate_status || 'none',
+      duplicate_group_id:       dupDetection.duplicate_group_id || undefined,
+      duplicate_candidate_ids:  dupDetection.duplicate_candidate_ids?.length > 0 ? dupDetection.duplicate_candidate_ids : undefined,
+      duplicate_match_reason:   dupDetection.duplicate_match_reason || undefined,
+      duplicate_review_status:  isDuplicate ? 'pending_review' : 'not_required',
       // Identity resolution fields
       matched_crab_id:          crabId || undefined,
       identity_resolution_status: identityResolutionStatus,
@@ -560,7 +636,27 @@ Return JSON with:
       extracted_identity:       extractedIdentity || undefined,
     });
 
-    console.log(`✅  CrabDocument v${newVersion} created: ${doc.id} → ${versionedVaultPath}`);
+    // Create DuplicateReview record if flagged
+    if (isDuplicate || isVersion) {
+      const reviewType = dupDetection.duplicate_status === 'exact_duplicate' ? 'exact_duplicate'
+        : dupDetection.duplicate_status === 'renamed_duplicate' ? 'renamed_duplicate'
+        : 'possible_version';
+
+      await db.entities.DuplicateReview.create({
+        review_type:            reviewType,
+        status:                 'pending',
+        primary_document_id:    doc.id,
+        candidate_document_ids: dupDetection.duplicate_candidate_ids || [],
+        duplicate_group_id:     dupDetection.duplicate_group_id || undefined,
+        version_group_id:       dupDetection.version_group_id || undefined,
+        match_score:            dupDetection.confidence === 'high' ? 1.0 : dupDetection.confidence === 'medium' ? 0.7 : 0.4,
+        match_reasons:          dupDetection.match_reasons || [],
+        suggested_action:       dupDetection.suggested_action || 'manual_review',
+      });
+      console.log(`🔍  DuplicateReview created for doc ${doc.id} — ${reviewType}`);
+    }
+
+    console.log(`✅  CrabDocument v${newVersion} created: ${doc.id} → ${versionedVaultPath} [dup: ${dupDetection.duplicate_status}]`);
     return Response.json({
       success:              true,
       document_id:          doc.id,
@@ -575,6 +671,8 @@ Return JSON with:
       candidate_crab_ids:   candidateCrabIds,
       version:              newVersion,
       is_new_version:       newVersion > 1,
+      duplicate_status:     dupDetection.duplicate_status,
+      duplicate_flagged:    isDuplicate,
     });
 
   } catch (error) {

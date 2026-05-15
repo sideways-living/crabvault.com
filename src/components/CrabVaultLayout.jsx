@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation, Outlet } from "react-router-dom";
-import { LayoutDashboard, Users, FileText, Shield, Inbox, AlertTriangle, Menu, X, Activity, Search } from "lucide-react";
+import { LayoutDashboard, Users, FileText, Shield, Inbox, AlertTriangle, Menu, X, Activity, Search, Copy } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV = [
@@ -9,6 +9,7 @@ const NAV = [
   { to: "/crab-documents", label: "Documents", icon: FileText },
   { to: "/ingress", label: "Ingress", icon: Inbox },
   { to: "/needs-attention", label: "Attention", icon: AlertTriangle },
+  { to: "/duplicate-review", label: "Duplicates", icon: Copy },
   { to: "/watcher-status", label: "Watchers", icon: Activity },
   { to: "/search", label: "Search", icon: Search },
 ];
