@@ -1,0 +1,94 @@
+{
+  "name": "DuplicateReview",
+  "type": "object",
+  "properties": {
+    "review_type": {
+      "type": "string",
+      "title": "Review Type",
+      "enum": [
+        "exact_duplicate",
+        "renamed_duplicate",
+        "possible_version"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "title": "Status",
+      "enum": [
+        "pending",
+        "resolved",
+        "dismissed"
+      ],
+      "default": "pending"
+    },
+    "primary_document_id": {
+      "type": "string",
+      "title": "Primary Document ID"
+    },
+    "candidate_document_ids": {
+      "type": "array",
+      "title": "Candidate Document IDs",
+      "items": {
+        "type": "string"
+      }
+    },
+    "duplicate_group_id": {
+      "type": "string",
+      "title": "Duplicate Group ID"
+    },
+    "version_group_id": {
+      "type": "string",
+      "title": "Version Group ID"
+    },
+    "match_score": {
+      "type": "number",
+      "title": "Match Score"
+    },
+    "match_reasons": {
+      "type": "array",
+      "title": "Match Reasons",
+      "items": {
+        "type": "string"
+      }
+    },
+    "suggested_action": {
+      "type": "string",
+      "title": "Suggested Action",
+      "enum": [
+        "flag_duplicate",
+        "ask_filename_choice",
+        "keep_as_new_version",
+        "manual_review"
+      ]
+    },
+    "suggested_filename_to_keep": {
+      "type": "string",
+      "title": "Suggested Filename to Keep"
+    },
+    "user_decision": {
+      "type": "string",
+      "title": "User Decision",
+      "enum": [
+        "keep_existing",
+        "keep_new",
+        "keep_both",
+        "merge_as_version",
+        "dismiss"
+      ]
+    },
+    "decision_notes": {
+      "type": "string",
+      "title": "Decision Notes"
+    },
+    "resolved_at": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Resolved At"
+    },
+    "resolved_by": {
+      "type": "string",
+      "title": "Resolved By"
+    }
+  },
+  "required": []
+}

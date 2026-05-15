@@ -14,6 +14,10 @@
       "type": "string",
       "title": "Original Filename"
     },
+    "normalized_filename": {
+      "type": "string",
+      "title": "Normalized Filename"
+    },
     "file_type": {
       "type": "string",
       "title": "File Type",
@@ -32,6 +36,15 @@
     "file_size": {
       "type": "number",
       "title": "File Size (bytes)"
+    },
+    "source_modified_at": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Source Modified At"
+    },
+    "content_hash": {
+      "type": "string",
+      "title": "Content Hash"
     },
     "crab_ids": {
       "type": "array",
@@ -131,8 +144,17 @@
     },
     "version": {
       "type": "number",
+      "title": "Version Number (legacy)",
+      "default": 1
+    },
+    "version_number": {
+      "type": "number",
       "title": "Version Number",
       "default": 1
+    },
+    "version_group_id": {
+      "type": "string",
+      "title": "Version Group ID"
     },
     "previous_version_id": {
       "type": "string",
@@ -146,6 +168,83 @@
     "version_notes": {
       "type": "string",
       "title": "Version Notes"
+    },
+    "duplicate_status": {
+      "type": "string",
+      "title": "Duplicate Status",
+      "enum": [
+        "none",
+        "exact_duplicate",
+        "renamed_duplicate",
+        "possible_version",
+        "confirmed_duplicate",
+        "confirmed_version",
+        "ignored"
+      ],
+      "default": "none"
+    },
+    "duplicate_group_id": {
+      "type": "string",
+      "title": "Duplicate Group ID"
+    },
+    "duplicate_of_document_id": {
+      "type": "string",
+      "title": "Duplicate of Document ID"
+    },
+    "duplicate_review_status": {
+      "type": "string",
+      "title": "Duplicate Review Status",
+      "enum": [
+        "not_required",
+        "pending_review",
+        "resolved"
+      ],
+      "default": "not_required"
+    },
+    "duplicate_match_reason": {
+      "type": "string",
+      "title": "Duplicate Match Reason"
+    },
+    "duplicate_candidate_ids": {
+      "type": "array",
+      "title": "Duplicate Candidate IDs",
+      "items": {
+        "type": "string"
+      }
+    },
+    "duplicate_decision": {
+      "type": "object",
+      "title": "Duplicate Decision",
+      "properties": {
+        "action": {
+          "type": "string",
+          "title": "Action",
+          "enum": [
+            "keep_existing",
+            "keep_new",
+            "keep_both",
+            "merge_as_version",
+            "ignore"
+          ]
+        },
+        "chosen_filename": {
+          "type": "string",
+          "title": "Chosen Filename"
+        },
+        "decided_at": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Decided At"
+        },
+        "decided_by": {
+          "type": "string",
+          "title": "Decided By"
+        },
+        "notes": {
+          "type": "string",
+          "title": "Notes"
+        }
+      }
     },
     "identity_resolution_status": {
       "type": "string",
