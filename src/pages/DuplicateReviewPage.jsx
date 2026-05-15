@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
-import { Loader2, CheckCircle2 } from "lucide-react";
+import { Loader2, CheckCircle2, ScanSearch } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import ReviewCard from "@/components/duplicateReview/ReviewCard";
 
@@ -12,6 +13,7 @@ export default function DuplicateReviewPage() {
   const [crabs, setCrabs] = useState({});
   const [loading, setLoading] = useState(true);
   const [resolving, setResolving] = useState(null); // review.id being resolved
+  const [scanning, setScanning] = useState(false);
   const [filter, setFilter] = useState("pending");
 
   const load = useCallback(async () => {
@@ -152,6 +154,22 @@ export default function DuplicateReviewPage() {
 
   const pendingCount = reviews.filter(r => r.status === "pending").length;
 
+  const runScan = async () => {
+    setScanning(true);
+    try {
+      const res = await base44.functions.invoke("scanExistingDuplicates", {});
+      const { new_reviews_created, scanned_crab_documents, scanned_documents } = res.data;
+      toast.success(
+        `Scan complete — ${scanned_crab_documents + scanned_documents} docs scanned, ${new_reviews_created} new review${new_reviews_created !== 1 ? "s" : ""} created`
+      );
+      await load();
+    } catch (err) {
+      toast.error("Scan failed: " + err.message);
+    } finally {
+      setScanning(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center py-24">
@@ -171,21 +189,34 @@ export default function DuplicateReviewPage() {
           </p>
         </div>
 
-        {/* Filter tabs */}
-        <div className="flex gap-0.5 border rounded-lg p-0.5 bg-muted/30">
-          {FILTERS.map(f => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors capitalize ${
-                filter === f
-                  ? "bg-background shadow-sm text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {f === "pending" && pendingCount > 0 ? `Pending (${pendingCount})` : f.charAt(0).toUpperCase() + f.slice(1)}
-            </button>
-          ))}
+        <div className="flex items-center gap-3 flex-wrap">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={runScan}
+            disabled={scanning || loading}
+            className="gap-2"
+          >
+            {scanning ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ScanSearch className="h-3.5 w-3.5" />}
+            {scanning ? "Scanning…" : "Scan Existing Documents"}
+          </Button>
+
+          {/* Filter tabs */}
+          <div className="flex gap-0.5 border rounded-lg p-0.5 bg-muted/30">
+            {FILTERS.map(f => (
+              <button
+                key={f}
+                onClick={() => setFilter(f)}
+                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors capitalize ${
+                  filter === f
+                    ? "bg-background shadow-sm text-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {f === "pending" && pendingCount > 0 ? `Pending (${pendingCount})` : f.charAt(0).toUpperCase() + f.slice(1)}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
