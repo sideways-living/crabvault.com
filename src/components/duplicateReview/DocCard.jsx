@@ -70,6 +70,7 @@ export default function DocCard({ doc, crab, label, isNew }) {
       {/* Metadata */}
       <div className="space-y-2.5">
         <MetaRow label="Filename" value={doc.original_filename} highlight />
+        <MetaRow label="Normalized filename" value={doc.normalized_filename} />
         <MetaRow label="Title" value={doc.title} />
         <MetaRow label="File size" value={formatBytes(doc.file_size)} />
         <MetaRow label="Source modified" value={formatDate(doc.source_modified_at)} />
