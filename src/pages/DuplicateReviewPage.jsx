@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
-import { Loader2, CheckCircle2, ScanSearch } from "lucide-react";
+import { Loader2, CheckCircle2, ScanSearch, Hash } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import ReviewCard from "@/components/duplicateReview/ReviewCard";
@@ -14,6 +14,7 @@ export default function DuplicateReviewPage() {
   const [loading, setLoading] = useState(true);
   const [resolving, setResolving] = useState(null); // review.id being resolved
   const [scanning, setScanning] = useState(false);
+  const [backfilling, setBackfilling] = useState(false);
   const [filter, setFilter] = useState("pending");
 
   const load = useCallback(async () => {
@@ -154,6 +155,19 @@ export default function DuplicateReviewPage() {
 
   const pendingCount = reviews.filter(r => r.status === "pending").length;
 
+  const runBackfill = async () => {
+    setBackfilling(true);
+    try {
+      const res = await base44.functions.invoke("backfillContentHashes", {});
+      const { hashes_updated, skipped } = res.data;
+      toast.success(`Hash backfill complete — ${hashes_updated} updated, ${skipped} skipped`);
+    } catch (err) {
+      toast.error("Backfill failed: " + err.message);
+    } finally {
+      setBackfilling(false);
+    }
+  };
+
   const runScan = async () => {
     setScanning(true);
     try {
@@ -190,6 +204,17 @@ export default function DuplicateReviewPage() {
         </div>
 
         <div className="flex items-center gap-3 flex-wrap">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={runBackfill}
+            disabled={backfilling || loading}
+            className="gap-2"
+          >
+            {backfilling ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Hash className="h-3.5 w-3.5" />}
+            {backfilling ? "Backfilling…" : "Backfill Hashes"}
+          </Button>
+
           <Button
             variant="outline"
             size="sm"
