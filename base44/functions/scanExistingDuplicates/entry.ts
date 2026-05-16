@@ -180,10 +180,14 @@ Deno.serve(async (req) => {
     // Create DuplicateReview records for new matches
     // -------------------------------------------------------------------------
     let created = 0;
+    const alreadyExisting = existingReviews.length;
+    const counts = { exact_duplicate: 0, renamed_duplicate: 0, possible_version: 0 };
+
     for (const match of matches) {
       const { type, primary, candidate, matchReasons } = match;
 
-      // Determine confidence
+      counts[type] = (counts[type] || 0) + 1;
+
       const confidence = matchReasons.includes('content_hash_match') ? 'high'
         : (matchReasons.includes('filesize_match') && matchReasons.includes('modified_time_match')) ? 'high'
         : 'medium';
@@ -205,8 +209,7 @@ Deno.serve(async (req) => {
       });
 
       // Flag the documents as needing review
-      const entityName = primary.crab_ids !== undefined ? 'CrabDocument' : 'Document';
-      const updateFn = entityName === 'CrabDocument'
+      const updateFn = primary.crab_ids !== undefined
         ? db.entities.CrabDocument
         : db.entities.Document;
 
@@ -220,14 +223,17 @@ Deno.serve(async (req) => {
       created++;
     }
 
-    console.log(`✅ scanExistingDuplicates: found ${matches.length} new match(es), created ${created} review(s)`);
+    console.log(`✅ scanExistingDuplicates: exact=${counts.exact_duplicate} renamed=${counts.renamed_duplicate} versions=${counts.possible_version} created=${created} already_existing=${alreadyExisting}`);
 
     return Response.json({
       success: true,
       scanned_crab_documents: crabDocs.length,
       scanned_documents: docs.length,
-      new_reviews_created: created,
-      skipped_already_reviewed: matches.length - created,
+      exact_duplicate_groups_found: counts.exact_duplicate,
+      renamed_duplicate_groups_found: counts.renamed_duplicate,
+      possible_version_groups_found: counts.possible_version,
+      review_records_created: created,
+      review_records_already_existing: alreadyExisting,
     });
 
   } catch (error) {
