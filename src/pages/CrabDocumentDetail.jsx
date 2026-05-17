@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Download, ExternalLink, FileText, Loader2, User, GitBranch, Plus, Save, Cpu, X, Trash2 } from "lucide-react";
+import { ArrowLeft, Download, ExternalLink, FileText, Loader2, User, GitBranch, Plus, Save, Cpu, X, Trash2, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 
 const DEFAULT_CATEGORIES = [
@@ -362,7 +362,8 @@ export default function CrabDocumentDetail() {
       }
 
       updateData.vault_path = `/crabs/${crabFolder}/documents/${newFilename}`;
-      updateData.original_filename = newFilename;
+      // NOTE: original_filename is immutable — never overwrite it.
+      // vault_path is updated to reflect the canonical naming convention.
     } else if (JSON.stringify(editCrabIds) !== JSON.stringify(doc.crab_ids || [])) {
       // Crab was removed, just use original filename
       if (doc.original_filename) {
@@ -656,10 +657,62 @@ export default function CrabDocumentDetail() {
             </div>
           )}
 
+          {/* AI Suggestions panel */}
+          {doc.ai_extraction_result && (
+            <div className="rounded-xl border p-4 space-y-2">
+              <h3 className="text-xs font-semibold uppercase text-muted-foreground tracking-wider flex items-center gap-1.5">
+                <Cpu className="h-3.5 w-3.5" /> AI Suggestions
+              </h3>
+              {/* Stale AI warning */}
+              {doc.ai_processed_content_hash && doc.content_hash &&
+               doc.ai_processed_content_hash !== doc.content_hash && (
+                <div className="flex items-start gap-2 p-2 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-xs">
+                  <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                  <span>AI result is stale — reprocess required. The file has changed since this analysis was run.</span>
+                </div>
+              )}
+              {/* Show suggestions only when hash is valid */}
+              {(!doc.ai_processed_content_hash || !doc.content_hash ||
+                doc.ai_processed_content_hash === doc.content_hash) && (
+                <div className="space-y-1 text-xs">
+                  {doc.ai_extraction_result.suggested_title && (
+                    <div className="flex gap-2">
+                      <span className="text-muted-foreground w-20 shrink-0">Title</span>
+                      <span className="text-foreground">{doc.ai_extraction_result.suggested_title}</span>
+                    </div>
+                  )}
+                  {doc.ai_extraction_result.suggested_category && (
+                    <div className="flex gap-2">
+                      <span className="text-muted-foreground w-20 shrink-0">Category</span>
+                      <span>{doc.ai_extraction_result.suggested_category}</span>
+                    </div>
+                  )}
+                  {doc.ai_extraction_result.suggested_document_date && (
+                    <div className="flex gap-2">
+                      <span className="text-muted-foreground w-20 shrink-0">Date</span>
+                      <span>{doc.ai_extraction_result.suggested_document_date}</span>
+                    </div>
+                  )}
+                  {doc.ai_extraction_result.suggested_summary && (
+                    <p className="text-muted-foreground italic mt-1 leading-relaxed">{doc.ai_extraction_result.suggested_summary}</p>
+                  )}
+                  <div className="flex items-center gap-1 pt-1">
+                    {doc.ai_confidence === 'high' ? (
+                      <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+                    ) : (
+                      <AlertTriangle className="h-3 w-3 text-amber-500" />
+                    )}
+                    <span className="text-muted-foreground capitalize">Confidence: {doc.ai_confidence || 'unknown'}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Notes / Summary */}
           <div className="rounded-xl border p-4 space-y-2">
             <h3 className="text-xs font-semibold uppercase text-muted-foreground tracking-wider">Notes</h3>
-            {doc.summary && <p className="text-xs text-muted-foreground italic border-b pb-2 mb-2">{doc.summary}</p>}
+            {doc.summary && !doc.ai_extraction_result && <p className="text-xs text-muted-foreground italic border-b pb-2 mb-2">{doc.summary}</p>}
             <textarea
               className="w-full text-sm border rounded-lg px-3 py-2 bg-background resize-none focus-visible:ring-1 focus-visible:ring-ring outline-none min-h-[80px]"
               placeholder="Add notes…"

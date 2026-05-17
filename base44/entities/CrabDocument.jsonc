@@ -10,9 +10,26 @@
       "type": "string",
       "title": "File URL"
     },
+    "original_file_url": {
+      "type": "string",
+      "title": "Original File URL (immutable)"
+    },
     "original_filename": {
       "type": "string",
-      "title": "Original Filename"
+      "title": "Original Filename (immutable)"
+    },
+    "original_content_hash": {
+      "type": "string",
+      "title": "Original Content Hash (immutable)"
+    },
+    "original_file_size": {
+      "type": "number",
+      "title": "Original File Size in bytes (immutable)"
+    },
+    "original_uploaded_at": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Original Uploaded At (immutable)"
     },
     "normalized_filename": {
       "type": "string",
@@ -114,6 +131,84 @@
         "failed"
       ],
       "default": "pending"
+    },
+    "processing_error": {
+      "type": "string",
+      "title": "Processing Error"
+    },
+    "last_processing_job_id": {
+      "type": "string",
+      "title": "Last Processing Job ID"
+    },
+    "ai_processed_file_url": {
+      "type": "string",
+      "title": "File URL used during AI processing"
+    },
+    "ai_processed_content_hash": {
+      "type": "string",
+      "title": "Content Hash verified during AI processing"
+    },
+    "ai_processed_at": {
+      "type": "string",
+      "format": "date-time",
+      "title": "AI Processed At"
+    },
+    "ai_confidence": {
+      "type": "string",
+      "title": "AI Confidence",
+      "enum": [
+        "high",
+        "medium",
+        "low"
+      ]
+    },
+    "requires_human_review": {
+      "type": "boolean",
+      "title": "Requires Human Review",
+      "default": false
+    },
+    "review_reason": {
+      "type": "string",
+      "title": "Review Reason"
+    },
+    "ai_extraction_result": {
+      "type": "object",
+      "title": "AI Extraction Result (proposed/suggested only)",
+      "properties": {
+        "suggested_title": {
+          "type": "string"
+        },
+        "suggested_summary": {
+          "type": "string"
+        },
+        "suggested_category": {
+          "type": "string"
+        },
+        "suggested_document_date": {
+          "type": "string"
+        },
+        "suggested_id_card_side": {
+          "type": "string"
+        },
+        "suggested_tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "confidence": {
+          "type": "string"
+        },
+        "processed_at": {
+          "type": "string"
+        },
+        "file_url_used": {
+          "type": "string"
+        },
+        "content_hash_used": {
+          "type": "string"
+        }
+      }
     },
     "vault_path": {
       "type": "string",
@@ -218,7 +313,6 @@
       "properties": {
         "action": {
           "type": "string",
-          "title": "Action",
           "enum": [
             "keep_existing",
             "keep_new",
@@ -228,21 +322,17 @@
           ]
         },
         "chosen_filename": {
-          "type": "string",
-          "title": "Chosen Filename"
+          "type": "string"
         },
         "decided_at": {
           "type": "string",
-          "format": "date-time",
-          "title": "Decided At"
+          "format": "date-time"
         },
         "decided_by": {
-          "type": "string",
-          "title": "Decided By"
+          "type": "string"
         },
         "notes": {
-          "type": "string",
-          "title": "Notes"
+          "type": "string"
         }
       }
     },
@@ -258,7 +348,7 @@
     },
     "matched_crab_id": {
       "type": "string",
-      "title": "Matched Crab ID (primary identity result)"
+      "title": "Matched Crab ID"
     },
     "identity_confidence": {
       "type": "string",
@@ -275,7 +365,7 @@
     },
     "candidate_crab_ids": {
       "type": "array",
-      "title": "Candidate Crab IDs (ambiguous matches)",
+      "title": "Candidate Crab IDs",
       "items": {
         "type": "string"
       }
@@ -285,46 +375,30 @@
       "title": "Extracted Identity",
       "properties": {
         "first_name": {
-          "type": "string",
-          "title": "First Name"
+          "type": "string"
         },
         "middle_name": {
-          "type": "string",
-          "title": "Middle Name"
+          "type": "string"
         },
         "surname": {
-          "type": "string",
-          "title": "Surname"
+          "type": "string"
         },
         "date_of_birth": {
-          "type": "string",
-          "title": "Date of Birth"
+          "type": "string"
         },
         "address": {
-          "type": "string",
-          "title": "Address"
+          "type": "string"
         },
         "phone": {
-          "type": "string",
-          "title": "Phone"
+          "type": "string"
         },
         "email": {
-          "type": "string",
-          "title": "Email"
+          "type": "string"
         },
         "id_numbers": {
           "type": "array",
-          "title": "ID Numbers",
           "items": {
-            "type": "object",
-            "properties": {
-              "label": {
-                "type": "string"
-              },
-              "value": {
-                "type": "string"
-              }
-            }
+            "type": "object"
           }
         }
       }

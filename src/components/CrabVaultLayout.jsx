@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation, Outlet } from "react-router-dom";
-import { LayoutDashboard, Users, FileText, Shield, Inbox, AlertTriangle, Menu, X, Activity, Search, Copy, Smartphone } from "lucide-react";
+import { LayoutDashboard, Users, FileText, Shield, Inbox, AlertTriangle, Menu, X, Activity, Search, Copy, Smartphone, Wrench } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV = [
@@ -13,6 +13,7 @@ const NAV = [
   { to: "/duplicate-review", label: "Duplicates", icon: Copy },
   { to: "/watcher-status", label: "Watchers", icon: Activity },
   { to: "/search", label: "Search", icon: Search },
+  { to: "/admin-repair", label: "Repair", icon: Wrench },
 ];
 
 function isActive(to, pathname) {

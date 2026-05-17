@@ -6,28 +6,58 @@
       "type": "string",
       "title": "Document ID"
     },
-    "task": {
+    "processing_job_id": {
       "type": "string",
-      "title": "Task Description"
+      "title": "Processing Job ID"
+    },
+    "action": {
+      "type": "string",
+      "title": "Action",
+      "enum": [
+        "ai_processing",
+        "rename",
+        "vault_sync",
+        "duplicate_check",
+        "profile_assignment",
+        "ingest",
+        "repair",
+        "hash_backfill"
+      ]
     },
     "status": {
       "type": "string",
       "title": "Status",
       "enum": [
-        "pending",
-        "in_progress",
+        "started",
         "completed",
-        "failed"
+        "failed",
+        "skipped"
       ],
-      "default": "pending"
+      "default": "started"
+    },
+    "file_url": {
+      "type": "string",
+      "title": "File URL at time of action"
+    },
+    "content_hash": {
+      "type": "string",
+      "title": "Content Hash at time of action"
+    },
+    "file_size": {
+      "type": "number",
+      "title": "File Size at time of action"
     },
     "details": {
       "type": "string",
-      "title": "Details"
+      "title": "Details / Error"
+    },
+    "task": {
+      "type": "string",
+      "title": "Task Description (legacy)"
     }
   },
   "required": [
     "document_id",
-    "task"
+    "action"
   ]
 }

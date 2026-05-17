@@ -18,6 +18,7 @@ import WatcherStatus from './pages/WatcherStatus';
 import DocumentSearchPage from './pages/DocumentSearchPage';
 import DuplicateReviewPage from './pages/DuplicateReviewPage';
 import DevicesPage from './pages/DevicesPage';
+import AdminRepairPage from './pages/AdminRepairPage';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -58,6 +59,7 @@ const AuthenticatedApp = () => {
         <Route path="/search" element={<DocumentSearchPage />} />
         <Route path="/devices" element={<DevicesPage />} />
         <Route path="/duplicate-review" element={<DuplicateReviewPage />} />
+        <Route path="/admin-repair" element={<AdminRepairPage />} />
         <Route path="*" element={<PageNotFound />} />
       </Route>
     </Routes>

@@ -1,46 +1,36 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 /**
- * CrabVault Ingress Function
- * Accepts a file upload, resolves identity via shared resolver logic,
- * and saves a CrabDocument with full identity resolution metadata.
+ * CrabVault Ingress Function — hardened for safety.
  *
- * Payload (multipart form-data):
- *   file           — the file binary
- *   filename       — original filename
- *   first_name     — (optional) crab first name
- *   middle_name    — (optional) crab middle name
- *   surname        — required if crab_id not provided
- *   crab_id        — (optional) bypass matching, link to existing crab
- *   category       — (optional) document category, defaults to "other"
- *   ai_identify    — (optional) "true" to run AI extraction before resolving
+ * Safety rules enforced:
+ * 1. original_file_url, original_filename, original_content_hash,
+ *    original_file_size, original_uploaded_at are set once at ingest
+ *    and NEVER overwritten.
+ * 2. AI extraction is read-only: results stored in ai_extraction_result only.
+ * 3. AI CANNOT create a profile. Profile creation requires:
+ *    - zero plausible matches, AND
+ *    - AI confidence = "high"
+ *    Otherwise → needs_review / ambiguous.
+ * 4. "medium" confidence with no match → needs_review, no profile created.
  */
 
 // ---------------------------------------------------------------------------
-// Inlined identity resolver helpers (cannot import from other functions)
+// Helpers
 // ---------------------------------------------------------------------------
 
 function normKey(s) {
-  return (s || '')
-    .trim()
-    .toLowerCase()
-    .replace(/[''`.,\-]/g, '')
-    .replace(/\s+/g, ' ')
-    .trim();
+  return (s || '').trim().toLowerCase().replace(/[''`.,\-]/g, '').replace(/\s+/g, ' ').trim();
 }
-
 function normPhone(s) {
   return (s || '').replace(/\D/g, '').replace(/^610/, '0').replace(/^61/, '0');
 }
-
 function normEmail(s) {
   return (s || '').trim().toLowerCase();
 }
-
 function normAddress(s) {
   return (s || '').trim().toLowerCase().replace(/[,.\-]/g, ' ').replace(/\s+/g, ' ').trim();
 }
-
 function computeKeys(firstName, middleName, surname) {
   const fk = normKey(firstName);
   const mk = normKey(middleName);
@@ -49,7 +39,6 @@ function computeKeys(firstName, middleName, surname) {
   const surname_first_key = [sk, fk].filter(Boolean).join('|');
   return { name_key, surname_first_key, fk, mk, sk };
 }
-
 function buildCanonicalName(first, middle, surname) {
   const parts = [];
   if (first?.trim()) parts.push(first.trim());
@@ -57,199 +46,168 @@ function buildCanonicalName(first, middle, surname) {
   if (surname?.trim()) parts.push(surname.trim().toUpperCase());
   return parts.join(' ');
 }
-
 function buildFolderSlug(first, middle, surname) {
   return [first, middle, surname]
     .filter(Boolean)
     .map(p => p.trim().replace(/[^a-zA-Z0-9 ]/g, '').replace(/\s+/g, '-'))
-    .join('-')
-    .toLowerCase();
+    .join('-').toLowerCase();
 }
-
 function hasStrongIdentifierMatch(incoming, candidate) {
-  if (incoming.date_of_birth && candidate.date_of_birth) {
-    if (incoming.date_of_birth === candidate.date_of_birth) return true;
-  }
-
-  const candidatePhones = [
-    candidate.phone,
-    ...(candidate.additional_phones || []).map(p => p.number),
-    ...(candidate.match_identifiers?.phones || []),
-  ].map(normPhone).filter(Boolean);
+  if (incoming.date_of_birth && candidate.date_of_birth &&
+      incoming.date_of_birth === candidate.date_of_birth) return true;
+  const cp = [candidate.phone, ...(candidate.additional_phones || []).map(p => p.number),
+    ...(candidate.match_identifiers?.phones || [])].map(normPhone).filter(Boolean);
   for (const p of (incoming.phones || []).map(normPhone).filter(Boolean)) {
-    if (candidatePhones.includes(p)) return true;
+    if (cp.includes(p)) return true;
   }
-
-  const candidateEmails = [
-    candidate.email,
-    ...(candidate.additional_emails || []).map(e => e.email),
-    ...(candidate.match_identifiers?.emails || []),
-  ].map(normEmail).filter(Boolean);
+  const ce = [candidate.email, ...(candidate.additional_emails || []).map(e => e.email),
+    ...(candidate.match_identifiers?.emails || [])].map(normEmail).filter(Boolean);
   for (const e of (incoming.emails || []).map(normEmail).filter(Boolean)) {
-    if (candidateEmails.includes(e)) return true;
+    if (ce.includes(e)) return true;
   }
-
-  const candidateAddresses = [
-    [candidate.address1, candidate.suburb, candidate.postcode].filter(Boolean).join(' '),
+  const ca = [[candidate.address1, candidate.suburb, candidate.postcode].filter(Boolean).join(' '),
     ...(candidate.additional_addresses || []).map(a =>
-      [a.address1, a.suburb, a.postcode].filter(Boolean).join(' ')
-    ),
-    ...(candidate.match_identifiers?.addresses || []),
-  ].map(normAddress).filter(Boolean);
+      [a.address1, a.suburb, a.postcode].filter(Boolean).join(' ')),
+    ...(candidate.match_identifiers?.addresses || [])].map(normAddress).filter(Boolean);
   for (const a of (incoming.addresses || []).map(normAddress).filter(Boolean)) {
-    if (candidateAddresses.some(ca => ca.includes(a) || a.includes(ca))) return true;
+    if (ca.some(x => x.includes(a) || a.includes(x))) return true;
   }
-
-  const candidateIdValues = [
-    ...(candidate.id_numbers || []),
-    ...(candidate.match_identifiers?.id_numbers || []),
-  ].map(n => normKey(n.value)).filter(Boolean);
+  const ci = [...(candidate.id_numbers || []), ...(candidate.match_identifiers?.id_numbers || [])]
+    .map(n => normKey(n.value)).filter(Boolean);
   for (const v of (incoming.id_numbers || []).map(n => normKey(n.value)).filter(Boolean)) {
-    if (candidateIdValues.includes(v)) return true;
+    if (ci.includes(v)) return true;
   }
-
   return false;
 }
-
 function buildCanonicalFields(crab) {
   const first = crab.first_name || '';
   const middle = crab.middle_name || '';
   const surname = crab.surname || '';
   const { name_key, surname_first_key, fk, mk, sk } = computeKeys(first, middle, surname);
   return {
-    first_name: first,
-    middle_name: middle,
-    surname,
+    first_name: first, middle_name: middle, surname,
     canonical_name: crab.canonical_name || buildCanonicalName(first, middle, surname),
     name_key: crab.name_key || name_key,
     surname_first_key: crab.surname_first_key || surname_first_key,
-    first_key: crab.first_key || fk,
-    middle_key: crab.middle_key || mk,
+    first_key: crab.first_key || fk, middle_key: crab.middle_key || mk,
     surname_key: crab.surname_key || sk,
     folder_slug: crab.folder_slug || buildFolderSlug(first, middle, surname),
     previous_folder_slugs: crab.previous_folder_slugs || [],
   };
 }
-
 function buildCanonicalFromInput(first, middle, surname) {
   const { name_key, surname_first_key, fk, mk, sk } = computeKeys(first, middle, surname);
   return {
-    first_name: first,
-    middle_name: middle,
-    surname,
+    first_name: first, middle_name: middle, surname,
     canonical_name: buildCanonicalName(first, middle, surname),
-    name_key,
-    surname_first_key,
-    first_key: fk,
-    middle_key: mk,
-    surname_key: sk,
+    name_key, surname_first_key,
+    first_key: fk, middle_key: mk, surname_key: sk,
     folder_slug: buildFolderSlug(first, middle, surname),
     previous_folder_slugs: [],
   };
 }
+function normFilename(s) {
+  return (s || '').toLowerCase().replace(/[_\-]/g, ' ').replace(/\s+/g, ' ')
+    .replace(/\.(pdf|docx|xlsx|jpg|jpeg|png|heic|txt|psd|other)$/i, '').trim();
+}
+async function sha256Hex(arrayBuffer) {
+  const hashBuf = await crypto.subtle.digest('SHA-256', arrayBuffer);
+  return Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
 
-async function resolveIdentity(db, payload) {
-  const {
-    first_name: rawFirst = '',
-    middle_name: rawMiddle = '',
-    surname: rawSurname = '',
-    date_of_birth,
-    phones = [],
-    emails = [],
-    addresses = [],
-    id_numbers = [],
-    confidence = 'medium',
-  } = payload;
+// ---------------------------------------------------------------------------
+// Deterministic identity resolver
+// Rules:
+//  - exact full-name match → use existing
+//  - first+surname only match, one candidate → use existing
+//  - multiple candidates → needs_review, NO create
+//  - uncertain/low confidence → needs_review, NO create
+//  - zero matches AND confidence=high → create new
+//  - zero matches AND confidence=medium/low → needs_review, NO create
+// ---------------------------------------------------------------------------
+async function resolveIdentity(db, { first_name, middle_name, surname, date_of_birth,
+    phones, emails, addresses, id_numbers, confidence }) {
+  const firstName = (first_name || '').trim();
+  const middleName = (middle_name || '').trim();
+  const surnameTrim = (surname || '').trim();
 
-  const firstName  = rawFirst.trim();
-  const middleName = rawMiddle.trim();
-  const surname    = rawSurname.trim();
-
-  if (!surname || confidence === 'low') {
-    return {
-      status: 'unmatched',
-      crabId: null,
-      candidateCrabIds: [],
-      confidence,
-      reason: !surname ? 'Surname missing — cannot resolve identity' : 'Low confidence — sending to review',
-      canonicalCrab: null,
-      shouldCreateNew: false,
-    };
+  if (!surnameTrim || confidence === 'low') {
+    return { status: 'unmatched', crabId: null, candidateCrabIds: [], confidence,
+      reason: !surnameTrim ? 'Surname missing' : 'Low confidence — sending to review',
+      canonicalCrab: null, shouldCreateNew: false };
   }
 
-  const { name_key, surname_first_key } = computeKeys(firstName, middleName, surname);
+  const { name_key, surname_first_key } = computeKeys(firstName, middleName, surnameTrim);
   const allCrabs = await db.entities.Crab.filter({ is_deleted: false });
 
-  const exactMatches = allCrabs.filter(c => computeKeys(c.first_name, c.middle_name, c.surname).name_key === name_key);
+  // Rule: exact full-name match
+  const exactMatches = allCrabs.filter(c =>
+    computeKeys(c.first_name, c.middle_name, c.surname).name_key === name_key);
   if (exactMatches.length >= 1) {
     exactMatches.sort((a, b) => new Date(a.created_date) - new Date(b.created_date));
     const keeper = exactMatches[0];
     return { status: 'matched', crabId: keeper.id, candidateCrabIds: [], confidence: 'high',
-      reason: `Exact name_key match: "${name_key}"`, canonicalCrab: buildCanonicalFields(keeper), shouldCreateNew: false };
-  }
-
-  const sfkMatches = allCrabs.filter(c => computeKeys(c.first_name, c.middle_name, c.surname).surname_first_key === surname_first_key);
-
-  if (!middleName && sfkMatches.length === 1) {
-    const keeper = sfkMatches[0];
-    return { status: 'matched', crabId: keeper.id, candidateCrabIds: [], confidence: 'high',
-      reason: `No middle name supplied; unambiguous surname+first match to "${keeper.full_name || keeper.id}"`,
+      reason: `Exact name_key match: "${name_key}"`,
       canonicalCrab: buildCanonicalFields(keeper), shouldCreateNew: false };
   }
 
+  const sfkMatches = allCrabs.filter(c =>
+    computeKeys(c.first_name, c.middle_name, c.surname).surname_first_key === surname_first_key);
+
+  // Rule: first+surname, one candidate, no middle → match existing
+  if (!middleName && sfkMatches.length === 1) {
+    const keeper = sfkMatches[0];
+    return { status: 'matched', crabId: keeper.id, candidateCrabIds: [], confidence: 'high',
+      reason: `Unambiguous surname+first match to "${keeper.full_name || keeper.id}"`,
+      canonicalCrab: buildCanonicalFields(keeper), shouldCreateNew: false };
+  }
+
+  // Rule: multiple candidates with same first+surname
   if (sfkMatches.length > 1) {
     const supporting = { date_of_birth, phones, emails, addresses, id_numbers };
-    const strongMatches = sfkMatches.filter(c => hasStrongIdentifierMatch(supporting, c));
-    if (strongMatches.length === 1) {
-      const keeper = strongMatches[0];
+    const strong = sfkMatches.filter(c => hasStrongIdentifierMatch(supporting, c));
+    if (strong.length === 1) {
+      const keeper = strong[0];
       return { status: 'matched', crabId: keeper.id, candidateCrabIds: [], confidence: 'medium',
-        reason: `Disambiguated via supporting identifier from ${sfkMatches.length} candidates`,
+        reason: `Disambiguated via supporting identifier`,
         canonicalCrab: buildCanonicalFields(keeper), shouldCreateNew: false };
     }
-    return { status: 'ambiguous', crabId: null, candidateCrabIds: sfkMatches.map(c => c.id), confidence: 'low',
-      reason: `${sfkMatches.length} candidates share first+surname "${firstName} ${surname.toUpperCase()}" — supporting identifiers did not disambiguate`,
-      canonicalCrab: buildCanonicalFromInput(firstName, middleName, surname), shouldCreateNew: false };
+    // Multiple candidates — NEVER create; send to review
+    return { status: 'ambiguous', crabId: null, candidateCrabIds: sfkMatches.map(c => c.id),
+      confidence: 'low',
+      reason: `${sfkMatches.length} candidates share "${firstName} ${surnameTrim.toUpperCase()}" — cannot disambiguate`,
+      canonicalCrab: buildCanonicalFromInput(firstName, middleName, surnameTrim),
+      shouldCreateNew: false };
   }
 
-  if (sfkMatches.length === 0) {
-    const shouldCreate = confidence === 'high' || confidence === 'medium';
-    return { status: shouldCreate ? 'matched' : 'unmatched', crabId: null, candidateCrabIds: [], confidence,
-      reason: shouldCreate
-        ? `No existing Crab found — new profile will be created for "${buildCanonicalName(firstName, middleName, surname)}"`
-        : `No existing Crab found and confidence is "${confidence}" — sending to review`,
-      canonicalCrab: buildCanonicalFromInput(firstName, middleName, surname), shouldCreateNew: shouldCreate };
+  // Single sfkMatch with differing middle name
+  if (sfkMatches.length === 1) {
+    const candidate = sfkMatches[0];
+    const supporting = { date_of_birth, phones, emails, addresses, id_numbers };
+    if (hasStrongIdentifierMatch(supporting, candidate)) {
+      return { status: 'matched', crabId: candidate.id, candidateCrabIds: [], confidence: 'medium',
+        reason: `Middle name differs but supporting identifier confirms match`,
+        canonicalCrab: buildCanonicalFields(candidate), shouldCreateNew: false };
+    }
+    return { status: 'ambiguous', crabId: null, candidateCrabIds: [candidate.id], confidence: 'low',
+      reason: `Possible match to "${candidate.full_name || candidate.id}" — middle name differs, no supporting identifier`,
+      canonicalCrab: buildCanonicalFromInput(firstName, middleName, surnameTrim),
+      shouldCreateNew: false };
   }
 
-  // Single sfkMatch with different middle name — check supporting identifiers
-  const candidate = sfkMatches[0];
-  const supporting = { date_of_birth, phones, emails, addresses, id_numbers };
-  if (hasStrongIdentifierMatch(supporting, candidate)) {
-    return { status: 'matched', crabId: candidate.id, candidateCrabIds: [], confidence: 'medium',
-      reason: `Middle name differs but supporting identifier confirms match to "${candidate.full_name || candidate.id}"`,
-      canonicalCrab: buildCanonicalFields(candidate), shouldCreateNew: false };
+  // Zero matches — only create new if confidence is HIGH
+  if (confidence === 'high') {
+    return { status: 'new', crabId: null, candidateCrabIds: [], confidence: 'high',
+      reason: `No existing profile found — new profile will be created (confidence: high)`,
+      canonicalCrab: buildCanonicalFromInput(firstName, middleName, surnameTrim),
+      shouldCreateNew: true };
   }
-  return { status: 'ambiguous', crabId: null, candidateCrabIds: [candidate.id], confidence: 'low',
-    reason: `Possible match to "${candidate.full_name || candidate.id}" but middle name differs and no supporting identifier confirms`,
-    canonicalCrab: buildCanonicalFromInput(firstName, middleName, surname), shouldCreateNew: false };
-}
 
-// ---------------------------------------------------------------------------
-// Filename normalisation (mirrors detectDuplicates)
-// ---------------------------------------------------------------------------
-
-function normFilename(s) {
-  return (s || '')
-    .toLowerCase()
-    .replace(/[_\-]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .replace(/\.(pdf|docx|xlsx|jpg|jpeg|png|heic|txt|psd|other)$/i, '')
-    .trim();
-}
-
-// Compute SHA-256 hex of an ArrayBuffer
-async function sha256Hex(arrayBuffer) {
-  const hashBuf = await crypto.subtle.digest('SHA-256', arrayBuffer);
-  return Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2, '0')).join('');
+  // zero matches but medium/low confidence → needs review, no create
+  return { status: 'unmatched', crabId: null, candidateCrabIds: [], confidence,
+    reason: `No existing profile found and confidence="${confidence}" — sending to review without creating profile`,
+    canonicalCrab: buildCanonicalFromInput(firstName, middleName, surnameTrim),
+    shouldCreateNew: false };
 }
 
 // ---------------------------------------------------------------------------
@@ -258,7 +216,6 @@ async function sha256Hex(arrayBuffer) {
 
 Deno.serve(async (req) => {
   try {
-    // API key auth (watcher script)
     const apiKey = req.headers.get('x-api-key');
     if (apiKey !== Deno.env.get('INGEST_API_KEY')) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
@@ -275,9 +232,7 @@ Deno.serve(async (req) => {
     const aiIdentify = formData.get('ai_identify') === 'true';
     const sourceModifiedAt = formData.get('source_modified_at') || null;
 
-    if (!file) {
-      return Response.json({ error: 'No file provided' }, { status: 400 });
-    }
+    if (!file) return Response.json({ error: 'No file provided' }, { status: 400 });
     if (!existingCrabId && !surname && !aiIdentify) {
       return Response.json({ error: 'surname or crab_id is required' }, { status: 400 });
     }
@@ -285,34 +240,39 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const db = base44.asServiceRole;
 
-    // Upload file early
-    const ext = filename.split('.').pop()?.toLowerCase() || 'other';
-    const fileType = ['pdf', 'docx', 'xlsx', 'jpg', 'jpeg', 'png', 'heic', 'txt', 'psd'].includes(ext) ? (ext === 'jpeg' ? 'jpg' : ext) : 'other';
+    const ingestJobId = crypto.randomUUID();
+    const uploadedAt = new Date().toISOString();
 
-    // Compute content hash before uploading (read file bytes)
+    // Compute hash from raw bytes BEFORE uploading
+    const fileBytes = await file.arrayBuffer();
     let contentHash = null;
     try {
-      const fileBytes = await file.arrayBuffer();
       contentHash = await sha256Hex(fileBytes);
     } catch (e) {
       console.warn(`⚠️  Could not compute content hash: ${e.message}`);
     }
 
+    const ext = filename.split('.').pop()?.toLowerCase() || 'other';
+    const fileType = ['pdf', 'docx', 'xlsx', 'jpg', 'jpeg', 'png', 'heic', 'txt', 'psd'].includes(ext)
+      ? (ext === 'jpeg' ? 'jpg' : ext) : 'other';
+    const fileSize = file.size || 0;
+
+    // Upload file — original_file_url is set once and never changed
     const { file_url } = await db.integrations.Core.UploadFile({ file });
 
-    // Accumulated extracted identity from AI (populated if aiIdentify runs)
+    // -----------------------------------------------------------------------
+    // AI extraction (read-only — never mutates document state)
+    // -----------------------------------------------------------------------
     let extractedIdentity = null;
     let aiConfidence = 'medium';
-    let aiTitle = '';
-    let aiFilename = '';
+    let aiExtractionResult = null;
 
-    // AI extraction — enrich name parts and build extractedIdentity
     if (aiIdentify && !existingCrabId) {
       const isImage = ['jpg', 'jpeg', 'png', 'heic'].includes(ext);
       const isPdf = ext === 'pdf';
       if (isImage || isPdf) {
         const hint = [firstName, middleName, surname].filter(Boolean).join(' ');
-        console.log(`🤖  AI verifying document: ${filename}${hint ? ` (hint: ${hint})` : ''}`);
+        console.log(`🤖  AI extracting: ${filename}${hint ? ` (hint: ${hint})` : ''}`);
         try {
           const categories = await db.entities.Category.list();
           const categoryOptions = categories.map(c => c.name).join(', ');
@@ -358,28 +318,17 @@ Return JSON with:
             },
           });
 
+          aiConfidence = result.confidence === 'high' ? 'high'
+            : result.confidence === 'low' ? 'low' : 'medium';
+
+          // Only use AI-extracted name parts if a surname was returned
           if (result.surname) {
-            firstName  = result.first_name  || '';
-            middleName = result.middle_name || '';
+            firstName  = result.first_name  || firstName;
+            middleName = result.middle_name || middleName;
             surname    = result.surname;
             console.log(`🤖  AI extracted: ${[firstName, middleName, surname].filter(Boolean).join(' ')}`);
-          } else {
-            console.log(`🤖  AI could not identify crab — storing as unassigned`);
           }
 
-          aiConfidence = result.confidence === 'high' ? 'high' : result.confidence === 'low' ? 'low' : 'medium';
-          aiTitle = result.document_title || '';
-
-          // Build AI filename if original isn't already formatted
-          const filenameBase = filename.replace(/\.[^/.]+$/, '');
-          const alreadyFormatted = /^.+ - .+/.test(filenameBase);
-          if (!alreadyFormatted && result.document_type) {
-            const namePart = [result.first_name, result.middle_name, result.surname?.toUpperCase()].filter(Boolean).join(' ');
-            aiFilename = namePart ? `${namePart} - ${result.document_type}` : result.document_type;
-            console.log(`🤖  AI filename: ${aiFilename}`);
-          }
-
-          // Build extractedIdentity for storage on the document
           extractedIdentity = {
             first_name:    result.first_name   || '',
             middle_name:   result.middle_name  || '',
@@ -391,21 +340,27 @@ Return JSON with:
             id_numbers:    result.id_numbers    || [],
           };
 
+          aiExtractionResult = {
+            document_title:  result.document_title || '',
+            document_type:   result.document_type  || '',
+            confidence:      aiConfidence,
+            extracted_at:    new Date().toISOString(),
+            file_url_used:   file_url,
+            content_hash_used: contentHash,
+          };
+
         } catch (e) {
-          console.warn(`🤖  AI verification failed: ${e.message}`);
+          console.warn(`🤖  AI extraction failed: ${e.message}`);
           aiConfidence = 'low';
         }
-      } else {
-        console.log(`🤖  File type ${ext} not supported for AI extraction`);
       }
     }
 
-    // ---------------------------------------------------------------------------
-    // Identity resolution
-    // ---------------------------------------------------------------------------
+    // -----------------------------------------------------------------------
+    // Identity resolution — deterministic, no auto-create unless high confidence
+    // -----------------------------------------------------------------------
 
     let crabId = null;
-    let resolvedStatus = 'unmatched';
     let identityResolutionStatus = 'unmatched';
     let identityConfidence = aiConfidence;
     let identityMatchReason = '';
@@ -414,7 +369,6 @@ Return JSON with:
     let isNew = false;
 
     if (existingCrabId) {
-      // Explicit crab_id — bypass matching, mark as manually assigned
       const existing = await db.entities.Crab.filter({ id: existingCrabId });
       const crab = existing[0];
       crabId = existingCrabId;
@@ -422,56 +376,40 @@ Return JSON with:
       identityConfidence = 'high';
       identityMatchReason = 'Explicit crab_id provided by uploader';
       canonicalCrab = crab ? buildCanonicalFields(crab) : null;
-      console.log(`📌  Explicit crab_id: ${crabId}`);
     } else {
-      // Run shared resolver
       const resolution = await resolveIdentity(db, {
-        first_name: firstName,
-        middle_name: middleName,
-        surname,
+        first_name: firstName, middle_name: middleName, surname,
         date_of_birth: extractedIdentity?.date_of_birth || '',
-        phones:    extractedIdentity?.phone  ? [extractedIdentity.phone]  : [],
-        emails:    extractedIdentity?.email  ? [extractedIdentity.email]  : [],
-        addresses: extractedIdentity?.address ? [extractedIdentity.address] : [],
+        phones:    extractedIdentity?.phone    ? [extractedIdentity.phone]    : [],
+        emails:    extractedIdentity?.email    ? [extractedIdentity.email]    : [],
+        addresses: extractedIdentity?.address  ? [extractedIdentity.address]  : [],
         id_numbers: extractedIdentity?.id_numbers || [],
         confidence: aiConfidence,
       });
 
-      resolvedStatus         = resolution.status;
-      identityConfidence     = resolution.confidence;
-      identityMatchReason    = resolution.reason;
-      candidateCrabIds       = resolution.candidateCrabIds || [];
-      canonicalCrab          = resolution.canonicalCrab;
+      identityConfidence = resolution.confidence;
+      identityMatchReason = resolution.reason;
+      candidateCrabIds = resolution.candidateCrabIds || [];
+      canonicalCrab = resolution.canonicalCrab;
 
       if (resolution.status === 'matched' && !resolution.shouldCreateNew) {
         crabId = resolution.crabId;
         identityResolutionStatus = 'matched';
         console.log(`✅  Matched to Crab: ${crabId} — ${resolution.reason}`);
-      } else if (resolution.status === 'matched' && resolution.shouldCreateNew) {
-        // Create new Crab with canonical fields
+      } else if (resolution.shouldCreateNew && resolution.status === 'new') {
+        // Only reaches here when confidence=high AND zero matches
         const cc = resolution.canonicalCrab;
         const newCrab = await db.entities.Crab.create({
-          first_name:           cc.first_name,
-          middle_name:          cc.middle_name,
-          surname:              cc.surname,
-          full_name:            cc.canonical_name,
-          canonical_name:       cc.canonical_name,
-          name_key:             cc.name_key,
-          surname_first_key:    cc.surname_first_key,
-          first_key:            cc.first_key,
-          middle_key:           cc.middle_key,
-          surname_key:          cc.surname_key,
-          folder_slug:          cc.folder_slug,
-          previous_folder_slugs: [],
-          status:               '',
-          aliases:              [],
-          tags:                 [],
-          id_numbers:           [],
-          mailing_same_as_residential: true,
-          is_deleted:           false,
+          first_name: cc.first_name, middle_name: cc.middle_name, surname: cc.surname,
+          full_name: cc.canonical_name, canonical_name: cc.canonical_name,
+          name_key: cc.name_key, surname_first_key: cc.surname_first_key,
+          first_key: cc.first_key, middle_key: cc.middle_key, surname_key: cc.surname_key,
+          folder_slug: cc.folder_slug, previous_folder_slugs: [],
+          status: '', aliases: [], tags: [], id_numbers: [],
+          mailing_same_as_residential: true, is_deleted: false,
         });
         crabId = newCrab.id;
-        isNew  = true;
+        isNew = true;
         identityResolutionStatus = 'matched';
         console.log(`✅  Created new Crab: ${cc.canonical_name} (${crabId})`);
       } else if (resolution.status === 'ambiguous') {
@@ -483,67 +421,49 @@ Return JSON with:
       }
     }
 
-    // ---------------------------------------------------------------------------
-    // Build folder name and vault path from the matched Crab's canonical fields
-    // (never from AI-extracted name fields directly)
-    // ---------------------------------------------------------------------------
+    // -----------------------------------------------------------------------
+    // Build vault path from resolved Crab canonical fields only
+    // -----------------------------------------------------------------------
 
-    let folderName = '';
     let vaultPath = '/crabs/_To Review/';
+    let folderName = '';
 
     if (crabId && canonicalCrab) {
-      // Use folder_slug if available, otherwise fall back to canonical_name
       folderName = canonicalCrab.canonical_name || buildCanonicalName(
-        canonicalCrab.first_name, canonicalCrab.middle_name, canonicalCrab.surname
-      );
+        canonicalCrab.first_name, canonicalCrab.middle_name, canonicalCrab.surname);
       vaultPath = `/crabs/${folderName}/documents/`;
-    } else if (identityResolutionStatus === 'ambiguous') {
-      vaultPath = '/crabs/_To Review/';
     }
 
-    // Build canonical filename
+    // Build canonical filename — stored as suggested, not mutating original
     const fileExt = filename.includes('.') ? filename.slice(filename.lastIndexOf('.')) : '';
     const filenameBase = filename.replace(/\.[^/.]+$/, '');
     const alreadyFormatted = /^.+ - .+/.test(filenameBase);
     let canonicalBase = filenameBase;
-
-    if (!alreadyFormatted) {
-      if (aiFilename) {
-        canonicalBase = aiFilename;
-      } else if (folderName) {
-        // Prefix with the canonical folder name if filename doesn't already start with it
-        const folderLower = folderName.toLowerCase();
-        if (!filenameBase.toLowerCase().startsWith(folderLower + ' - ')) {
-          canonicalBase = `${folderName} - ${filenameBase}`;
-        }
+    if (!alreadyFormatted && folderName) {
+      const folderLower = folderName.toLowerCase();
+      if (!filenameBase.toLowerCase().startsWith(folderLower + ' - ')) {
+        canonicalBase = `${folderName} - ${filenameBase}`;
       }
+    } else if (!alreadyFormatted && aiExtractionResult?.document_type) {
+      const namePart = [extractedIdentity?.first_name, extractedIdentity?.middle_name,
+        extractedIdentity?.surname?.toUpperCase()].filter(Boolean).join(' ');
+      canonicalBase = namePart ? `${namePart} - ${aiExtractionResult.document_type}` : aiExtractionResult.document_type;
     }
     const canonicalFilename = `${canonicalBase}${fileExt}`;
-    const baseTitle = aiTitle || canonicalBase;
-
-    // ---------------------------------------------------------------------------
-    // Duplicate & version detection
-    // ---------------------------------------------------------------------------
-
     const normalizedFilename = normFilename(canonicalFilename);
-    const fileSize = file.size || 0;
 
-    // Run duplicate detection
+    // -----------------------------------------------------------------------
+    // Duplicate detection
+    // -----------------------------------------------------------------------
+
     let dupDetection = {
-      duplicate_status: 'none',
-      duplicate_group_id: null,
-      version_group_id: null,
-      version_number: 1,
-      previous_version_id: null,
-      duplicate_candidate_ids: [],
-      duplicate_match_reason: null,
-      suggested_action: null,
-      confidence: 'low',
-      match_reasons: [],
+      duplicate_status: 'none', duplicate_group_id: null, version_group_id: null,
+      version_number: 1, previous_version_id: null, duplicate_candidate_ids: [],
+      duplicate_match_reason: null, suggested_action: null, confidence: 'low', match_reasons: [],
     };
 
     try {
-      const dupResponse = await base44.functions.invoke('detectDuplicates', {
+      const dupResp = await base44.functions.invoke('detectDuplicates', {
         entity_type: 'CrabDocument',
         normalized_filename: normalizedFilename,
         file_size: fileSize,
@@ -552,127 +472,133 @@ Return JSON with:
         category,
         crab_ids: crabId ? [crabId] : [],
       });
-      if (dupResponse.data && !dupResponse.data.error) {
-        dupDetection = dupResponse.data;
-      }
+      if (dupResp.data && !dupResp.data.error) dupDetection = dupResp.data;
     } catch (e) {
       console.warn(`⚠️  Duplicate detection failed: ${e.message}`);
     }
 
     const isDuplicate = ['exact_duplicate', 'renamed_duplicate'].includes(dupDetection.duplicate_status);
     const isVersion = dupDetection.duplicate_status === 'possible_version';
+    const newVersion = dupDetection.version_number || 1;
+    const previousVersionId = dupDetection.previous_version_id;
 
-    // For exact/renamed duplicates — create the doc but flag it, then create a DuplicateReview
-    // For versions — proceed normally with version metadata
-    // No automatic silent rejection
-
-    let newVersion = dupDetection.version_number || 1;
-    let previousVersionId = dupDetection.previous_version_id;
-
-    // Mark the previous latest version as no longer latest (version case)
     if (isVersion && previousVersionId) {
       try {
         await db.entities.CrabDocument.update(previousVersionId, { is_latest_version: false });
       } catch (e) {
         console.warn(`Could not update previous version: ${e.message}`);
       }
-      console.log(`🔄  New version v${newVersion} of: ${canonicalFilename}`);
     }
 
-    const versionedTitle = newVersion > 1 ? `${baseTitle} (v${newVersion})` : baseTitle;
+    const versionedTitle = newVersion > 1
+      ? `${aiExtractionResult?.document_title || canonicalBase} (v${newVersion})`
+      : (aiExtractionResult?.document_title || canonicalBase);
     const versionedVaultPath = crabId
       ? (newVersion > 1
           ? `${vaultPath}${canonicalFilename}`.replace(/(\.[^/.]+)$/, ` (v${newVersion})$1`)
           : `${vaultPath}${canonicalFilename}`)
       : vaultPath;
 
-    // ---------------------------------------------------------------------------
-    // Create CrabDocument
-    // ---------------------------------------------------------------------------
+    // -----------------------------------------------------------------------
+    // Determine processing status
+    // -----------------------------------------------------------------------
+    const processingStatus =
+      (identityResolutionStatus === 'ambiguous' ||
+       identityResolutionStatus === 'unmatched' ||
+       isDuplicate)
+        ? 'needs_review' : 'pending';
 
-    const processingStatus = (identityResolutionStatus === 'ambiguous' || identityResolutionStatus === 'unmatched' || isDuplicate)
-      ? 'needs_review'
-      : 'pending';
+    // -----------------------------------------------------------------------
+    // Create CrabDocument with immutable original fields
+    // -----------------------------------------------------------------------
 
     const doc = await db.entities.CrabDocument.create({
-      title:                    versionedTitle,
+      // Immutable original fields — set once, never overwritten
+      original_file_url:      file_url,
+      original_filename:      filename,   // the raw filename as received
+      original_content_hash:  contentHash || undefined,
+      original_file_size:     fileSize,
+      original_uploaded_at:   uploadedAt,
+      // Working / display fields
+      title:                  versionedTitle,
       file_url,
-      original_filename:        canonicalFilename,
-      normalized_filename:      normalizedFilename,
-      file_type:                fileType,
-      file_size:                fileSize,
-      source_modified_at:       sourceModifiedAt || undefined,
-      content_hash:             contentHash || undefined,
-      crab_ids:                 crabId ? [crabId] : [],
+      normalized_filename:    normalizedFilename,
+      file_type:              fileType,
+      file_size:              fileSize,
+      source_modified_at:     sourceModifiedAt || undefined,
+      content_hash:           contentHash || undefined,
+      crab_ids:               crabId ? [crabId] : [],
       category,
-      processing_status:        processingStatus,
-      notes:                    identityResolutionStatus === 'ambiguous'
-                                  ? `Ambiguous identity: ${identityMatchReason}`
-                                  : identityResolutionStatus === 'unmatched'
-                                    ? `Unmatched identity: ${identityMatchReason}`
-                                    : isDuplicate
-                                      ? `Flagged as ${dupDetection.duplicate_status}: ${dupDetection.duplicate_match_reason}`
-                                      : undefined,
-      vault_path:               crabId ? versionedVaultPath : '',
-      ingress_deleted:          false,
-      synced_to_vault:          false,
-      version:                  newVersion,
-      version_number:           newVersion,
-      version_group_id:         dupDetection.version_group_id || undefined,
-      previous_version_id:      previousVersionId || undefined,
-      is_latest_version:        !isDuplicate,
-      // Duplicate detection fields
-      duplicate_status:         dupDetection.duplicate_status || 'none',
-      duplicate_group_id:       dupDetection.duplicate_group_id || undefined,
-      duplicate_candidate_ids:  dupDetection.duplicate_candidate_ids?.length > 0 ? dupDetection.duplicate_candidate_ids : undefined,
-      duplicate_match_reason:   dupDetection.duplicate_match_reason || undefined,
-      duplicate_review_status:  isDuplicate ? 'pending_review' : 'not_required',
-      // Identity resolution fields
-      matched_crab_id:          crabId || undefined,
+      processing_status:      processingStatus,
+      notes:                  identityResolutionStatus === 'ambiguous'
+                                ? `Ambiguous identity: ${identityMatchReason}`
+                                : identityResolutionStatus === 'unmatched'
+                                  ? `Unmatched identity: ${identityMatchReason}`
+                                  : isDuplicate
+                                    ? `Flagged as ${dupDetection.duplicate_status}: ${dupDetection.duplicate_match_reason}`
+                                    : undefined,
+      vault_path:             crabId ? versionedVaultPath : '',
+      ingress_deleted:        false,
+      synced_to_vault:        false,
+      version:                newVersion,
+      version_number:         newVersion,
+      version_group_id:       dupDetection.version_group_id || undefined,
+      previous_version_id:    previousVersionId || undefined,
+      is_latest_version:      !isDuplicate,
+      duplicate_status:       dupDetection.duplicate_status || 'none',
+      duplicate_group_id:     dupDetection.duplicate_group_id || undefined,
+      duplicate_candidate_ids: dupDetection.duplicate_candidate_ids?.length > 0
+                                ? dupDetection.duplicate_candidate_ids : undefined,
+      duplicate_match_reason: dupDetection.duplicate_match_reason || undefined,
+      duplicate_review_status: isDuplicate ? 'pending_review' : 'not_required',
+      matched_crab_id:        crabId || undefined,
       identity_resolution_status: identityResolutionStatus,
-      identity_confidence:      identityConfidence,
-      identity_match_reason:    identityMatchReason,
-      candidate_crab_ids:       candidateCrabIds.length > 0 ? candidateCrabIds : undefined,
-      extracted_identity:       extractedIdentity || undefined,
+      identity_confidence:    identityConfidence,
+      identity_match_reason:  identityMatchReason,
+      candidate_crab_ids:     candidateCrabIds.length > 0 ? candidateCrabIds : undefined,
+      extracted_identity:     extractedIdentity || undefined,
+      // AI extraction is stored as proposed/suggested only
+      ai_extraction_result:   aiExtractionResult || undefined,
+      ai_confidence:          aiConfidence,
+      last_processing_job_id: ingestJobId,
     });
 
-    // Create DuplicateReview record if flagged
+    // Audit log
+    await db.entities.ProcessingLog.create({
+      document_id: doc.id,
+      processing_job_id: ingestJobId,
+      action: 'ingest',
+      status: 'completed',
+      file_url,
+      content_hash: contentHash,
+      file_size: fileSize,
+      details: `identity=${identityResolutionStatus} confidence=${identityConfidence} dup=${dupDetection.duplicate_status}`,
+    });
+
     if (isDuplicate || isVersion) {
       const reviewType = dupDetection.duplicate_status === 'exact_duplicate' ? 'exact_duplicate'
         : dupDetection.duplicate_status === 'renamed_duplicate' ? 'renamed_duplicate'
         : 'possible_version';
-
       await db.entities.DuplicateReview.create({
-        review_type:            reviewType,
-        status:                 'pending',
-        primary_document_id:    doc.id,
+        review_type: reviewType, status: 'pending',
+        primary_document_id: doc.id,
         candidate_document_ids: dupDetection.duplicate_candidate_ids || [],
-        duplicate_group_id:     dupDetection.duplicate_group_id || undefined,
-        version_group_id:       dupDetection.version_group_id || undefined,
-        match_score:            dupDetection.confidence === 'high' ? 1.0 : dupDetection.confidence === 'medium' ? 0.7 : 0.4,
-        match_reasons:          dupDetection.match_reasons || [],
-        suggested_action:       dupDetection.suggested_action || 'manual_review',
+        duplicate_group_id: dupDetection.duplicate_group_id || undefined,
+        version_group_id: dupDetection.version_group_id || undefined,
+        match_score: dupDetection.confidence === 'high' ? 1.0 : dupDetection.confidence === 'medium' ? 0.7 : 0.4,
+        match_reasons: dupDetection.match_reasons || [],
+        suggested_action: dupDetection.suggested_action || 'manual_review',
       });
-      console.log(`🔍  DuplicateReview created for doc ${doc.id} — ${reviewType}`);
     }
 
-    console.log(`✅  CrabDocument v${newVersion} created: ${doc.id} → ${versionedVaultPath} [dup: ${dupDetection.duplicate_status}]`);
+    console.log(`✅  CrabDocument v${newVersion} created: ${doc.id} [dup: ${dupDetection.duplicate_status}]`);
     return Response.json({
-      success:              true,
-      document_id:          doc.id,
-      crab_id:              crabId,
-      crab_name:            canonicalCrab?.canonical_name || '',
-      vault_path:           crabId ? versionedVaultPath : '',
-      is_new_crab:          isNew,
-      identity_status:      identityResolutionStatus,
-      identity_confidence:  identityConfidence,
-      identity_reason:      identityMatchReason,
-      ambiguous_crab:       identityResolutionStatus === 'ambiguous',
-      candidate_crab_ids:   candidateCrabIds,
-      version:              newVersion,
-      is_new_version:       newVersion > 1,
-      duplicate_status:     dupDetection.duplicate_status,
-      duplicate_flagged:    isDuplicate,
+      success: true, document_id: doc.id, crab_id: crabId,
+      crab_name: canonicalCrab?.canonical_name || '', is_new_crab: isNew,
+      identity_status: identityResolutionStatus, identity_confidence: identityConfidence,
+      identity_reason: identityMatchReason, ambiguous_crab: identityResolutionStatus === 'ambiguous',
+      candidate_crab_ids: candidateCrabIds, version: newVersion,
+      duplicate_status: dupDetection.duplicate_status, duplicate_flagged: isDuplicate,
     });
 
   } catch (error) {
