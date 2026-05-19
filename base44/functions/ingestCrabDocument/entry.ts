@@ -278,11 +278,7 @@ Deno.serve(async (req) => {
           const categoryOptions = categories.map(c => c.name).join(', ');
 
           const result = await db.integrations.Core.InvokeLLM({
-            prompt: `Analyse this document carefully and extract:
-1. The full name of the primary person it belongs to or is addressed to.
-2. A descriptive title for the document.
-3. The document type — choose from the available types below.
-4. Any date of birth, address, phone, email, or ID numbers visible.
+            prompt: `Analyse this document carefully and extract the following information.
 
 Filename: "${filename}"
 ${hint ? `Name hint from filename/folder: "${hint}" — use as strong hint but correct if document shows a different name.` : 'No name hint — identify from document content only.'}
@@ -290,8 +286,9 @@ ${hint ? `Name hint from filename/folder: "${hint}" — use as strong hint but c
 Available document types: ${categoryOptions}
 
 Return JSON with:
-- first_name, middle_name, surname
-- document_title (clean descriptive title)
+- first_name, middle_name, surname (the primary person this document belongs to or is addressed to)
+- jurisdiction: The issuing state, territory, country, or authority (e.g. "VIC", "NSW", "Australia", "QLD"). Leave empty string if unknown — do NOT invent it.
+- document_description: A concise human-readable description of the document type only (e.g. "Drivers Licence", "Passport", "Birth Certificate", "ASIC Company Extract", "Medicare Card"). Do NOT include a person name or date. Keep it short.
 - document_type (exactly one from available types)
 - date_of_birth (YYYY-MM-DD or empty)
 - address (full address as single string or empty)
@@ -303,17 +300,18 @@ Return JSON with:
             response_json_schema: {
               type: 'object',
               properties: {
-                first_name:     { type: 'string' },
-                middle_name:    { type: 'string' },
-                surname:        { type: 'string' },
-                document_title: { type: 'string' },
-                document_type:  { type: 'string' },
-                date_of_birth:  { type: 'string' },
-                address:        { type: 'string' },
-                phone:          { type: 'string' },
-                email:          { type: 'string' },
-                id_numbers:     { type: 'array', items: { type: 'object' } },
-                confidence:     { type: 'string' },
+                first_name:           { type: 'string' },
+                middle_name:          { type: 'string' },
+                surname:              { type: 'string' },
+                jurisdiction:         { type: 'string' },
+                document_description: { type: 'string' },
+                document_type:        { type: 'string' },
+                date_of_birth:        { type: 'string' },
+                address:              { type: 'string' },
+                phone:                { type: 'string' },
+                email:                { type: 'string' },
+                id_numbers:           { type: 'array', items: { type: 'object' } },
+                confidence:           { type: 'string' },
               },
             },
           });
@@ -341,12 +339,13 @@ Return JSON with:
           };
 
           aiExtractionResult = {
-            document_title:  result.document_title || '',
-            document_type:   result.document_type  || '',
-            confidence:      aiConfidence,
-            extracted_at:    new Date().toISOString(),
-            file_url_used:   file_url,
-            content_hash_used: contentHash,
+            document_description: result.document_description || '',
+            jurisdiction:         result.jurisdiction         || '',
+            document_type:        result.document_type        || '',
+            confidence:           aiConfidence,
+            extracted_at:         new Date().toISOString(),
+            file_url_used:        file_url,
+            content_hash_used:    contentHash,
           };
 
         } catch (e) {
@@ -434,21 +433,33 @@ Return JSON with:
       vaultPath = `/crabs/${folderName}/documents/`;
     }
 
-    // Build canonical filename — stored as suggested, not mutating original
+    // -----------------------------------------------------------------------
+    // Build canonical filename using new standard format:
+    //   <Profile Full NAME> - <Jurisdiction> <Document Description>.<ext>
+    //
+    // Profile name MUST come from the matched Crab record only — AI must not
+    // decide or generate the profile name portion.
+    // -----------------------------------------------------------------------
     const fileExt = filename.includes('.') ? filename.slice(filename.lastIndexOf('.')) : '';
-    const filenameBase = filename.replace(/\.[^/.]+$/, '');
-    const alreadyFormatted = /^.+ - .+/.test(filenameBase);
-    let canonicalBase = filenameBase;
-    if (!alreadyFormatted && folderName) {
-      const folderLower = folderName.toLowerCase();
-      if (!filenameBase.toLowerCase().startsWith(folderLower + ' - ')) {
-        canonicalBase = `${folderName} - ${filenameBase}`;
+
+    // Resolve the profile name from the matched Crab record
+    let profileName = null;
+    if (crabId && canonicalCrab) {
+      profileName = canonicalCrab.canonical_name || null;
+      if (!profileName) {
+        const parts = [canonicalCrab.first_name, canonicalCrab.middle_name, canonicalCrab.surname?.toUpperCase()].filter(Boolean);
+        profileName = parts.join(' ');
       }
-    } else if (!alreadyFormatted && aiExtractionResult?.document_type) {
-      const namePart = [extractedIdentity?.first_name, extractedIdentity?.middle_name,
-        extractedIdentity?.surname?.toUpperCase()].filter(Boolean).join(' ');
-      canonicalBase = namePart ? `${namePart} - ${aiExtractionResult.document_type}` : aiExtractionResult.document_type;
     }
+    if (!profileName) {
+      profileName = 'Unknown Subject';
+    }
+
+    // Jurisdiction and document description come from AI extraction only (no profile name from AI)
+    const jurisdiction = aiExtractionResult?.jurisdiction || '';
+    const docDescription = aiExtractionResult?.document_description || aiExtractionResult?.document_type || filename.replace(/\.[^/.]+$/, '');
+    const descPart = [jurisdiction, docDescription].filter(Boolean).join(' ');
+    const canonicalBase = `${profileName} - ${descPart}`;
     const canonicalFilename = `${canonicalBase}${fileExt}`;
     const normalizedFilename = normFilename(canonicalFilename);
 

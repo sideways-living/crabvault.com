@@ -68,9 +68,13 @@ async function processDoc(db, doc) {
   const bothSidesHint = /both|both.?sides|front.?and.?back/.test(filename);
 
   let crabContext = '';
+  let resolvedCrab = null;
   if (doc.crab_ids?.length) {
     const crabs = await db.entities.Crab.filter({ id: doc.crab_ids[0] });
-    if (crabs[0]) crabContext = `\nThis document belongs to: ${crabs[0].full_name || crabs[0].surname}`;
+    if (crabs[0]) {
+      resolvedCrab = crabs[0];
+      crabContext = `\nThis document belongs to: ${crabs[0].full_name || crabs[0].surname}`;
+    }
   }
 
   let aiResult = null;
@@ -90,7 +94,8 @@ ${bothSidesHint ? `⚠️  FILENAME INDICATES BOTH SIDES: Set id_card_side to "b
 CRITICAL: Trust the filename hints above. If filename indicates Medicare Card, Drivers Licence, Passport, or Birth Certificate, classify it as such.
 
 Please analyse this document and return structured data:
-- suggested_title: A clean, descriptive title. Format: "YYYY-MM-DD - Description" if you can identify a date. Keep it concise.
+- jurisdiction: The issuing state, territory, country, or authority (e.g. "VIC", "NSW", "Australia", "QLD"). Leave empty string if unknown — do NOT invent it.
+- document_description: A concise human-readable document type only, no names or dates (e.g. "Drivers Licence", "Passport", "Birth Certificate", "Medicare Card", "Pay Slip"). Keep it short.
 - summary: 2-3 sentence summary of what this document is and its key details.
 - category: One of: correspondence, evidence, receipt, Medicare Card, Drivers Licence, Passport, Birth Certificate, id, legal, medical, financial, Pay Slip, other. PRIORITIZE filename hints.
 - id_card_side: If this is an ID document, specify "front", "back", or "both". Otherwise null.
@@ -104,16 +109,17 @@ Please analyse this document and return structured data:
       response_json_schema: {
         type: 'object',
         properties: {
-          suggested_title: { type: 'string' },
-          summary: { type: 'string' },
-          category: { type: 'string' },
-          id_card_side: { type: ['string', 'null'] },
-          is_payslip: { type: 'boolean' },
-          pay_period_end_date: { type: ['string', 'null'] },
-          pay_date: { type: ['string', 'null'] },
-          document_date: { type: ['string', 'null'] },
-          tags: { type: 'array', items: { type: 'string' } },
-          confidence: { type: 'string' },
+          jurisdiction:         { type: 'string' },
+          document_description: { type: 'string' },
+          summary:              { type: 'string' },
+          category:             { type: 'string' },
+          id_card_side:         { type: ['string', 'null'] },
+          is_payslip:           { type: 'boolean' },
+          pay_period_end_date:  { type: ['string', 'null'] },
+          pay_date:             { type: ['string', 'null'] },
+          document_date:        { type: ['string', 'null'] },
+          tags:                 { type: 'array', items: { type: 'string' } },
+          confidence:           { type: 'string' },
         },
       },
     });
@@ -180,6 +186,25 @@ Please analyse this document and return structured data:
   // -------------------------------------------------------------------------
   // Build suggested (proposed) fields — NOT applied directly to live fields
   // -------------------------------------------------------------------------
+
+  // Build suggested_title using standard CrabVault format:
+  //   <Profile Full NAME> - <Jurisdiction> <Document Description>
+  // Profile name MUST come from the matched Crab record — AI must not decide it.
+  let profileName = null;
+  if (resolvedCrab) {
+    profileName = resolvedCrab.canonical_name || resolvedCrab.full_name || null;
+    if (!profileName) {
+      const surname = resolvedCrab.surname ? resolvedCrab.surname.toUpperCase() : '';
+      profileName = [resolvedCrab.first_name, resolvedCrab.middle_name, surname].filter(Boolean).join(' ');
+    }
+  }
+  if (!profileName) profileName = 'Unknown Subject';
+
+  const jurisdiction = (aiResult.jurisdiction || '').trim();
+  const docDescription = (aiResult.document_description || '').trim();
+  const descPart = [jurisdiction, docDescription].filter(Boolean).join(' ');
+  const suggestedTitle = descPart ? `${profileName} - ${descPart}` : profileName;
+
   let suggestedCategory = aiResult.category || doc.category || 'other';
   let suggestedDocDate = aiResult.document_date || null;
 
@@ -211,14 +236,16 @@ Please analyse this document and return structured data:
     review_reason: reviewReason,
     // Store AI output as suggested/proposed fields
     ai_extraction_result: {
-      suggested_title: aiResult.suggested_title || null,
-      suggested_summary: aiResult.summary || null,
-      suggested_category: suggestedCategory,
-      suggested_document_date: suggestedDocDate,
-      suggested_id_card_side: aiResult.id_card_side || null,
-      suggested_tags: aiResult.tags || [],
-      confidence: aiConfidence,
-      processed_at: new Date().toISOString(),
+      suggested_title:          suggestedTitle,
+      suggested_summary:        aiResult.summary || null,
+      suggested_category:       suggestedCategory,
+      suggested_document_date:  suggestedDocDate,
+      suggested_id_card_side:   aiResult.id_card_side || null,
+      suggested_tags:           aiResult.tags || [],
+      jurisdiction:             jurisdiction || null,
+      document_description:     docDescription || null,
+      confidence:               aiConfidence,
+      processed_at:             new Date().toISOString(),
     },
   };
 
@@ -239,7 +266,7 @@ Please analyse this document and return structured data:
     file_url: snapshotFileUrl,
     content_hash: snapshotHash,
     file_size: snapshotSize,
-    details: `AI confidence: ${aiConfidence}. Suggested title: "${aiResult.suggested_title}". Auto-applied: ${canAutoApply}`,
+    details: `AI confidence: ${aiConfidence}. Suggested title: "${suggestedTitle}". Auto-applied: ${canAutoApply}`,
   });
 
   console.log(`✅ Processed: ${doc.id} → confidence=${aiConfidence} autoApply=${canAutoApply}`);
