@@ -95,11 +95,18 @@ CRITICAL: Trust the filename hints above. If filename indicates Medicare Card, D
 
 Please analyse this document and return structured data:
 - jurisdiction: The issuing state, territory, country, or authority (e.g. "VIC", "NSW", "Australia", "QLD"). Leave empty string if unknown — do NOT invent it.
-- document_description: A concise human-readable document type only, no names or dates (e.g. "Drivers Licence", "Passport", "Birth Certificate", "Medicare Card", "Pay Slip"). Keep it short.
+- document_description: A concise human-readable document type only, no names or dates (e.g. "Drivers Licence", "Passport", "Birth Certificate", "Medicare Card", "Pay Slip", "Debit Mastercard", "Credit Visa"). Keep it short.
 - summary: 2-3 sentence summary of what this document is and its key details.
 - category: One of: correspondence, evidence, receipt, Medicare Card, Drivers Licence, Passport, Birth Certificate, id, legal, medical, financial, Pay Slip, other. PRIORITIZE filename hints.
 - id_card_side: If this is an ID document, specify "front", "back", or "both". Otherwise null.
 - is_payslip: Boolean - true if this is a payslip/pay advice/salary statement
+- is_card: true if this document is a bank card / credit card / debit card image
+- card_number: Full card number if visible (e.g. "1234 5678 9012 3456"), or last 4 digits only as "ending XXXX XXXX XXXX 1234". Empty string if not visible.
+- card_expiry: Expiry formatted as MM.YY (e.g. "02.28"). Empty string if not visible.
+- card_cvv: CVV/CVC only if visibly present. Empty string if not visible — do NOT invent it.
+- card_issuer: Issuing bank or financial institution (e.g. "Westpac", "NAB"). Empty string if unknown.
+- card_debit_or_credit: "Debit" or "Credit" if determinable. Empty string if unknown.
+- card_scheme: Card scheme if visible (e.g. "Visa", "Mastercard", "Amex", "eftpos"). Empty string if unknown.
 - pay_period_end_date: If payslip, end date in YYYY-MM-DD, otherwise null
 - pay_date: If payslip, actual pay date in YYYY-MM-DD, otherwise null
 - document_date: The date of the document in YYYY-MM-DD format if identifiable, otherwise null
@@ -115,6 +122,13 @@ Please analyse this document and return structured data:
           category:             { type: 'string' },
           id_card_side:         { type: ['string', 'null'] },
           is_payslip:           { type: 'boolean' },
+          is_card:              { type: 'boolean' },
+          card_number:          { type: 'string' },
+          card_expiry:          { type: 'string' },
+          card_cvv:             { type: 'string' },
+          card_issuer:          { type: 'string' },
+          card_debit_or_credit: { type: 'string' },
+          card_scheme:          { type: 'string' },
           pay_period_end_date:  { type: ['string', 'null'] },
           pay_date:             { type: ['string', 'null'] },
           document_date:        { type: ['string', 'null'] },
@@ -200,10 +214,26 @@ Please analyse this document and return structured data:
   }
   if (!profileName) profileName = 'Unknown Subject';
 
-  const jurisdiction = (aiResult.jurisdiction || '').trim();
-  const docDescription = (aiResult.document_description || '').trim();
-  const descPart = [jurisdiction, docDescription].filter(Boolean).join(' ');
-  const suggestedTitle = descPart ? `${profileName} - ${descPart}` : profileName;
+  let suggestedTitle;
+  if (aiResult.is_card) {
+    // Card format: <Profile Full NAME> - <CardNumber> <Expiry MM.YY> <CVV> - <Issuer> <Debit/Credit> <Scheme>
+    const cardNumber  = (aiResult.card_number          || '').trim() || 'XXX';
+    const cardExpiry  = (aiResult.card_expiry          || '').trim() || 'XX.XX';
+    const cardCvv     = (aiResult.card_cvv             || '').trim();
+    const cardIssuer  = (aiResult.card_issuer          || '').trim();
+    const cardDC      = (aiResult.card_debit_or_credit || '').trim();
+    const cardScheme  = (aiResult.card_scheme          || '').trim();
+    const cardDetails = [cardNumber, cardExpiry, cardCvv].filter(Boolean).join(' ');
+    const cardParts   = [cardIssuer, cardDC, cardScheme].filter(Boolean).join(' ');
+    suggestedTitle = cardParts
+      ? `${profileName} - ${cardDetails} - ${cardParts}`
+      : `${profileName} - ${cardDetails}`;
+  } else {
+    const jurisdiction   = (aiResult.jurisdiction         || '').trim();
+    const docDescription = (aiResult.document_description || '').trim();
+    const descPart       = [jurisdiction, docDescription].filter(Boolean).join(' ');
+    suggestedTitle = descPart ? `${profileName} - ${descPart}` : profileName;
+  }
 
   let suggestedCategory = aiResult.category || doc.category || 'other';
   let suggestedDocDate = aiResult.document_date || null;
@@ -242,8 +272,15 @@ Please analyse this document and return structured data:
       suggested_document_date:  suggestedDocDate,
       suggested_id_card_side:   aiResult.id_card_side || null,
       suggested_tags:           aiResult.tags || [],
-      jurisdiction:             jurisdiction || null,
-      document_description:     docDescription || null,
+      jurisdiction:             (aiResult.jurisdiction         || '') || null,
+      document_description:     (aiResult.document_description || '') || null,
+      is_card:                  aiResult.is_card              || false,
+      card_number:              aiResult.card_number          || null,
+      card_expiry:              aiResult.card_expiry          || null,
+      card_cvv:                 aiResult.card_cvv             || null,
+      card_issuer:              aiResult.card_issuer          || null,
+      card_debit_or_credit:     aiResult.card_debit_or_credit || null,
+      card_scheme:              aiResult.card_scheme          || null,
       confidence:               aiConfidence,
       processed_at:             new Date().toISOString(),
     },

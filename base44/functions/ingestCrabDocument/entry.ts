@@ -288,8 +288,15 @@ Available document types: ${categoryOptions}
 Return JSON with:
 - first_name, middle_name, surname (the primary person this document belongs to or is addressed to)
 - jurisdiction: The issuing state, territory, country, or authority (e.g. "VIC", "NSW", "Australia", "QLD"). Leave empty string if unknown — do NOT invent it.
-- document_description: A concise human-readable description of the document type only (e.g. "Drivers Licence", "Passport", "Birth Certificate", "ASIC Company Extract", "Medicare Card"). Do NOT include a person name or date. Keep it short.
+- document_description: A concise human-readable description of the document type only (e.g. "Drivers Licence", "Passport", "Birth Certificate", "ASIC Company Extract", "Medicare Card", "Debit Mastercard", "Credit Visa"). Do NOT include a person name or date. Keep it short.
 - document_type (exactly one from available types)
+- is_card: true if this document is a bank card / credit card / debit card image
+- card_number: Full card number if visible (e.g. "1234 5678 9012 3456"), or last 4 digits only as "ending XXXX XXXX XXXX 1234" if only partial is visible. Empty string if not visible.
+- card_expiry: Expiry formatted as MM.YY (e.g. "02.28"). Empty string if not visible.
+- card_cvv: CVV/CVC if visibly present on the document. Empty string if not visible — do NOT invent it.
+- card_issuer: The issuing bank or financial institution (e.g. "Westpac", "NAB", "CommBank"). Empty string if unknown.
+- card_debit_or_credit: "Debit" or "Credit" if determinable. Empty string if unknown.
+- card_scheme: Card scheme if visible (e.g. "Visa", "Mastercard", "Amex", "eftpos"). Empty string if unknown.
 - date_of_birth (YYYY-MM-DD or empty)
 - address (full address as single string or empty)
 - phone (normalised or empty)
@@ -306,6 +313,13 @@ Return JSON with:
                 jurisdiction:         { type: 'string' },
                 document_description: { type: 'string' },
                 document_type:        { type: 'string' },
+                is_card:              { type: 'boolean' },
+                card_number:          { type: 'string' },
+                card_expiry:          { type: 'string' },
+                card_cvv:             { type: 'string' },
+                card_issuer:          { type: 'string' },
+                card_debit_or_credit: { type: 'string' },
+                card_scheme:          { type: 'string' },
                 date_of_birth:        { type: 'string' },
                 address:              { type: 'string' },
                 phone:                { type: 'string' },
@@ -342,6 +356,13 @@ Return JSON with:
             document_description: result.document_description || '',
             jurisdiction:         result.jurisdiction         || '',
             document_type:        result.document_type        || '',
+            is_card:              result.is_card              || false,
+            card_number:          result.card_number          || '',
+            card_expiry:          result.card_expiry          || '',
+            card_cvv:             result.card_cvv             || '',
+            card_issuer:          result.card_issuer          || '',
+            card_debit_or_credit: result.card_debit_or_credit || '',
+            card_scheme:          result.card_scheme          || '',
             confidence:           aiConfidence,
             extracted_at:         new Date().toISOString(),
             file_url_used:        file_url,
@@ -455,11 +476,28 @@ Return JSON with:
       profileName = 'Unknown Subject';
     }
 
-    // Jurisdiction and document description come from AI extraction only (no profile name from AI)
-    const jurisdiction = aiExtractionResult?.jurisdiction || '';
-    const docDescription = aiExtractionResult?.document_description || aiExtractionResult?.document_type || filename.replace(/\.[^/.]+$/, '');
-    const descPart = [jurisdiction, docDescription].filter(Boolean).join(' ');
-    const canonicalBase = `${profileName} - ${descPart}`;
+    // Build canonical base using the correct format for the document type
+    let canonicalBase;
+    if (aiExtractionResult?.is_card) {
+      // Card format: <Profile Full NAME> - <CardNumber> <Expiry MM.YY> <CVV> - <Issuer> <Debit/Credit> <Scheme>
+      const cardNumber   = aiExtractionResult.card_number          || 'XXX';
+      const cardExpiry   = aiExtractionResult.card_expiry          || 'XX.XX';
+      const cardCvv      = aiExtractionResult.card_cvv             || '';
+      const cardIssuer   = aiExtractionResult.card_issuer          || '';
+      const cardDC       = aiExtractionResult.card_debit_or_credit || '';
+      const cardScheme   = aiExtractionResult.card_scheme          || '';
+      const cardParts    = [cardIssuer, cardDC, cardScheme].filter(Boolean).join(' ');
+      const cardDetails  = [cardNumber, cardExpiry, cardCvv].filter(Boolean).join(' ');
+      canonicalBase = cardParts
+        ? `${profileName} - ${cardDetails} - ${cardParts}`
+        : `${profileName} - ${cardDetails}`;
+    } else {
+      // Standard format: <Profile Full NAME> - <Jurisdiction> <Document Description>
+      const jurisdiction  = aiExtractionResult?.jurisdiction         || '';
+      const docDescription = aiExtractionResult?.document_description || aiExtractionResult?.document_type || filename.replace(/\.[^/.]+$/, '');
+      const descPart      = [jurisdiction, docDescription].filter(Boolean).join(' ');
+      canonicalBase = `${profileName} - ${descPart}`;
+    }
     const canonicalFilename = `${canonicalBase}${fileExt}`;
     const normalizedFilename = normFilename(canonicalFilename);
 
@@ -502,8 +540,8 @@ Return JSON with:
     }
 
     const versionedTitle = newVersion > 1
-      ? `${aiExtractionResult?.document_title || canonicalBase} (v${newVersion})`
-      : (aiExtractionResult?.document_title || canonicalBase);
+      ? `${canonicalBase} (v${newVersion})`
+      : canonicalBase;
     const versionedVaultPath = crabId
       ? (newVersion > 1
           ? `${vaultPath}${canonicalFilename}`.replace(/(\.[^/.]+)$/, ` (v${newVersion})$1`)
