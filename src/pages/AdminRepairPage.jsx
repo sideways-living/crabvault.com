@@ -3,6 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Loader2, AlertTriangle, CheckCircle2, Wrench, Users, FileWarning, HardDrive, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
+import FilenameReprocessPanel from "@/components/admin/FilenameReprocessPanel";
 
 function SectionCard({ title, icon: Icon, items, emptyMsg, renderItem }) {
   if (!items || items.length === 0) {
@@ -78,6 +79,8 @@ export default function AdminRepairPage() {
           </Button>
         </div>
       </div>
+
+      <FilenameReprocessPanel />
 
       {!report && !loading && (
         <div className="flex flex-col items-center py-20 gap-3 text-muted-foreground">

@@ -35,6 +35,66 @@
       "type": "string",
       "title": "Normalized Filename"
     },
+    "suggested_filename": {
+      "type": "string",
+      "title": "Suggested Filename (from bulk reprocess)"
+    },
+    "naming_status": {
+      "type": "string",
+      "title": "Naming Status",
+      "enum": [
+        "pending",
+        "needs_review",
+        "approved",
+        "applied"
+      ],
+      "default": "pending"
+    },
+    "extracted_naming_data": {
+      "type": "object",
+      "title": "Extracted Naming Data (from filename reprocessing)",
+      "properties": {
+        "document_kind": {
+          "type": "string"
+        },
+        "jurisdiction": {
+          "type": "string"
+        },
+        "document_description": {
+          "type": "string"
+        },
+        "card_number": {
+          "type": "string"
+        },
+        "card_last_four": {
+          "type": "string"
+        },
+        "card_expiry": {
+          "type": "string"
+        },
+        "card_cvv": {
+          "type": "string"
+        },
+        "card_issuer": {
+          "type": "string"
+        },
+        "card_account_type": {
+          "type": "string"
+        },
+        "card_type": {
+          "type": "string"
+        },
+        "filename_confidence": {
+          "type": "string"
+        },
+        "review_reason": {
+          "type": "string"
+        },
+        "processed_at": {
+          "type": "string"
+        }
+      }
+    },
     "file_type": {
       "type": "string",
       "title": "File Type",
