@@ -108,7 +108,7 @@ Document metadata fields:
 Filename component fields (used to build the vault filename — do NOT include the person name):
 - document_kind: "card" if this is a bank/credit/debit card image, "identity_document" if government-issued ID, "other" for everything else.
 - jurisdiction: Issuing state/territory/country only if clearly visible (e.g. "VIC", "NSW", "QLD", "Australia"). Empty string if unknown — do NOT invent.
-- document_description: Concise document type label only, no names or dates (e.g. "Drivers Licence", "Passport", "Birth Certificate", "Medicare Card", "Pay Slip"). Empty string if unknown.
+- document_description: 3 to 5 word description of what the document is. No person names, no dates. Examples: "Drivers Licence Front", "Passport Photo Page", "Birth Certificate Extract", "Medicare Card", "ASIC Company Extract", "Rates Notice", "Bank Statement". Empty string if unknown.
 - card_number: Full card number if visible (e.g. "1234 5678 9012 3456"). Empty string if not visible.
 - card_last_four: Last 4 digits only if full number not visible. Empty string otherwise.
 - card_expiry: Expiry as MM.YY (e.g. "02.28"). Empty string if not visible.
@@ -218,10 +218,10 @@ Confidence:
   // Profile name MUST come from the matched Crab record — AI must not decide it.
   let profileName = null;
   if (resolvedCrab) {
-    profileName = resolvedCrab.canonical_name || resolvedCrab.full_name || null;
+    profileName = resolvedCrab.canonical_name?.trim() || resolvedCrab.full_name?.trim() || null;
     if (!profileName) {
       const surname = resolvedCrab.surname ? resolvedCrab.surname.toUpperCase() : '';
-      profileName = [resolvedCrab.first_name, resolvedCrab.middle_name, surname].filter(Boolean).join(' ');
+      profileName = [resolvedCrab.first_name, resolvedCrab.middle_name, surname].filter(Boolean).join(' ') || null;
     }
   }
   if (!profileName) profileName = 'Unknown Subject';
@@ -242,6 +242,8 @@ Confidence:
       ? `${profileName} - ${cardDetails} - ${cardParts}`
       : `${profileName} - ${cardDetails}`;
   } else {
+    // Standard format: <Profile Full NAME> - [Jurisdiction] <Document Description in 3-5 words>
+    // Jurisdiction omitted entirely if unknown — never left as blank token
     const jurisdiction   = (aiResult.jurisdiction         || '').trim();
     const docDescription = (aiResult.document_description || '').trim();
     const descPart       = [jurisdiction, docDescription].filter(Boolean).join(' ');
