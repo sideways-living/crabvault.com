@@ -295,22 +295,23 @@ Identity fields (for profile matching):
 - email (or empty string)
 - id_numbers: array of { label, value } objects
 
-Filename component fields (used to build the vault filename — do NOT include the person name):
-- document_kind: "card" if this is a bank/credit/debit card image, "identity_document" if government-issued ID, "other" for everything else
-- jurisdiction: Issuing state/territory/country/authority only if clearly visible or obvious (e.g. "VIC", "NSW", "QLD", "Australia"). Empty string if unknown — do NOT invent.
-- document_description: Concise document type label only, no names or dates (e.g. "Drivers Licence", "Passport", "Birth Certificate", "Medicare Card", "ASIC Company Extract"). Empty string if unknown.
-- card_number: Full card number if visible (e.g. "1234 5678 9012 3456"). Empty string if not visible.
+Filename component fields — return ONLY these four for the filename (do NOT include person name, do NOT generate the full filename):
+- jurisdiction: Issuing state/territory/country/authority ONLY if clearly visible or strongly implied by the issuing authority (e.g. "VIC", "NSW", "QLD", "Australia"). null if unknown — do NOT invent.
+- document_description: Exactly 3 to 5 words describing the document type. No person names. No dates. Examples: "Drivers Licence Front", "Passport Photo Page", "Birth Certificate Extract", "Medicare Card", "ASIC Company Extract", "Rates Notice", "Bank Statement".
+- filename_confidence: "high" if jurisdiction and document_description are clearly legible and unambiguous, "medium" if mostly clear, "low" if uncertain.
+- review_reason: Brief explanation if filename_confidence is not "high" (e.g. "document partially obscured"). null if confidence is high.
+
+Also return these fields for identity matching and card detection (NOT for filename):
+- document_kind: "card" if bank/credit/debit card image, "identity_document" if government-issued ID, "other" for everything else.
+- card_number: Full card number if visible. Empty string if not.
 - card_last_four: Last 4 digits only if full number not visible. Empty string otherwise.
-- card_expiry: Expiry as MM.YY (e.g. "02.28"). Empty string if not visible.
-- card_cvv: CVV/CVC only if visibly printed on the document. Empty string if not visible — do NOT invent.
-- card_issuer: Issuing bank or institution (e.g. "Westpac", "NAB", "CommBank"). Empty string if unknown.
+- card_expiry: MM.YY format. Empty string if not visible.
+- card_cvv: Only if visibly printed. Empty string if not — do NOT invent.
+- card_issuer: Issuing bank (e.g. "Westpac", "NAB"). Empty string if unknown.
 - card_account_type: "Debit" or "Credit" if determinable. Empty string if unknown.
 - card_type: Card scheme if visible ("Visa", "Mastercard", "Amex", "eftpos"). Empty string if unknown.
-- document_type (exactly one from available types, for internal categorisation)
-
-Confidence:
-- filename_confidence: "high" if filename components are clearly legible and unambiguous, "medium" if mostly clear, "low" if uncertain
-- identity_confidence: "high" if name is clearly legible, "medium" if inferred, "low" if uncertain`,
+- document_type: exactly one from available types, for internal categorisation.
+- identity_confidence: "high" if name is clearly legible, "medium" if inferred, "low" if uncertain.`,
             file_urls: [file_url],
             response_json_schema: {
               type: 'object',
@@ -324,8 +325,10 @@ Confidence:
                 email:                { type: 'string' },
                 id_numbers:           { type: 'array', items: { type: 'object' } },
                 document_kind:        { type: 'string' },
-                jurisdiction:         { type: 'string' },
+                jurisdiction:         { type: ['string', 'null'] },
                 document_description: { type: 'string' },
+                filename_confidence:  { type: 'string' },
+                review_reason:        { type: ['string', 'null'] },
                 card_number:          { type: 'string' },
                 card_last_four:       { type: 'string' },
                 card_expiry:          { type: 'string' },
@@ -334,7 +337,6 @@ Confidence:
                 card_account_type:    { type: 'string' },
                 card_type:            { type: 'string' },
                 document_type:        { type: 'string' },
-                filename_confidence:  { type: 'string' },
                 identity_confidence:  { type: 'string' },
               },
             },
@@ -370,7 +372,7 @@ Confidence:
           aiExtractionResult = {
             document_kind:        result.document_kind        || 'other',
             document_description: result.document_description || '',
-            jurisdiction:         result.jurisdiction         || '',
+            jurisdiction:         result.jurisdiction         || null,
             document_type:        result.document_type        || '',
             is_card:              isCard,
             card_number:          result.card_number          || '',
@@ -381,6 +383,7 @@ Confidence:
             card_account_type:    result.card_account_type    || '',
             card_type:            result.card_type            || '',
             filename_confidence:  fileConf,
+            review_reason:        result.review_reason        || null,
             identity_confidence:  identConf,
             extracted_at:         new Date().toISOString(),
             file_url_used:        file_url,

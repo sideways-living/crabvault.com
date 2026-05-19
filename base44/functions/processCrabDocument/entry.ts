@@ -105,20 +105,21 @@ Document metadata fields:
 - document_date: Date of the document in YYYY-MM-DD if identifiable, otherwise null.
 - tags: Array of relevant keyword tags.
 
-Filename component fields (used to build the vault filename — do NOT include the person name):
-- document_kind: "card" if this is a bank/credit/debit card image, "identity_document" if government-issued ID, "other" for everything else.
-- jurisdiction: Issuing state/territory/country only if clearly visible (e.g. "VIC", "NSW", "QLD", "Australia"). Empty string if unknown — do NOT invent.
-- document_description: 3 to 5 word description of what the document is. No person names, no dates. Examples: "Drivers Licence Front", "Passport Photo Page", "Birth Certificate Extract", "Medicare Card", "ASIC Company Extract", "Rates Notice", "Bank Statement". Empty string if unknown.
-- card_number: Full card number if visible (e.g. "1234 5678 9012 3456"). Empty string if not visible.
+Filename component fields — return ONLY these four for the filename (do NOT include person name, do NOT generate the full filename):
+- jurisdiction: Issuing state/territory/country ONLY if clearly visible or strongly implied by the issuing authority (e.g. "VIC", "NSW", "QLD", "Australia"). null if unknown — do NOT invent.
+- document_description: Exactly 3 to 5 words describing the document type. No person names. No dates. Examples: "Drivers Licence Front", "Passport Photo Page", "Birth Certificate Extract", "Medicare Card", "ASIC Company Extract", "Rates Notice", "Bank Statement".
+- filename_confidence: "high" if jurisdiction and document_description are clearly legible and unambiguous, "medium" if mostly clear, "low" if uncertain.
+- review_reason: Brief explanation if filename_confidence is not "high" (e.g. "document partially obscured"). null if confidence is high.
+
+Also return these fields for card detection (NOT for filename):
+- document_kind: "card" if bank/credit/debit card image, "identity_document" if government-issued ID, "other" for everything else.
+- card_number: Full card number if visible. Empty string if not.
 - card_last_four: Last 4 digits only if full number not visible. Empty string otherwise.
-- card_expiry: Expiry as MM.YY (e.g. "02.28"). Empty string if not visible.
-- card_cvv: CVV/CVC only if visibly printed. Empty string if not visible — do NOT invent.
-- card_issuer: Issuing bank or institution (e.g. "Westpac", "NAB"). Empty string if unknown.
+- card_expiry: MM.YY format. Empty string if not visible.
+- card_cvv: Only if visibly printed. Empty string if not — do NOT invent.
+- card_issuer: Issuing bank (e.g. "Westpac", "NAB"). Empty string if unknown.
 - card_account_type: "Debit" or "Credit" if determinable. Empty string if unknown.
 - card_type: Card scheme if visible ("Visa", "Mastercard", "Amex", "eftpos"). Empty string if unknown.
-
-Confidence:
-- filename_confidence: "high" if filename components are clearly legible and unambiguous, "medium" if mostly clear, "low" if uncertain.
 - identity_confidence: "high" if person identity is clear, "medium" if inferred, "low" if uncertain.`,
       file_urls: isVisual ? [snapshotFileUrl] : undefined,
       response_json_schema: {
@@ -133,8 +134,10 @@ Confidence:
           document_date:        { type: ['string', 'null'] },
           tags:                 { type: 'array', items: { type: 'string' } },
           document_kind:        { type: 'string' },
-          jurisdiction:         { type: 'string' },
+          jurisdiction:         { type: ['string', 'null'] },
           document_description: { type: 'string' },
+          filename_confidence:  { type: 'string' },
+          review_reason:        { type: ['string', 'null'] },
           card_number:          { type: 'string' },
           card_last_four:       { type: 'string' },
           card_expiry:          { type: 'string' },
@@ -142,7 +145,6 @@ Confidence:
           card_issuer:          { type: 'string' },
           card_account_type:    { type: 'string' },
           card_type:            { type: 'string' },
-          filename_confidence:  { type: 'string' },
           identity_confidence:  { type: 'string' },
         },
       },
@@ -290,6 +292,7 @@ Confidence:
       document_kind:            aiResult.document_kind        || 'other',
       jurisdiction:             aiResult.jurisdiction         || null,
       document_description:     aiResult.document_description || null,
+      review_reason:            aiResult.review_reason        || null,
       is_card:                  isCard,
       card_number:              aiResult.card_number          || null,
       card_last_four:           aiResult.card_last_four       || null,
