@@ -93,52 +93,64 @@ ${bothSidesHint ? `⚠️  FILENAME INDICATES BOTH SIDES: Set id_card_side to "b
 
 CRITICAL: Trust the filename hints above. If filename indicates Medicare Card, Drivers Licence, Passport, or Birth Certificate, classify it as such.
 
-Please analyse this document and return structured data:
-- jurisdiction: The issuing state, territory, country, or authority (e.g. "VIC", "NSW", "Australia", "QLD"). Leave empty string if unknown — do NOT invent it.
-- document_description: A concise human-readable document type only, no names or dates (e.g. "Drivers Licence", "Passport", "Birth Certificate", "Medicare Card", "Pay Slip", "Debit Mastercard", "Credit Visa"). Keep it short.
+Analyse this document and return structured data.
+
+Document metadata fields:
 - summary: 2-3 sentence summary of what this document is and its key details.
 - category: One of: correspondence, evidence, receipt, Medicare Card, Drivers Licence, Passport, Birth Certificate, id, legal, medical, financial, Pay Slip, other. PRIORITIZE filename hints.
 - id_card_side: If this is an ID document, specify "front", "back", or "both". Otherwise null.
-- is_payslip: Boolean - true if this is a payslip/pay advice/salary statement
-- is_card: true if this document is a bank card / credit card / debit card image
-- card_number: Full card number if visible (e.g. "1234 5678 9012 3456"), or last 4 digits only as "ending XXXX XXXX XXXX 1234". Empty string if not visible.
-- card_expiry: Expiry formatted as MM.YY (e.g. "02.28"). Empty string if not visible.
-- card_cvv: CVV/CVC only if visibly present. Empty string if not visible — do NOT invent it.
-- card_issuer: Issuing bank or financial institution (e.g. "Westpac", "NAB"). Empty string if unknown.
-- card_debit_or_credit: "Debit" or "Credit" if determinable. Empty string if unknown.
-- card_scheme: Card scheme if visible (e.g. "Visa", "Mastercard", "Amex", "eftpos"). Empty string if unknown.
-- pay_period_end_date: If payslip, end date in YYYY-MM-DD, otherwise null
-- pay_date: If payslip, actual pay date in YYYY-MM-DD, otherwise null
-- document_date: The date of the document in YYYY-MM-DD format if identifiable, otherwise null
-- tags: Array of relevant keyword tags
-- confidence: "high" if content is clearly legible and unambiguous, "medium" if mostly clear, "low" if uncertain`,
+- is_payslip: Boolean — true if this is a payslip/pay advice/salary statement.
+- pay_period_end_date: If payslip, end date in YYYY-MM-DD, otherwise null.
+- pay_date: If payslip, actual pay date in YYYY-MM-DD, otherwise null.
+- document_date: Date of the document in YYYY-MM-DD if identifiable, otherwise null.
+- tags: Array of relevant keyword tags.
+
+Filename component fields (used to build the vault filename — do NOT include the person name):
+- document_kind: "card" if this is a bank/credit/debit card image, "identity_document" if government-issued ID, "other" for everything else.
+- jurisdiction: Issuing state/territory/country only if clearly visible (e.g. "VIC", "NSW", "QLD", "Australia"). Empty string if unknown — do NOT invent.
+- document_description: Concise document type label only, no names or dates (e.g. "Drivers Licence", "Passport", "Birth Certificate", "Medicare Card", "Pay Slip"). Empty string if unknown.
+- card_number: Full card number if visible (e.g. "1234 5678 9012 3456"). Empty string if not visible.
+- card_last_four: Last 4 digits only if full number not visible. Empty string otherwise.
+- card_expiry: Expiry as MM.YY (e.g. "02.28"). Empty string if not visible.
+- card_cvv: CVV/CVC only if visibly printed. Empty string if not visible — do NOT invent.
+- card_issuer: Issuing bank or institution (e.g. "Westpac", "NAB"). Empty string if unknown.
+- card_account_type: "Debit" or "Credit" if determinable. Empty string if unknown.
+- card_type: Card scheme if visible ("Visa", "Mastercard", "Amex", "eftpos"). Empty string if unknown.
+
+Confidence:
+- filename_confidence: "high" if filename components are clearly legible and unambiguous, "medium" if mostly clear, "low" if uncertain.
+- identity_confidence: "high" if person identity is clear, "medium" if inferred, "low" if uncertain.`,
       file_urls: isVisual ? [snapshotFileUrl] : undefined,
       response_json_schema: {
         type: 'object',
         properties: {
-          jurisdiction:         { type: 'string' },
-          document_description: { type: 'string' },
           summary:              { type: 'string' },
           category:             { type: 'string' },
           id_card_side:         { type: ['string', 'null'] },
           is_payslip:           { type: 'boolean' },
-          is_card:              { type: 'boolean' },
-          card_number:          { type: 'string' },
-          card_expiry:          { type: 'string' },
-          card_cvv:             { type: 'string' },
-          card_issuer:          { type: 'string' },
-          card_debit_or_credit: { type: 'string' },
-          card_scheme:          { type: 'string' },
           pay_period_end_date:  { type: ['string', 'null'] },
           pay_date:             { type: ['string', 'null'] },
           document_date:        { type: ['string', 'null'] },
           tags:                 { type: 'array', items: { type: 'string' } },
-          confidence:           { type: 'string' },
+          document_kind:        { type: 'string' },
+          jurisdiction:         { type: 'string' },
+          document_description: { type: 'string' },
+          card_number:          { type: 'string' },
+          card_last_four:       { type: 'string' },
+          card_expiry:          { type: 'string' },
+          card_cvv:             { type: 'string' },
+          card_issuer:          { type: 'string' },
+          card_account_type:    { type: 'string' },
+          card_type:            { type: 'string' },
+          filename_confidence:  { type: 'string' },
+          identity_confidence:  { type: 'string' },
         },
       },
     });
     aiResult = result;
-    aiConfidence = result.confidence === 'high' ? 'high' : result.confidence === 'low' ? 'low' : 'medium';
+    // Use filename_confidence as the primary gate for auto-apply decisions
+    aiConfidence = result.filename_confidence === 'high' ? 'high'
+      : result.filename_confidence === 'low' ? 'low' : 'medium';
   } catch (aiErr) {
     failReason = `AI call failed: ${aiErr.message}`;
     console.error(`❌ AI error for ${doc.id}:`, aiErr.message);
@@ -214,16 +226,17 @@ Please analyse this document and return structured data:
   }
   if (!profileName) profileName = 'Unknown Subject';
 
+  const isCard = aiResult.document_kind === 'card';
   let suggestedTitle;
-  if (aiResult.is_card) {
+  if (isCard) {
     // Card format: <Profile Full NAME> - <CardNumber> <Expiry MM.YY> <CVV> - <Issuer> <Debit/Credit> <Scheme>
-    const cardNumber  = (aiResult.card_number          || '').trim() || 'XXX';
-    const cardExpiry  = (aiResult.card_expiry          || '').trim() || 'XX.XX';
-    const cardCvv     = (aiResult.card_cvv             || '').trim();
-    const cardIssuer  = (aiResult.card_issuer          || '').trim();
-    const cardDC      = (aiResult.card_debit_or_credit || '').trim();
-    const cardScheme  = (aiResult.card_scheme          || '').trim();
-    const cardDetails = [cardNumber, cardExpiry, cardCvv].filter(Boolean).join(' ');
+    const cardNum    = (aiResult.card_number    || aiResult.card_last_four || '').trim() || 'XXX';
+    const cardExpiry = (aiResult.card_expiry    || '').trim() || 'XX.XX';
+    const cardCvv    = (aiResult.card_cvv       || '').trim();
+    const cardIssuer = (aiResult.card_issuer    || '').trim();
+    const cardDC     = (aiResult.card_account_type || '').trim();
+    const cardScheme = (aiResult.card_type      || '').trim();
+    const cardDetails = [cardNum, cardExpiry, cardCvv].filter(Boolean).join(' ');
     const cardParts   = [cardIssuer, cardDC, cardScheme].filter(Boolean).join(' ');
     suggestedTitle = cardParts
       ? `${profileName} - ${cardDetails} - ${cardParts}`
@@ -272,15 +285,19 @@ Please analyse this document and return structured data:
       suggested_document_date:  suggestedDocDate,
       suggested_id_card_side:   aiResult.id_card_side || null,
       suggested_tags:           aiResult.tags || [],
-      jurisdiction:             (aiResult.jurisdiction         || '') || null,
-      document_description:     (aiResult.document_description || '') || null,
-      is_card:                  aiResult.is_card              || false,
+      document_kind:            aiResult.document_kind        || 'other',
+      jurisdiction:             aiResult.jurisdiction         || null,
+      document_description:     aiResult.document_description || null,
+      is_card:                  isCard,
       card_number:              aiResult.card_number          || null,
+      card_last_four:           aiResult.card_last_four       || null,
       card_expiry:              aiResult.card_expiry          || null,
       card_cvv:                 aiResult.card_cvv             || null,
       card_issuer:              aiResult.card_issuer          || null,
-      card_debit_or_credit:     aiResult.card_debit_or_credit || null,
-      card_scheme:              aiResult.card_scheme          || null,
+      card_account_type:        aiResult.card_account_type    || null,
+      card_type:                aiResult.card_type            || null,
+      filename_confidence:      aiResult.filename_confidence  || aiConfidence,
+      identity_confidence:      aiResult.identity_confidence  || null,
       confidence:               aiConfidence,
       processed_at:             new Date().toISOString(),
     },

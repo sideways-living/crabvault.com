@@ -278,31 +278,39 @@ Deno.serve(async (req) => {
           const categoryOptions = categories.map(c => c.name).join(', ');
 
           const result = await db.integrations.Core.InvokeLLM({
-            prompt: `Analyse this document carefully and extract the following information.
+            prompt: `Analyse this CrabVault document and extract identity + filename component information.
 
 Filename: "${filename}"
 ${hint ? `Name hint from filename/folder: "${hint}" — use as strong hint but correct if document shows a different name.` : 'No name hint — identify from document content only.'}
 
 Available document types: ${categoryOptions}
 
-Return JSON with:
+Return JSON with these fields:
+
+Identity fields (for profile matching):
 - first_name, middle_name, surname (the primary person this document belongs to or is addressed to)
-- jurisdiction: The issuing state, territory, country, or authority (e.g. "VIC", "NSW", "Australia", "QLD"). Leave empty string if unknown — do NOT invent it.
-- document_description: A concise human-readable description of the document type only (e.g. "Drivers Licence", "Passport", "Birth Certificate", "ASIC Company Extract", "Medicare Card", "Debit Mastercard", "Credit Visa"). Do NOT include a person name or date. Keep it short.
-- document_type (exactly one from available types)
-- is_card: true if this document is a bank card / credit card / debit card image
-- card_number: Full card number if visible (e.g. "1234 5678 9012 3456"), or last 4 digits only as "ending XXXX XXXX XXXX 1234" if only partial is visible. Empty string if not visible.
-- card_expiry: Expiry formatted as MM.YY (e.g. "02.28"). Empty string if not visible.
-- card_cvv: CVV/CVC if visibly present on the document. Empty string if not visible — do NOT invent it.
-- card_issuer: The issuing bank or financial institution (e.g. "Westpac", "NAB", "CommBank"). Empty string if unknown.
-- card_debit_or_credit: "Debit" or "Credit" if determinable. Empty string if unknown.
-- card_scheme: Card scheme if visible (e.g. "Visa", "Mastercard", "Amex", "eftpos"). Empty string if unknown.
-- date_of_birth (YYYY-MM-DD or empty)
-- address (full address as single string or empty)
-- phone (normalised or empty)
-- email (or empty)
+- date_of_birth (YYYY-MM-DD or empty string)
+- address (full address as single string or empty string)
+- phone (normalised or empty string)
+- email (or empty string)
 - id_numbers: array of { label, value } objects
-- confidence: "high" if name is clearly legible, "medium" if inferred, "low" if uncertain`,
+
+Filename component fields (used to build the vault filename — do NOT include the person name):
+- document_kind: "card" if this is a bank/credit/debit card image, "identity_document" if government-issued ID, "other" for everything else
+- jurisdiction: Issuing state/territory/country/authority only if clearly visible or obvious (e.g. "VIC", "NSW", "QLD", "Australia"). Empty string if unknown — do NOT invent.
+- document_description: Concise document type label only, no names or dates (e.g. "Drivers Licence", "Passport", "Birth Certificate", "Medicare Card", "ASIC Company Extract"). Empty string if unknown.
+- card_number: Full card number if visible (e.g. "1234 5678 9012 3456"). Empty string if not visible.
+- card_last_four: Last 4 digits only if full number not visible. Empty string otherwise.
+- card_expiry: Expiry as MM.YY (e.g. "02.28"). Empty string if not visible.
+- card_cvv: CVV/CVC only if visibly printed on the document. Empty string if not visible — do NOT invent.
+- card_issuer: Issuing bank or institution (e.g. "Westpac", "NAB", "CommBank"). Empty string if unknown.
+- card_account_type: "Debit" or "Credit" if determinable. Empty string if unknown.
+- card_type: Card scheme if visible ("Visa", "Mastercard", "Amex", "eftpos"). Empty string if unknown.
+- document_type (exactly one from available types, for internal categorisation)
+
+Confidence:
+- filename_confidence: "high" if filename components are clearly legible and unambiguous, "medium" if mostly clear, "low" if uncertain
+- identity_confidence: "high" if name is clearly legible, "medium" if inferred, "low" if uncertain`,
             file_urls: [file_url],
             response_json_schema: {
               type: 'object',
@@ -310,28 +318,34 @@ Return JSON with:
                 first_name:           { type: 'string' },
                 middle_name:          { type: 'string' },
                 surname:              { type: 'string' },
-                jurisdiction:         { type: 'string' },
-                document_description: { type: 'string' },
-                document_type:        { type: 'string' },
-                is_card:              { type: 'boolean' },
-                card_number:          { type: 'string' },
-                card_expiry:          { type: 'string' },
-                card_cvv:             { type: 'string' },
-                card_issuer:          { type: 'string' },
-                card_debit_or_credit: { type: 'string' },
-                card_scheme:          { type: 'string' },
                 date_of_birth:        { type: 'string' },
                 address:              { type: 'string' },
                 phone:                { type: 'string' },
                 email:                { type: 'string' },
                 id_numbers:           { type: 'array', items: { type: 'object' } },
-                confidence:           { type: 'string' },
+                document_kind:        { type: 'string' },
+                jurisdiction:         { type: 'string' },
+                document_description: { type: 'string' },
+                card_number:          { type: 'string' },
+                card_last_four:       { type: 'string' },
+                card_expiry:          { type: 'string' },
+                card_cvv:             { type: 'string' },
+                card_issuer:          { type: 'string' },
+                card_account_type:    { type: 'string' },
+                card_type:            { type: 'string' },
+                document_type:        { type: 'string' },
+                filename_confidence:  { type: 'string' },
+                identity_confidence:  { type: 'string' },
               },
             },
           });
 
-          aiConfidence = result.confidence === 'high' ? 'high'
-            : result.confidence === 'low' ? 'low' : 'medium';
+          // identity_confidence drives profile matching; filename_confidence drives naming
+          const identConf = result.identity_confidence === 'high' ? 'high'
+            : result.identity_confidence === 'low' ? 'low' : 'medium';
+          const fileConf = result.filename_confidence === 'high' ? 'high'
+            : result.filename_confidence === 'low' ? 'low' : 'medium';
+          aiConfidence = identConf; // used for profile resolution gate
 
           // Only use AI-extracted name parts if a surname was returned
           if (result.surname) {
@@ -352,18 +366,22 @@ Return JSON with:
             id_numbers:    result.id_numbers    || [],
           };
 
+          const isCard = result.document_kind === 'card';
           aiExtractionResult = {
+            document_kind:        result.document_kind        || 'other',
             document_description: result.document_description || '',
             jurisdiction:         result.jurisdiction         || '',
             document_type:        result.document_type        || '',
-            is_card:              result.is_card              || false,
+            is_card:              isCard,
             card_number:          result.card_number          || '',
+            card_last_four:       result.card_last_four       || '',
             card_expiry:          result.card_expiry          || '',
             card_cvv:             result.card_cvv             || '',
             card_issuer:          result.card_issuer          || '',
-            card_debit_or_credit: result.card_debit_or_credit || '',
-            card_scheme:          result.card_scheme          || '',
-            confidence:           aiConfidence,
+            card_account_type:    result.card_account_type    || '',
+            card_type:            result.card_type            || '',
+            filename_confidence:  fileConf,
+            identity_confidence:  identConf,
             extracted_at:         new Date().toISOString(),
             file_url_used:        file_url,
             content_hash_used:    contentHash,
@@ -480,22 +498,22 @@ Return JSON with:
     let canonicalBase;
     if (aiExtractionResult?.is_card) {
       // Card format: <Profile Full NAME> - <CardNumber> <Expiry MM.YY> <CVV> - <Issuer> <Debit/Credit> <Scheme>
-      const cardNumber   = aiExtractionResult.card_number          || 'XXX';
-      const cardExpiry   = aiExtractionResult.card_expiry          || 'XX.XX';
-      const cardCvv      = aiExtractionResult.card_cvv             || '';
-      const cardIssuer   = aiExtractionResult.card_issuer          || '';
-      const cardDC       = aiExtractionResult.card_debit_or_credit || '';
-      const cardScheme   = aiExtractionResult.card_scheme          || '';
+      const cardNum      = aiExtractionResult.card_number    || aiExtractionResult.card_last_four || 'XXX';
+      const cardExpiry   = aiExtractionResult.card_expiry    || 'XX.XX';
+      const cardCvv      = aiExtractionResult.card_cvv       || '';
+      const cardIssuer   = aiExtractionResult.card_issuer    || '';
+      const cardDC       = aiExtractionResult.card_account_type || '';
+      const cardScheme   = aiExtractionResult.card_type      || '';
       const cardParts    = [cardIssuer, cardDC, cardScheme].filter(Boolean).join(' ');
-      const cardDetails  = [cardNumber, cardExpiry, cardCvv].filter(Boolean).join(' ');
+      const cardDetails  = [cardNum, cardExpiry, cardCvv].filter(Boolean).join(' ');
       canonicalBase = cardParts
         ? `${profileName} - ${cardDetails} - ${cardParts}`
         : `${profileName} - ${cardDetails}`;
     } else {
       // Standard format: <Profile Full NAME> - <Jurisdiction> <Document Description>
-      const jurisdiction  = aiExtractionResult?.jurisdiction         || '';
+      const jurisdiction   = aiExtractionResult?.jurisdiction         || '';
       const docDescription = aiExtractionResult?.document_description || aiExtractionResult?.document_type || filename.replace(/\.[^/.]+$/, '');
-      const descPart      = [jurisdiction, docDescription].filter(Boolean).join(' ');
+      const descPart       = [jurisdiction, docDescription].filter(Boolean).join(' ');
       canonicalBase = `${profileName} - ${descPart}`;
     }
     const canonicalFilename = `${canonicalBase}${fileExt}`;
