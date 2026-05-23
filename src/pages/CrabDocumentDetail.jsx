@@ -618,20 +618,22 @@ export default function CrabDocumentDetail() {
                   onChange={e => { setEditDocDate(e.target.value); setDirty(true); }}
                 />
               </div>
-              <div className="flex gap-3 items-center">
-                <span className="text-xs text-muted-foreground w-28 shrink-0">Card Side</span>
-                <Select value={editIdCardSide || "__none__"} onValueChange={v => { setEditIdCardSide(v === "__none__" ? "" : v); setDirty(true); }}>
-                  <SelectTrigger className="h-7 text-xs w-36">
-                    <SelectValue placeholder="Select side…" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__none__">— Not Set —</SelectItem>
-                    <SelectItem value="front">Front</SelectItem>
-                    <SelectItem value="back">Back</SelectItem>
-                    <SelectItem value="both">Both Sides</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              {["Credit Card", "Debit Card", "Drivers Licence", "Medicare Card", "Photo Card", "Work Licence"].includes(doc.category) && (
+                <div className="flex gap-3 items-center">
+                  <span className="text-xs text-muted-foreground w-28 shrink-0">Card Side</span>
+                  <Select value={editIdCardSide || "__none__"} onValueChange={v => { setEditIdCardSide(v === "__none__" ? "" : v); setDirty(true); }}>
+                    <SelectTrigger className="h-7 text-xs w-36">
+                      <SelectValue placeholder="Select side…" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none__">— Not Set —</SelectItem>
+                      <SelectItem value="front">Front</SelectItem>
+                      <SelectItem value="back">Back</SelectItem>
+                      <SelectItem value="both">Both Sides</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               <MetaRow label="File Size" value={doc.file_size ? `${(doc.file_size / 1024).toFixed(1)} KB` : null} />
               <MetaRow label="Vault Path" value={doc.vault_path} />
               {doc.synced_to_vault !== undefined && (
