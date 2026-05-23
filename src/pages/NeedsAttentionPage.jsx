@@ -176,12 +176,12 @@ export default function NeedsAttentionPage() {
           <table className="w-full text-sm">
             <thead className="bg-muted/50 text-xs text-muted-foreground uppercase tracking-wide">
               <tr>
-                <th className="text-left px-4 py-3 font-medium">Document</th>
-                <th className="text-left px-4 py-3 font-medium">Linked Profiles</th>
-                <th className="text-left px-4 py-3 font-medium">Summary</th>
-                <th className="text-left px-4 py-3 font-medium">Suggested Filename</th>
-                <th className="text-left px-4 py-3 font-medium">Status</th>
-                <th className="px-4 py-3" />
+                <th className="text-left px-4 py-3 font-medium w-[18%]">Document</th>
+                <th className="text-left px-4 py-3 font-medium w-[14%]">Linked Profiles</th>
+                <th className="text-left px-4 py-3 font-medium w-[28%]">Summary</th>
+                <th className="text-left px-4 py-3 font-medium w-[20%]">Suggested Filename</th>
+                <th className="text-left px-4 py-3 font-medium w-[12%]">Status</th>
+                <th className="px-4 py-3 w-[8%]" />
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -193,34 +193,34 @@ export default function NeedsAttentionPage() {
 
                 return (
                   <tr key={doc.id} className="hover:bg-muted/20 transition-colors">
-                    <td className="px-4 py-3">
-                      <p className="font-medium truncate max-w-[200px]">{doc.title}</p>
+                    <td className="px-4 py-3 w-[18%]">
+                      <p className="font-medium truncate">{doc.title}</p>
                       {doc.original_filename && (
-                        <p className="text-[10px] font-mono text-muted-foreground truncate max-w-[200px]">{doc.original_filename}</p>
+                        <p className="text-[10px] font-mono text-muted-foreground truncate">{doc.original_filename}</p>
                       )}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 w-[14%]">
                       <div className="flex flex-wrap gap-1">
                         {crabNames.length > 0 ? crabNames.map(n => (
                           <span key={n} className="text-[10px] bg-secondary px-1.5 py-0.5 rounded-full">{n}</span>
                         )) : <span className="text-xs text-muted-foreground italic">None</span>}
                       </div>
                     </td>
-                    <td className="px-4 py-3 max-w-[220px]">
+                    <td className="px-4 py-3 w-[28%]">
                       {doc.summary ? (
                         <p className="text-xs text-muted-foreground line-clamp-2">{doc.summary}</p>
                       ) : (
                         <span className="text-xs text-muted-foreground italic">Not processed yet</span>
                       )}
                     </td>
-                    <td className="px-4 py-3 max-w-[180px]">
+                    <td className="px-4 py-3 w-[20%]">
                       {doc.vault_path ? (
                         <p className="text-[10px] font-mono text-muted-foreground truncate" title={doc.vault_path}>{doc.vault_path.split("/").pop()}</p>
                       ) : (
                         <span className="text-xs text-muted-foreground italic">—</span>
                       )}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 w-[12%]">
                       <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full ${statusDef.color}`}>
                         {isProcessingThis
                           ? <Loader2 className="h-3 w-3 animate-spin" />
@@ -229,7 +229,7 @@ export default function NeedsAttentionPage() {
                         {isProcessingThis ? "Processing…" : statusDef.label}
                       </span>
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 w-[8%]">
                       <div className="flex items-center gap-1 justify-end">
                         {doc.processing_status === "pending" && (
                           <Button
