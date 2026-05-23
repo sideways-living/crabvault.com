@@ -426,6 +426,24 @@ export default function CrabDocumentDetail() {
               <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200 shrink-0">outdated</span>
             )}
           </div>
+          {linkedCrabs.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mt-1">
+              {linkedCrabs.map(c => {
+                const profileName = [c.first_name, c.middle_name].filter(Boolean).map(n => n.charAt(0).toUpperCase() + n.slice(1).toLowerCase()).join(" ") + (c.surname ? " " + c.surname.toUpperCase() : "");
+                return (
+                  <button
+                    key={c.id}
+                    type="button"
+                    className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors border border-primary/20"
+                    onClick={() => { setEditTitle(profileName.trim()); setDirty(true); setTitleManuallyEdited(true); }}
+                    title={`Insert: ${profileName.trim()}`}
+                  >
+                    + {profileName.trim()}
+                  </button>
+                );
+              })}
+            </div>
+          )}
           {doc.original_filename && (
             <p className="text-xs font-mono text-muted-foreground mt-0.5 truncate">{doc.original_filename}</p>
           )}

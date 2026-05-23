@@ -152,6 +152,13 @@ export default function CrabsPage() {
                           ) : null;
                         })()}
                       </div>
+                      {crab.date_of_birth && (
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {crab.date_of_birth}
+                          {" · "}
+                          {Math.floor((Date.now() - new Date(crab.date_of_birth).getTime()) / (365.25 * 24 * 60 * 60 * 1000))} yrs
+                        </p>
+                      )}
                       {(crab.aliases || []).length > 0 && (
                         <p className="text-xs text-muted-foreground mt-0.5 truncate">aka {crab.aliases.join(", ")}</p>
                       )}
