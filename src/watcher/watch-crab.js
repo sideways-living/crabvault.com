@@ -241,10 +241,33 @@ async function uploadFile(filePath, filename, crabInfo) {
 }
 
 /**
+ * Recursively collect all files under a directory, returning
+ * { filePath, filename, relKey } for each file.
+ */
+function collectFilesRecursive(dir, relBase) {
+  const results = [];
+  let entries;
+  try { entries = fs.readdirSync(dir); } catch { return results; }
+  for (const entry of entries) {
+    if (isMacJunk(entry)) continue;
+    const fullPath = path.join(dir, entry);
+    const relKey   = relBase ? `${relBase}/${entry}` : entry;
+    let stat;
+    try { stat = fs.statSync(fullPath); } catch { continue; }
+    if (stat.isDirectory()) {
+      results.push(...collectFilesRecursive(fullPath, relKey));
+    } else if (stat.isFile()) {
+      results.push({ filePath: fullPath, filename: entry, relKey });
+    }
+  }
+  return results;
+}
+
+/**
  * Scan for files.
  * Supports two modes:
  *   1. Flat mode: all files in WATCH_FOLDER → use DEFAULT_SURNAME / DEFAULT_CRAB_ID
- *   2. Subfolder mode: WATCH_FOLDER/SURNAME_First_Middle/file.pdf → parse from folder name
+ *   2. Subfolder mode: WATCH_FOLDER/SURNAME_First_Middle/[nested/]file.pdf → parse from top-level folder name
  */
 async function poll() {
   let entries;
@@ -254,32 +277,29 @@ async function poll() {
 
   for (const entry of entries) {
     const entryPath = path.join(WATCH_FOLDER, entry);
-    const stat = fs.statSync(entryPath);
+    let stat;
+    try { stat = fs.statSync(entryPath); } catch { continue; }
 
     if (stat.isDirectory()) {
-      // Subfolder mode — folder name is a hint, AI will verify
+      // Subfolder mode — top-level folder name is the crab name hint
+      if (isMacJunk(entry)) continue;
       const crabInfo = { ...parseCrabFolder(entry), aiIdentify: true };
       if (!crabInfo.surname) continue;
 
-      let subFiles;
-      try { subFiles = fs.readdirSync(entryPath); } catch { continue; }
+      // Recursively collect all files under this person's folder
+      const files = collectFilesRecursive(entryPath, entry);
 
-      for (const filename of subFiles) {
-        if (isMacJunk(filename)) continue;
-        const logKey = `${entry}/${filename}`;
-        if (uploadedFiles.has(logKey)) continue;
+      for (const { filePath, filename, relKey } of files) {
+        if (uploadedFiles.has(relKey)) continue;
         const ext = path.extname(filename).toLowerCase();
-        if (!SUPPORTED.includes(ext)) { uploadedFiles.add(logKey); continue; }
-        const filePath = path.join(entryPath, filename);
-        if (!fs.statSync(filePath).isFile()) continue;
+        if (!SUPPORTED.includes(ext)) { uploadedFiles.add(relKey); continue; }
 
-        uploadedFiles.add(logKey);
-        console.log(`📄  [${entry}] Detected: ${filename}`);
+        uploadedFiles.add(relKey);
+        console.log(`📄  [${entry}] Detected: ${relKey}`);
         try {
           const result = await uploadFile(filePath, filename, crabInfo);
-          saveLog(); // Only persist to log after confirmed success
+          saveLog();
           console.log(`✅  Uploaded: ${filename} → doc:${result.document_id} crab:${result.crab_id} ${result.is_new_crab ? '(new profile)' : ''}`);
-          // Securely delete from unencrypted watch folder immediately after confirmed upload
           try {
             fs.unlinkSync(filePath);
             console.log(`🗑️   Deleted from watch folder: ${filePath}`);
@@ -288,7 +308,7 @@ async function poll() {
           }
         } catch (err) {
           console.error(`❌  Failed ${filename}:`, err.message);
-          uploadedFiles.delete(logKey);
+          uploadedFiles.delete(relKey);
         }
       }
 
