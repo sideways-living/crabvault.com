@@ -430,15 +430,34 @@ export default function CrabDocumentDetail() {
             <div className="flex flex-wrap gap-1.5 mt-1">
               {linkedCrabs.map(c => {
                 const profileName = [c.first_name, c.middle_name].filter(Boolean).map(n => n.charAt(0).toUpperCase() + n.slice(1).toLowerCase()).join(" ") + (c.surname ? " " + c.surname.toUpperCase() : "");
+                const name = profileName.trim();
                 return (
                   <button
                     key={c.id}
                     type="button"
                     className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors border border-primary/20"
-                    onClick={() => { setEditTitle(profileName.trim()); setDirty(true); setTitleManuallyEdited(true); }}
-                    title={`Insert: ${profileName.trim()}`}
+                    onMouseDown={e => {
+                      // Prevent the input from losing focus so we can read selectionStart/End
+                      e.preventDefault();
+                      const input = e.currentTarget.closest(".flex-1")?.querySelector("input");
+                      const start = input?.selectionStart ?? editTitle.length;
+                      const end = input?.selectionEnd ?? editTitle.length;
+                      const newVal = editTitle.slice(0, start) + name + editTitle.slice(end);
+                      setEditTitle(newVal);
+                      setDirty(true);
+                      setTitleManuallyEdited(true);
+                      // Restore cursor after state update
+                      requestAnimationFrame(() => {
+                        if (input) {
+                          const pos = start + name.length;
+                          input.setSelectionRange(pos, pos);
+                          input.focus();
+                        }
+                      });
+                    }}
+                    title={`Insert: ${name}`}
                   >
-                    + {profileName.trim()}
+                    + {name}
                   </button>
                 );
               })}
