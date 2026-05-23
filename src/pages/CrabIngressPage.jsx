@@ -3,7 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { Link } from "react-router-dom";
 import {
   FileText, User, CheckCircle2, AlertTriangle, Clock, Loader2,
-  ChevronRight, Upload, RefreshCw, X
+  ChevronRight, Upload, RefreshCw, X, ExternalLink
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -205,13 +205,22 @@ export default function CrabIngressPage() {
           {selectedDoc ? (
             <div className="bg-card border rounded-xl p-5 space-y-4 self-start sticky top-6">
               <div className="flex items-start justify-between">
-                <div>
+                <div className="flex-1 min-w-0">
                   <h2 className="font-semibold">Assign Document</h2>
                   <p className="text-xs text-muted-foreground mt-0.5 truncate max-w-xs">{selectedDoc.title}</p>
                 </div>
-                <button onClick={() => setSelected(null)} className="text-muted-foreground hover:text-foreground">
-                  <X className="h-4 w-4" />
-                </button>
+                <div className="flex gap-2 shrink-0">
+                  {selectedDoc.file_url && (
+                    <a href={selectedDoc.file_url} target="_blank" rel="noopener noreferrer">
+                      <button className="text-muted-foreground hover:text-primary transition-colors" title="Open document">
+                        <ExternalLink className="h-4 w-4" />
+                      </button>
+                    </a>
+                  )}
+                  <button onClick={() => setSelected(null)} className="text-muted-foreground hover:text-foreground">
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
 
               {/* New / Existing toggle */}
