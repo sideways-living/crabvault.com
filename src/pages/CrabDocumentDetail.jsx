@@ -16,6 +16,7 @@ const DEFAULT_CATEGORIES = [
   "Document",
   "Drivers Licence",
   "Employment Contract",
+  "Information",
   "Medical Certificate",
   "Medicare Card",
   "Mugshot",
@@ -26,8 +27,10 @@ const DEFAULT_CATEGORIES = [
   "Questionnaire",
   "Residential Lease",
   "Signature",
+  "Statement",
   "Tenant Report",
   "Utility Bill",
+  "Welcome Letter",
   "Work Licence",
 ];
 
