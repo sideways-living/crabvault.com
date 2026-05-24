@@ -17,6 +17,7 @@ const DEFAULT_CATEGORIES = [
   "Drivers Licence",
   "Employment Contract",
   "Information",
+  "Invoice",
   "Medical Certificate",
   "Medicare Card",
   "Mugshot",
