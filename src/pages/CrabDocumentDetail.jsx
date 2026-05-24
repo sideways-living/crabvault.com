@@ -26,6 +26,7 @@ const DEFAULT_CATEGORIES = [
   "Pay Slip",
   "Photo Card",
   "Questionnaire",
+  "Receipt",
   "Residential Lease",
   "Signature",
   "Statement",
