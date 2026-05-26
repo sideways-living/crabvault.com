@@ -83,15 +83,15 @@ export default function CrabRemindersSection({ crabId, crabName, refreshKey }) {
                 <div key={r.id} className={`rounded-lg border text-xs overflow-hidden ${isOverdue ? "border-red-200 bg-red-50/40" : "bg-muted/20"}`}>
                   {/* Row 1: icon+type (2/3) | edit/delete/done (1/3) */}
                   <div className="flex">
-                    <div className="flex-[2] p-2.5 flex flex-col gap-1 justify-center">
-                      <div className="flex items-center gap-1.5">
-                        {isOverdue
-                          ? <AlertTriangle className="h-3 w-3 text-red-500 shrink-0" />
-                          : <Clock className="h-3 w-3 text-muted-foreground shrink-0" />
-                        }
+                    <div className="flex-[2] p-2.5 flex flex-col gap-1 justify-start">
+                      {isOverdue
+                        ? <AlertTriangle className="h-3 w-3 text-red-500 shrink-0" />
+                        : <Clock className="h-3 w-3 text-muted-foreground shrink-0" />
+                      }
+                      <div className="flex flex-col gap-0.5">
                         <span className="font-medium">{r.reminder_type || "Reminder"}</span>
+                        {r.notes && <p className="text-muted-foreground truncate leading-tight">{r.notes}</p>}
                       </div>
-                      {r.notes && <p className="text-muted-foreground truncate leading-tight">{r.notes}</p>}
                     </div>
                     <div className="flex-1 p-2 flex flex-col items-end justify-between border-l border-border/40">
                       <div className="flex items-center gap-0.5">
