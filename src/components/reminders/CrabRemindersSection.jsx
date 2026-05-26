@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Bell, CheckCircle2, AlertTriangle, Clock, Loader2, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import EditReminderModal from "./EditReminderModal";
 
@@ -55,20 +56,27 @@ export default function CrabRemindersSection({ crabId, crabName, refreshKey }) {
   );
 
   return (
-    <>
-      {editingReminder && (
-        <EditReminderModal
-          reminder={editingReminder}
-          crabName={crabName}
-          onClose={() => setEditingReminder(null)}
-          onSaved={() => { setEditingReminder(null); load(); }}
-        />
-      )}
+    <TooltipProvider>
+      <>
+        {editingReminder && (
+          <EditReminderModal
+            reminder={editingReminder}
+            crabName={crabName}
+            onClose={() => setEditingReminder(null)}
+            onSaved={() => { setEditingReminder(null); load(); }}
+          />
+        )}
 
-      <div className="bg-card border rounded-xl p-5 space-y-3">
-        <h2 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-          <Bell className="h-3.5 w-3.5" /> Reminders
-        </h2>
+        <div className="bg-card border rounded-xl p-5 space-y-3">
+          <h2 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Bell className="h-3.5 w-3.5" />
+              </TooltipTrigger>
+              <TooltipContent>Reminders</TooltipContent>
+            </Tooltip>
+            Reminders
+          </h2>
 
         {reminders.filter(r => !r.is_deleted).length === 0 && (
           <p className="text-xs text-muted-foreground">No reminders yet</p>
@@ -85,8 +93,18 @@ export default function CrabRemindersSection({ crabId, crabName, refreshKey }) {
                   <div className="flex">
                     <div className="flex-[2] p-2.5 flex flex-col gap-1 justify-start">
                       {isOverdue
-                        ? <AlertTriangle className="h-3 w-3 text-red-500 shrink-0" />
-                        : <Clock className="h-3 w-3 text-muted-foreground shrink-0" />
+                        ? <Tooltip>
+                            <TooltipTrigger asChild>
+                              <AlertTriangle className="h-3 w-3 text-red-500 shrink-0 cursor-help" />
+                            </TooltipTrigger>
+                            <TooltipContent>Overdue</TooltipContent>
+                          </Tooltip>
+                        : <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Clock className="h-3 w-3 text-muted-foreground shrink-0 cursor-help" />
+                            </TooltipTrigger>
+                            <TooltipContent>Active</TooltipContent>
+                          </Tooltip>
                       }
                       <div className="flex flex-col gap-0.5">
                         <span className="font-medium">{r.reminder_type || "Reminder"}</span>
@@ -95,16 +113,31 @@ export default function CrabRemindersSection({ crabId, crabName, refreshKey }) {
                     </div>
                     <div className="flex-1 p-2 flex flex-col items-end justify-between">
                       <div className="flex items-center gap-0.5">
-                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground" onClick={() => setEditingReminder(r)} title="Edit">
-                          <Pencil className="h-3 w-3" />
-                        </Button>
-                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive" onClick={() => handleDelete(r)} title="Delete">
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground" onClick={() => setEditingReminder(r)}>
+                              <Pencil className="h-3 w-3" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Edit reminder</TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive" onClick={() => handleDelete(r)}>
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Delete reminder</TooltipContent>
+                        </Tooltip>
                       </div>
-                      <Button size="sm" variant="outline" className="h-6 text-[10px] px-2 gap-1" onClick={() => handleMarkDone(r)}>
-                        <CheckCircle2 className="h-3 w-3" /> Done
-                      </Button>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50" onClick={() => handleMarkDone(r)}>
+                            <CheckCircle2 className="h-3 w-3" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Mark as done</TooltipContent>
+                      </Tooltip>
                     </div>
                   </div>
                   {/* Row 2: Added (left 50%) | Due (right 50%) */}
@@ -137,19 +170,34 @@ export default function CrabRemindersSection({ crabId, crabName, refreshKey }) {
                   <div className="flex">
                     <div className="flex-[2] p-2 flex flex-col gap-1 justify-center">
                       <div className="flex items-center gap-1.5">
-                        <CheckCircle2 className="h-3 w-3 text-emerald-500 shrink-0" />
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <CheckCircle2 className="h-3 w-3 text-emerald-500 shrink-0 cursor-help" />
+                          </TooltipTrigger>
+                          <TooltipContent>Completed</TooltipContent>
+                        </Tooltip>
                         <span className="font-medium">{r.reminder_type || "Reminder"}</span>
                       </div>
                       {r.notes && <p className="text-muted-foreground truncate leading-tight">{r.notes}</p>}
                     </div>
                     <div className="flex-1 p-2 flex flex-col items-end justify-start">
                       <div className="flex items-center gap-0.5">
-                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground" onClick={() => setEditingReminder(r)} title="Edit">
-                          <Pencil className="h-3 w-3" />
-                        </Button>
-                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive" onClick={() => handleDelete(r)} title="Delete">
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground" onClick={() => setEditingReminder(r)}>
+                              <Pencil className="h-3 w-3" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Edit reminder</TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive" onClick={() => handleDelete(r)}>
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Delete reminder</TooltipContent>
+                        </Tooltip>
                       </div>
                     </div>
                   </div>
@@ -170,6 +218,7 @@ export default function CrabRemindersSection({ crabId, crabName, refreshKey }) {
           </details>
         )}
       </div>
-    </>
-  );
-}
+      </>
+      </TooltipProvider>
+      );
+      }
