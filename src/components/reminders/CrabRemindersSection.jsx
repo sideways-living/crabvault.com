@@ -98,13 +98,13 @@ export default function CrabRemindersSection({ crabId, crabName, refreshKey }) {
                     {isOverdue
                       ? <Tooltip>
                           <TooltipTrigger asChild>
-                            <AlertTriangle className="h-4 w-4 text-red-500 shrink-0 cursor-help" />
+                            <AlertTriangle className="h-4 w-4 text-red-500 shrink-0 cursor-help" strokeWidth={2.5} />
                           </TooltipTrigger>
                           <TooltipContent>Overdue</TooltipContent>
                         </Tooltip>
                       : <Tooltip>
                           <TooltipTrigger asChild>
-                            <Clock className="h-4 w-4 text-muted-foreground shrink-0 cursor-help" />
+                            <Clock className="h-4 w-4 text-muted-foreground shrink-0 cursor-help" strokeWidth={2.5} />
                           </TooltipTrigger>
                           <TooltipContent>Active</TooltipContent>
                         </Tooltip>
@@ -170,7 +170,7 @@ export default function CrabRemindersSection({ crabId, crabName, refreshKey }) {
                   <div className="flex items-center px-2 pt-2 pb-1 gap-1">
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0 cursor-help" />
+                        <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0 cursor-help" strokeWidth={2.5} />
                       </TooltipTrigger>
                       <TooltipContent>Completed</TooltipContent>
                     </Tooltip>
