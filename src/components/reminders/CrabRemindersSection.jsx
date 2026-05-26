@@ -93,7 +93,7 @@ export default function CrabRemindersSection({ crabId, crabName, refreshKey }) {
                         {r.notes && <p className="text-muted-foreground truncate leading-tight">{r.notes}</p>}
                       </div>
                     </div>
-                    <div className="flex-1 p-2 flex flex-col items-end justify-between border-l border-border/40">
+                    <div className="flex-1 p-2 flex flex-col items-end justify-between">
                       <div className="flex items-center gap-0.5">
                         <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground" onClick={() => setEditingReminder(r)} title="Edit">
                           <Pencil className="h-3 w-3" />
@@ -108,12 +108,12 @@ export default function CrabRemindersSection({ crabId, crabName, refreshKey }) {
                     </div>
                   </div>
                   {/* Row 2: Added (left 50%) | Due (right 50%) */}
-                  <div className="flex border-t border-border/40">
+                  <div className="flex">
                     <div className="flex-1 px-2.5 py-1.5 text-muted-foreground/70">
                       <div className="text-[10px] uppercase tracking-wide">Added</div>
                       <div>{formatDate(r.created_date)}</div>
                     </div>
-                    <div className={`flex-1 px-2.5 py-1.5 border-l border-border/40 ${isOverdue ? "text-red-600 font-medium" : "text-muted-foreground/70"}`}>
+                    <div className={`flex-1 px-2.5 py-1.5 text-right ${isOverdue ? "text-red-600 font-medium" : "text-muted-foreground/70"}`}>
                       <div className="text-[10px] uppercase tracking-wide">Due</div>
                       <div>{formatDate(r.due_date)}</div>
                     </div>
@@ -142,7 +142,7 @@ export default function CrabRemindersSection({ crabId, crabName, refreshKey }) {
                       </div>
                       {r.notes && <p className="text-muted-foreground truncate leading-tight">{r.notes}</p>}
                     </div>
-                    <div className="flex-1 p-2 flex flex-col items-end justify-start border-l border-border/40">
+                    <div className="flex-1 p-2 flex flex-col items-end justify-start">
                       <div className="flex items-center gap-0.5">
                         <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground" onClick={() => setEditingReminder(r)} title="Edit">
                           <Pencil className="h-3 w-3" />
@@ -154,12 +154,12 @@ export default function CrabRemindersSection({ crabId, crabName, refreshKey }) {
                     </div>
                   </div>
                   {/* Row 2: Added (50%) | Completed (50%) */}
-                  <div className="flex border-t border-border/40">
+                  <div className="flex">
                     <div className="flex-1 px-2 py-1.5 text-muted-foreground/70">
                       <div className="text-[10px] uppercase tracking-wide">Added</div>
                       <div>{formatDate(r.created_date)}</div>
                     </div>
-                    <div className="flex-1 px-2 py-1.5 border-l border-border/40 text-emerald-600">
+                    <div className="flex-1 px-2 py-1.5 text-right text-emerald-600">
                       <div className="text-[10px] uppercase tracking-wide">Completed</div>
                       <div>{formatDate(r.completed_at)}</div>
                     </div>
