@@ -19,6 +19,7 @@ import CrabAIExtractPanel from "@/components/CrabAIExtractPanel";
 import AddIdentificationDialog from "@/components/AddIdentificationDialog";
 import IdentificationSection from "@/components/IdentificationSection";
 import AddReminderButton from "@/components/reminders/AddReminderButton";
+import CrabRemindersSection from "@/components/reminders/CrabRemindersSection";
 import { toast } from "sonner";
 
 const isNew = (id) => id === "new";
@@ -47,6 +48,7 @@ export default function CrabDetail() {
   const [editing, setEditing] = useState(creating);
   const [editingAddressIdx, setEditingAddressIdx] = useState(null);
   const [showAddIdDialog, setShowAddIdDialog] = useState(false);
+  const [reminderRefreshKey, setReminderRefreshKey] = useState(0);
 
   useEffect(() => {
     if (creating) return;
@@ -749,6 +751,11 @@ export default function CrabDetail() {
             <ModuleSelector enabledModules={enabledModules} onToggle={handleModuleToggle} />
           )}
 
+          {/* Reminders */}
+          {!creating && (
+            <CrabRemindersSection crabId={id} refreshKey={reminderRefreshKey} />
+          )}
+
           {/* Linked Documents */}
           {!creating && (
             <div className="bg-card border rounded-xl p-5 space-y-3">
@@ -791,7 +798,7 @@ export default function CrabDetail() {
       onAdd={handleAddIdEntries}
     />
 
-    {!creating && <AddReminderButton crabId={id} />}
+    {!creating && <AddReminderButton crabId={id} onAdded={() => setReminderRefreshKey(k => k + 1)} />}
     </TooltipProvider>
   );
 }

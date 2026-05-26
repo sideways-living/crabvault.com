@@ -19,6 +19,7 @@ import DocumentSearchPage from './pages/DocumentSearchPage';
 import DuplicateReviewPage from './pages/DuplicateReviewPage';
 import DevicesPage from './pages/DevicesPage';
 import AdminRepairPage from './pages/AdminRepairPage';
+import RemindersPage from './pages/RemindersPage';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -60,6 +61,7 @@ const AuthenticatedApp = () => {
         <Route path="/devices" element={<DevicesPage />} />
         <Route path="/duplicate-review" element={<DuplicateReviewPage />} />
         <Route path="/admin-repair" element={<AdminRepairPage />} />
+        <Route path="/reminders" element={<RemindersPage />} />
         <Route path="*" element={<PageNotFound />} />
       </Route>
     </Routes>

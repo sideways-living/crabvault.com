@@ -23,6 +23,11 @@
       "type": "boolean",
       "title": "Done",
       "default": false
+    },
+    "completed_at": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Completed At"
     }
   },
   "required": [

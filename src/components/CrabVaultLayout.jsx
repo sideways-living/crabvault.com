@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { Link, useLocation, Outlet } from "react-router-dom";
-import { LayoutDashboard, Users, FileText, Shield, Inbox, AlertTriangle, Menu, X, Activity, Search, Copy, Smartphone, Wrench } from "lucide-react";
+import { LayoutDashboard, Users, FileText, Shield, Inbox, AlertTriangle, Menu, X, Activity, Search, Copy, Smartphone, Wrench, Bell } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
   { to: "/crabs", label: "Crabs", icon: Users },
+  { to: "/reminders", label: "Reminders", icon: Bell },
   { to: "/crab-documents", label: "Documents", icon: FileText },
   { to: "/ingress", label: "Ingress", icon: Inbox },
   { to: "/needs-attention", label: "Attention", icon: AlertTriangle },
