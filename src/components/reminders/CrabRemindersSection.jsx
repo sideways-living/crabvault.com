@@ -89,59 +89,55 @@ export default function CrabRemindersSection({ crabId, crabName, refreshKey }) {
               const isOverdue = r.due_date && new Date(r.due_date) < today;
               return (
                 <div key={r.id} className={`rounded-lg border text-xs overflow-hidden ${isOverdue ? "border-red-200 bg-red-50/40" : "bg-muted/20"}`}>
-                  {/* Row 1: icon+type (2/3) | edit/delete/done (1/3) */}
-                  <div className="flex">
-                    <div className="flex-[2] p-2.5 flex flex-col gap-1 justify-start">
-                      {isOverdue
-                        ? <Tooltip>
-                            <TooltipTrigger asChild>
-                              <AlertTriangle className="h-3 w-3 text-red-500 shrink-0 cursor-help" />
-                            </TooltipTrigger>
-                            <TooltipContent>Overdue</TooltipContent>
-                          </Tooltip>
-                        : <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Clock className="h-3 w-3 text-muted-foreground shrink-0 cursor-help" />
-                            </TooltipTrigger>
-                            <TooltipContent>Active</TooltipContent>
-                          </Tooltip>
-                      }
-                      <div className="flex flex-col gap-0.5">
-                        <span className="font-medium">{r.reminder_type || "Reminder"}</span>
-                        {r.notes && <p className="text-muted-foreground truncate leading-tight">{r.notes}</p>}
-                      </div>
-                    </div>
-                    <div className="flex-1 p-2 flex flex-col items-end justify-between">
-                      <div className="flex items-center gap-0.5">
-                        <Tooltip>
+                  {/* Row 1: status icon (left) | edit + delete + done buttons (right) */}
+                  <div className="flex items-center px-2.5 pt-2 pb-1 gap-1">
+                    {isOverdue
+                      ? <Tooltip>
                           <TooltipTrigger asChild>
-                            <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground" onClick={() => setEditingReminder(r)}>
-                              <Pencil className="h-3 w-3" />
-                            </Button>
+                            <AlertTriangle className="h-3 w-3 text-red-500 shrink-0 cursor-help" />
                           </TooltipTrigger>
-                          <TooltipContent>Edit reminder</TooltipContent>
+                          <TooltipContent>Overdue</TooltipContent>
                         </Tooltip>
-                        <Tooltip>
+                      : <Tooltip>
                           <TooltipTrigger asChild>
-                            <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive" onClick={() => handleDelete(r)}>
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
+                            <Clock className="h-3 w-3 text-muted-foreground shrink-0 cursor-help" />
                           </TooltipTrigger>
-                          <TooltipContent>Delete reminder</TooltipContent>
+                          <TooltipContent>Active</TooltipContent>
                         </Tooltip>
-                      </div>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50" onClick={() => handleMarkDone(r)}>
-                            <CheckCircle2 className="h-3 w-3" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Mark as done</TooltipContent>
-                      </Tooltip>
-                    </div>
+                    }
+                    <div className="flex-1" />
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground" onClick={() => setEditingReminder(r)}>
+                          <Pencil className="h-3 w-3" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Edit reminder</TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive" onClick={() => handleDelete(r)}>
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Delete reminder</TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50" onClick={() => handleMarkDone(r)}>
+                          <CheckCircle2 className="h-3 w-3" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Mark as done</TooltipContent>
+                    </Tooltip>
                   </div>
-                  {/* Row 2: Added (left 50%) | Due (right 50%) */}
-                  <div className="flex">
+                  {/* Row 2: reminder type + notes */}
+                  <div className="px-2.5 pb-1">
+                    <span className="font-medium">{r.reminder_type || "Reminder"}</span>
+                    {r.notes && <p className="text-muted-foreground truncate leading-tight mt-0.5">{r.notes}</p>}
+                  </div>
+                  {/* Row 3: Added (left 50%) | Due (right 50%) */}
+                  <div className="flex border-t mt-1">
                     <div className="flex-1 px-2.5 py-1.5 text-muted-foreground/70">
                       <div className="text-[10px] uppercase tracking-wide">Added</div>
                       <div>{formatDate(r.created_date)}</div>
@@ -166,43 +162,39 @@ export default function CrabRemindersSection({ crabId, crabName, refreshKey }) {
             <div className="space-y-1.5 mt-2 opacity-60">
               {done.map(r => (
                 <div key={r.id} className="rounded-lg border bg-muted/10 text-xs overflow-hidden">
-                  {/* Row 1: icon+type (2/3) | edit/delete (1/3) */}
-                  <div className="flex">
-                    <div className="flex-[2] p-2 flex flex-col gap-1 justify-center">
-                      <div className="flex items-center gap-1.5">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <CheckCircle2 className="h-3 w-3 text-emerald-500 shrink-0 cursor-help" />
-                          </TooltipTrigger>
-                          <TooltipContent>Completed</TooltipContent>
-                        </Tooltip>
-                        <span className="font-medium">{r.reminder_type || "Reminder"}</span>
-                      </div>
-                      {r.notes && <p className="text-muted-foreground truncate leading-tight">{r.notes}</p>}
-                    </div>
-                    <div className="flex-1 p-2 flex flex-col items-end justify-start">
-                      <div className="flex items-center gap-0.5">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground" onClick={() => setEditingReminder(r)}>
-                              <Pencil className="h-3 w-3" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>Edit reminder</TooltipContent>
-                        </Tooltip>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive" onClick={() => handleDelete(r)}>
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>Delete reminder</TooltipContent>
-                        </Tooltip>
-                      </div>
-                    </div>
+                  {/* Row 1: status icon (left) | edit + delete buttons (right) */}
+                  <div className="flex items-center px-2 pt-2 pb-1 gap-1">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <CheckCircle2 className="h-3 w-3 text-emerald-500 shrink-0 cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent>Completed</TooltipContent>
+                    </Tooltip>
+                    <div className="flex-1" />
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground" onClick={() => setEditingReminder(r)}>
+                          <Pencil className="h-3 w-3" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Edit reminder</TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive" onClick={() => handleDelete(r)}>
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Delete reminder</TooltipContent>
+                    </Tooltip>
                   </div>
-                  {/* Row 2: Added (50%) | Completed (50%) */}
-                  <div className="flex">
+                  {/* Row 2: reminder type + notes */}
+                  <div className="px-2 pb-1">
+                    <span className="font-medium">{r.reminder_type || "Reminder"}</span>
+                    {r.notes && <p className="text-muted-foreground truncate leading-tight mt-0.5">{r.notes}</p>}
+                  </div>
+                  {/* Row 3: Added (50%) | Completed (50%) */}
+                  <div className="flex border-t mt-1">
                     <div className="flex-1 px-2 py-1.5 text-muted-foreground/70">
                       <div className="text-[10px] uppercase tracking-wide">Added</div>
                       <div>{formatDate(r.created_date)}</div>
