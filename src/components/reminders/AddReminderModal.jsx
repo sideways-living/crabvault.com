@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { X, Plus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
-export default function AddReminderModal({ crabId, onClose, onAdded }) {
+export default function AddReminderModal({ crabId, crabName, onClose, onAdded }) {
   const [types, setTypes] = useState([]);
   const [selectedType, setSelectedType] = useState("");
   const [dueDate, setDueDate] = useState("");
@@ -53,7 +53,10 @@ export default function AddReminderModal({ crabId, onClose, onAdded }) {
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center justify-between">
-          <h2 className="text-base font-semibold">Add Reminder</h2>
+          <div className="space-y-0.5">
+            <h2 className="text-base font-semibold">Add Reminder</h2>
+            {crabName && <p className="text-xs text-muted-foreground">{crabName}</p>}
+          </div>
           <button onClick={onClose}><X className="h-4 w-4 text-muted-foreground hover:text-foreground" /></button>
         </div>
 

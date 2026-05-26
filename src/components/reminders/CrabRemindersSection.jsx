@@ -10,7 +10,7 @@ function formatDate(d) {
   return new Date(d).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" });
 }
 
-export default function CrabRemindersSection({ crabId, refreshKey }) {
+export default function CrabRemindersSection({ crabId, crabName, refreshKey }) {
   const [reminders, setReminders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editingReminder, setEditingReminder] = useState(null);
@@ -59,6 +59,7 @@ export default function CrabRemindersSection({ crabId, refreshKey }) {
       {editingReminder && (
         <EditReminderModal
           reminder={editingReminder}
+          crabName={crabName}
           onClose={() => setEditingReminder(null)}
           onSaved={() => { setEditingReminder(null); load(); }}
         />

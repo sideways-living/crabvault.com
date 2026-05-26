@@ -731,7 +731,7 @@ export default function CrabDetail() {
 
           {/* Reminders */}
           {!creating && (
-            <CrabRemindersSection crabId={id} refreshKey={reminderRefreshKey} />
+            <CrabRemindersSection crabId={id} crabName={computedFullName || crab.full_name} refreshKey={reminderRefreshKey} />
           )}
 
           {/* Tags */}
