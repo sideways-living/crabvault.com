@@ -80,29 +80,43 @@ export default function CrabRemindersSection({ crabId, crabName, refreshKey }) {
             {active.map(r => {
               const isOverdue = r.due_date && new Date(r.due_date) < today;
               return (
-                <div key={r.id} className={`flex flex-col gap-2 p-2.5 rounded-lg border text-xs ${isOverdue ? "border-red-200 bg-red-50/40" : "bg-muted/20"}`}>
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    {isOverdue
-                      ? <AlertTriangle className="h-3 w-3 text-red-500 shrink-0" />
-                      : <Clock className="h-3 w-3 text-muted-foreground shrink-0" />
-                    }
-                    {r.reminder_type && <span className="font-medium">{r.reminder_type}</span>}
+                <div key={r.id} className={`rounded-lg border text-xs overflow-hidden ${isOverdue ? "border-red-200 bg-red-50/40" : "bg-muted/20"}`}>
+                  {/* Row 1: icon+type (2/3) | edit/delete/done (1/3) */}
+                  <div className="flex">
+                    <div className="flex-[2] p-2.5 flex flex-col gap-1 justify-center">
+                      <div className="flex items-center gap-1.5">
+                        {isOverdue
+                          ? <AlertTriangle className="h-3 w-3 text-red-500 shrink-0" />
+                          : <Clock className="h-3 w-3 text-muted-foreground shrink-0" />
+                        }
+                        <span className="font-medium">{r.reminder_type || "Reminder"}</span>
+                      </div>
+                      {r.notes && <p className="text-muted-foreground truncate leading-tight">{r.notes}</p>}
+                    </div>
+                    <div className="flex-1 p-2 flex flex-col items-end justify-between border-l border-border/40">
+                      <div className="flex items-center gap-0.5">
+                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground" onClick={() => setEditingReminder(r)} title="Edit">
+                          <Pencil className="h-3 w-3" />
+                        </Button>
+                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive" onClick={() => handleDelete(r)} title="Delete">
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                      <Button size="sm" variant="outline" className="h-6 text-[10px] px-2 gap-1" onClick={() => handleMarkDone(r)}>
+                        <CheckCircle2 className="h-3 w-3" /> Done
+                      </Button>
+                    </div>
                   </div>
-                  {r.notes && <p className="text-muted-foreground truncate">{r.notes}</p>}
-                  <div className="flex items-center gap-1">
-                    <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground" onClick={() => setEditingReminder(r)} title="Edit">
-                      <Pencil className="h-3 w-3" />
-                    </Button>
-                    <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive" onClick={() => handleDelete(r)} title="Delete">
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </div>
-                  <Button size="sm" variant="outline" className="h-6 text-[10px] px-2 gap-1 w-fit" onClick={() => handleMarkDone(r)}>
-                    <CheckCircle2 className="h-3 w-3" /> Done
-                  </Button>
-                  <div className="flex items-center justify-between text-muted-foreground/60 pt-1 border-t">
-                    <span>Added {formatDate(r.created_date)}</span>
-                    <span className={isOverdue ? "text-red-600 font-medium" : ""}>Due {formatDate(r.due_date)}</span>
+                  {/* Row 2: Added (left 50%) | Due (right 50%) */}
+                  <div className="flex border-t border-border/40">
+                    <div className="flex-1 px-2.5 py-1.5 text-muted-foreground/70">
+                      <div className="text-[10px] uppercase tracking-wide">Added</div>
+                      <div>{formatDate(r.created_date)}</div>
+                    </div>
+                    <div className={`flex-1 px-2.5 py-1.5 border-l border-border/40 ${isOverdue ? "text-red-600 font-medium" : "text-muted-foreground/70"}`}>
+                      <div className="text-[10px] uppercase tracking-wide">Due</div>
+                      <div>{formatDate(r.due_date)}</div>
+                    </div>
                   </div>
                 </div>
               );
@@ -118,23 +132,37 @@ export default function CrabRemindersSection({ crabId, crabName, refreshKey }) {
             </summary>
             <div className="space-y-1.5 mt-2 opacity-60">
               {done.map(r => (
-                <div key={r.id} className="flex flex-col gap-2 p-2 rounded-lg border bg-muted/10 text-xs">
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <CheckCircle2 className="h-3 w-3 text-emerald-500 shrink-0" />
-                    {r.reminder_type && <span className="font-medium">{r.reminder_type}</span>}
+                <div key={r.id} className="rounded-lg border bg-muted/10 text-xs overflow-hidden">
+                  {/* Row 1: icon+type (2/3) | edit/delete (1/3) */}
+                  <div className="flex">
+                    <div className="flex-[2] p-2 flex flex-col gap-1 justify-center">
+                      <div className="flex items-center gap-1.5">
+                        <CheckCircle2 className="h-3 w-3 text-emerald-500 shrink-0" />
+                        <span className="font-medium">{r.reminder_type || "Reminder"}</span>
+                      </div>
+                      {r.notes && <p className="text-muted-foreground truncate leading-tight">{r.notes}</p>}
+                    </div>
+                    <div className="flex-1 p-2 flex flex-col items-end justify-start border-l border-border/40">
+                      <div className="flex items-center gap-0.5">
+                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground" onClick={() => setEditingReminder(r)} title="Edit">
+                          <Pencil className="h-3 w-3" />
+                        </Button>
+                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive" onClick={() => handleDelete(r)} title="Delete">
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
                   </div>
-                  {r.notes && <p className="text-muted-foreground truncate">{r.notes}</p>}
-                  <div className="flex items-center gap-1">
-                    <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground" onClick={() => setEditingReminder(r)} title="Edit">
-                      <Pencil className="h-3 w-3" />
-                    </Button>
-                    <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive" onClick={() => handleDelete(r)} title="Delete">
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </div>
-                  <div className="flex items-center justify-between text-muted-foreground/60 pt-1 border-t">
-                    <span>Added {formatDate(r.created_date)}</span>
-                    <span className="text-emerald-600">✓ {formatDate(r.completed_at)}</span>
+                  {/* Row 2: Added (50%) | Completed (50%) */}
+                  <div className="flex border-t border-border/40">
+                    <div className="flex-1 px-2 py-1.5 text-muted-foreground/70">
+                      <div className="text-[10px] uppercase tracking-wide">Added</div>
+                      <div>{formatDate(r.created_date)}</div>
+                    </div>
+                    <div className="flex-1 px-2 py-1.5 border-l border-border/40 text-emerald-600">
+                      <div className="text-[10px] uppercase tracking-wide">Completed</div>
+                      <div>{formatDate(r.completed_at)}</div>
+                    </div>
                   </div>
                 </div>
               ))}
