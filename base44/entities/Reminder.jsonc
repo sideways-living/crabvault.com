@@ -28,6 +28,11 @@
       "type": "string",
       "format": "date-time",
       "title": "Completed At"
+    },
+    "is_deleted": {
+      "type": "boolean",
+      "title": "Deleted",
+      "default": false
     }
   },
   "required": [
