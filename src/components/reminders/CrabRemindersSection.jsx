@@ -80,31 +80,29 @@ export default function CrabRemindersSection({ crabId, crabName, refreshKey }) {
             {active.map(r => {
               const isOverdue = r.due_date && new Date(r.due_date) < today;
               return (
-                <div key={r.id} className={`flex items-center gap-2.5 p-2.5 rounded-lg border text-xs ${isOverdue ? "border-red-200 bg-red-50/40" : "bg-muted/20"}`}>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      {isOverdue
-                        ? <AlertTriangle className="h-3 w-3 text-red-500 shrink-0" />
-                        : <Clock className="h-3 w-3 text-muted-foreground shrink-0" />
-                      }
-                      {r.reminder_type && <span className="font-medium">{r.reminder_type}</span>}
-                      <span className={isOverdue ? "text-red-600 font-medium" : "text-muted-foreground"}>
-                        Due {formatDate(r.due_date)}
-                      </span>
-                    </div>
-                    {r.notes && <p className="text-muted-foreground mt-0.5 truncate">{r.notes}</p>}
-                    <p className="text-muted-foreground/60 mt-0.5">Added {formatDate(r.created_date)}</p>
+                <div key={r.id} className={`flex flex-col gap-2 p-2.5 rounded-lg border text-xs ${isOverdue ? "border-red-200 bg-red-50/40" : "bg-muted/20"}`}>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {isOverdue
+                      ? <AlertTriangle className="h-3 w-3 text-red-500 shrink-0" />
+                      : <Clock className="h-3 w-3 text-muted-foreground shrink-0" />
+                    }
+                    {r.reminder_type && <span className="font-medium">{r.reminder_type}</span>}
                   </div>
-                  <div className="flex items-center gap-1 shrink-0">
+                  {r.notes && <p className="text-muted-foreground truncate">{r.notes}</p>}
+                  <div className="flex items-center gap-1">
                     <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground" onClick={() => setEditingReminder(r)} title="Edit">
                       <Pencil className="h-3 w-3" />
                     </Button>
                     <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive" onClick={() => handleDelete(r)} title="Delete">
                       <Trash2 className="h-3 w-3" />
                     </Button>
-                    <Button size="sm" variant="outline" className="h-6 text-[10px] px-2 gap-1" onClick={() => handleMarkDone(r)}>
-                      <CheckCircle2 className="h-3 w-3" /> Done
-                    </Button>
+                  </div>
+                  <Button size="sm" variant="outline" className="h-6 text-[10px] px-2 gap-1 w-fit" onClick={() => handleMarkDone(r)}>
+                    <CheckCircle2 className="h-3 w-3" /> Done
+                  </Button>
+                  <div className="flex items-center justify-between text-muted-foreground/60 pt-1 border-t">
+                    <span>Added {formatDate(r.created_date)}</span>
+                    <span className={isOverdue ? "text-red-600 font-medium" : ""}>Due {formatDate(r.due_date)}</span>
                   </div>
                 </div>
               );
@@ -120,24 +118,23 @@ export default function CrabRemindersSection({ crabId, crabName, refreshKey }) {
             </summary>
             <div className="space-y-1.5 mt-2 opacity-60">
               {done.map(r => (
-                <div key={r.id} className="flex items-center gap-2 p-2 rounded-lg border bg-muted/10 text-xs">
-                  <CheckCircle2 className="h-3 w-3 text-emerald-500 shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      {r.reminder_type && <span className="font-medium">{r.reminder_type}</span>}
-                      <span className="text-muted-foreground">Due {formatDate(r.due_date)}</span>
-                      <span className="text-emerald-600">✓ {formatDate(r.completed_at)}</span>
-                    </div>
-                    {r.notes && <p className="text-muted-foreground truncate">{r.notes}</p>}
-                    <p className="text-muted-foreground/60">Added {formatDate(r.created_date)}</p>
+                <div key={r.id} className="flex flex-col gap-2 p-2 rounded-lg border bg-muted/10 text-xs">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <CheckCircle2 className="h-3 w-3 text-emerald-500 shrink-0" />
+                    {r.reminder_type && <span className="font-medium">{r.reminder_type}</span>}
                   </div>
-                  <div className="flex items-center gap-1 shrink-0">
+                  {r.notes && <p className="text-muted-foreground truncate">{r.notes}</p>}
+                  <div className="flex items-center gap-1">
                     <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground" onClick={() => setEditingReminder(r)} title="Edit">
                       <Pencil className="h-3 w-3" />
                     </Button>
                     <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive" onClick={() => handleDelete(r)} title="Delete">
                       <Trash2 className="h-3 w-3" />
                     </Button>
+                  </div>
+                  <div className="flex items-center justify-between text-muted-foreground/60 pt-1 border-t">
+                    <span>Added {formatDate(r.created_date)}</span>
+                    <span className="text-emerald-600">✓ {formatDate(r.completed_at)}</span>
                   </div>
                 </div>
               ))}
