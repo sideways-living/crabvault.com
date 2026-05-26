@@ -759,14 +759,21 @@ export default function CrabDetail() {
                 <p className="text-xs text-muted-foreground">No documents linked yet</p>
               ) : (
                 <div className="space-y-1.5 max-h-96 overflow-y-auto">
-                  {documents.map(d => (
-                    <Link key={d.id} to={`/crab-documents/${d.id}`}>
-                      <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50 transition-colors">
-                        <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                        <span className="text-xs truncate">{d.title}</span>
-                      </div>
-                    </Link>
-                  ))}
+                  {documents.map(d => {
+                    // Shorten display: remove profile name prefix if present
+                    const profilePrefix = [crab.first_name, crab.middle_name, crab.surname].filter(Boolean).join(" ");
+                    const shortTitle = d.title.startsWith(profilePrefix + " - ")
+                      ? d.title.substring((profilePrefix + " - ").length)
+                      : d.title;
+                    return (
+                      <Link key={d.id} to={`/crab-documents/${d.id}`}>
+                        <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50 transition-colors">
+                          <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                          <span className="text-xs truncate">{shortTitle}</span>
+                        </div>
+                      </Link>
+                    );
+                  })}
                 </div>
               )}
             </div>
