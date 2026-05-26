@@ -46,7 +46,11 @@ export default function CrabRemindersSection({ crabId, crabName, refreshKey }) {
   const active = reminders.filter(r => !r.is_done && !r.is_deleted);
   const done = reminders.filter(r => r.is_done && !r.is_deleted);
 
-  active.sort((a, b) => new Date(a.due_date) - new Date(b.due_date));
+  active.sort((a, b) => {
+    const dateDiff = new Date(a.due_date) - new Date(b.due_date);
+    if (dateDiff !== 0) return dateDiff;
+    return new Date(a.created_date) - new Date(b.created_date);
+  });
   done.sort((a, b) => new Date(b.completed_at || b.updated_date) - new Date(a.completed_at || a.updated_date));
 
   if (loading) return (
