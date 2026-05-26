@@ -1,0 +1,32 @@
+{
+  "name": "Reminder",
+  "type": "object",
+  "properties": {
+    "crab_id": {
+      "type": "string",
+      "title": "Crab ID"
+    },
+    "reminder_type": {
+      "type": "string",
+      "title": "Reminder Type"
+    },
+    "due_date": {
+      "type": "string",
+      "format": "date",
+      "title": "Due Date"
+    },
+    "notes": {
+      "type": "string",
+      "title": "Notes"
+    },
+    "is_done": {
+      "type": "boolean",
+      "title": "Done",
+      "default": false
+    }
+  },
+  "required": [
+    "crab_id",
+    "due_date"
+  ]
+}

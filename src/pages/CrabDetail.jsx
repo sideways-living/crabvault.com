@@ -18,6 +18,7 @@ import CollapsibleModuleCard from "@/components/modules/CollapsibleModuleCard";
 import CrabAIExtractPanel from "@/components/CrabAIExtractPanel";
 import AddIdentificationDialog from "@/components/AddIdentificationDialog";
 import IdentificationSection from "@/components/IdentificationSection";
+import AddReminderButton from "@/components/reminders/AddReminderButton";
 import { toast } from "sonner";
 
 const isNew = (id) => id === "new";
@@ -789,6 +790,8 @@ export default function CrabDetail() {
       documents={documents}
       onAdd={handleAddIdEntries}
     />
+
+    {!creating && <AddReminderButton crabId={id} />}
     </TooltipProvider>
   );
 }
