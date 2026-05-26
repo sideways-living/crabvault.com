@@ -108,7 +108,7 @@ export default function CrabRemindersSection({ crabId, crabName, refreshKey }) {
                     <div className="flex-1" />
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground" onClick={() => setEditingReminder(r)}>
+                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-black hover:text-black hover:bg-black/10" onClick={() => setEditingReminder(r)}>
                           <Pencil className="h-3 w-3" />
                         </Button>
                       </TooltipTrigger>
@@ -116,7 +116,7 @@ export default function CrabRemindersSection({ crabId, crabName, refreshKey }) {
                     </Tooltip>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive" onClick={() => handleDelete(r)}>
+                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => handleDelete(r)}>
                           <Trash2 className="h-3 w-3" />
                         </Button>
                       </TooltipTrigger>
@@ -124,7 +124,7 @@ export default function CrabRemindersSection({ crabId, crabName, refreshKey }) {
                     </Tooltip>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50" onClick={() => handleMarkDone(r)}>
+                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-green-600 hover:text-green-700 hover:bg-green-50" onClick={() => handleMarkDone(r)}>
                           <CheckCircle2 className="h-3 w-3" />
                         </Button>
                       </TooltipTrigger>
@@ -133,18 +133,18 @@ export default function CrabRemindersSection({ crabId, crabName, refreshKey }) {
                   </div>
                   {/* Row 2: reminder type + notes */}
                   <div className="px-2.5 pb-1">
-                    <span className="font-medium">{r.reminder_type || "Reminder"}</span>
-                    {r.notes && <p className="text-muted-foreground truncate leading-tight mt-0.5">{r.notes}</p>}
+                    <span className="text-sm font-bold">{r.reminder_type || "Reminder"}</span>
+                    {r.notes && <p className="text-xs text-muted-foreground truncate leading-tight mt-0.5">{r.notes}</p>}
                   </div>
                   {/* Row 3: Added (left 50%) | Due (right 50%) */}
                   <div className="flex border-t mt-1">
-                    <div className="flex-1 px-2.5 py-1.5 text-muted-foreground/70">
-                      <div className="text-[10px] uppercase tracking-wide">Added</div>
-                      <div>{formatDate(r.created_date)}</div>
+                    <div className="flex-1 px-2.5 py-1 text-muted-foreground/70">
+                      <div className="text-[8px] uppercase tracking-wide">Added</div>
+                      <div className="text-[10px]">{formatDate(r.created_date)}</div>
                     </div>
-                    <div className={`flex-1 px-2.5 py-1.5 text-right ${isOverdue ? "text-red-600 font-medium" : "text-muted-foreground/70"}`}>
-                      <div className="text-[10px] uppercase tracking-wide">Due</div>
-                      <div>{formatDate(r.due_date)}</div>
+                    <div className={`flex-1 px-2.5 py-1 text-right ${isOverdue ? "text-red-600 font-medium" : "text-muted-foreground/70"}`}>
+                      <div className="text-[8px] uppercase tracking-wide">Due</div>
+                      <div className="text-[10px]">{formatDate(r.due_date)}</div>
                     </div>
                   </div>
                 </div>
@@ -173,7 +173,7 @@ export default function CrabRemindersSection({ crabId, crabName, refreshKey }) {
                     <div className="flex-1" />
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground" onClick={() => setEditingReminder(r)}>
+                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-black hover:text-black hover:bg-black/10" onClick={() => setEditingReminder(r)}>
                           <Pencil className="h-3 w-3" />
                         </Button>
                       </TooltipTrigger>
@@ -181,7 +181,7 @@ export default function CrabRemindersSection({ crabId, crabName, refreshKey }) {
                     </Tooltip>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive" onClick={() => handleDelete(r)}>
+                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => handleDelete(r)}>
                           <Trash2 className="h-3 w-3" />
                         </Button>
                       </TooltipTrigger>
@@ -190,18 +190,18 @@ export default function CrabRemindersSection({ crabId, crabName, refreshKey }) {
                   </div>
                   {/* Row 2: reminder type + notes */}
                   <div className="px-2 pb-1">
-                    <span className="font-medium">{r.reminder_type || "Reminder"}</span>
-                    {r.notes && <p className="text-muted-foreground truncate leading-tight mt-0.5">{r.notes}</p>}
+                    <span className="text-sm font-bold">{r.reminder_type || "Reminder"}</span>
+                    {r.notes && <p className="text-xs text-muted-foreground truncate leading-tight mt-0.5">{r.notes}</p>}
                   </div>
                   {/* Row 3: Added (50%) | Completed (50%) */}
                   <div className="flex border-t mt-1">
-                    <div className="flex-1 px-2 py-1.5 text-muted-foreground/70">
-                      <div className="text-[10px] uppercase tracking-wide">Added</div>
-                      <div>{formatDate(r.created_date)}</div>
+                    <div className="flex-1 px-2 py-1 text-muted-foreground/70">
+                      <div className="text-[8px] uppercase tracking-wide">Added</div>
+                      <div className="text-[10px]">{formatDate(r.created_date)}</div>
                     </div>
-                    <div className="flex-1 px-2 py-1.5 text-right text-emerald-600">
-                      <div className="text-[10px] uppercase tracking-wide">Completed</div>
-                      <div>{formatDate(r.completed_at)}</div>
+                    <div className="flex-1 px-2 py-1 text-right text-emerald-600">
+                      <div className="text-[8px] uppercase tracking-wide">Completed</div>
+                      <div className="text-[10px]">{formatDate(r.completed_at)}</div>
                     </div>
                   </div>
                 </div>
