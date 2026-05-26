@@ -726,8 +726,13 @@ export default function CrabDetail() {
           )}
         </div>
 
-        {/* Right col — tags, docs, markets */}
+        {/* Right col — reminders, tags, docs, markets */}
         <div className="space-y-5">
+
+          {/* Reminders */}
+          {!creating && (
+            <CrabRemindersSection crabId={id} refreshKey={reminderRefreshKey} />
+          )}
 
           {/* Tags */}
           <div className="bg-card border rounded-xl p-5 space-y-3">
@@ -749,11 +754,6 @@ export default function CrabDetail() {
           {/* Module Selector */}
           {!creating && (
             <ModuleSelector enabledModules={enabledModules} onToggle={handleModuleToggle} />
-          )}
-
-          {/* Reminders */}
-          {!creating && (
-            <CrabRemindersSection crabId={id} refreshKey={reminderRefreshKey} />
           )}
 
           {/* Linked Documents */}
