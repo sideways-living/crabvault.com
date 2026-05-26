@@ -89,18 +89,18 @@ export default function CrabRemindersSection({ crabId, crabName, refreshKey }) {
               const isOverdue = r.due_date && new Date(r.due_date) < today;
               return (
                 <div key={r.id} className={`rounded-lg border text-xs overflow-hidden ${isOverdue ? "border-red-200 bg-red-50/40" : "bg-muted/20"}`}>
-                  {/* Row 1: status icon (left) | edit + delete + done buttons (right) */}
+                  {/* Row 1: status icon (left) | edit + done + delete buttons (right) */}
                   <div className="flex items-center px-2.5 pt-2 pb-1 gap-1">
                     {isOverdue
                       ? <Tooltip>
                           <TooltipTrigger asChild>
-                            <AlertTriangle className="h-3 w-3 text-red-500 shrink-0 cursor-help" />
+                            <AlertTriangle className="h-4 w-4 text-red-500 shrink-0 cursor-help" />
                           </TooltipTrigger>
                           <TooltipContent>Overdue</TooltipContent>
                         </Tooltip>
                       : <Tooltip>
                           <TooltipTrigger asChild>
-                            <Clock className="h-3 w-3 text-muted-foreground shrink-0 cursor-help" />
+                            <Clock className="h-4 w-4 text-muted-foreground shrink-0 cursor-help" />
                           </TooltipTrigger>
                           <TooltipContent>Active</TooltipContent>
                         </Tooltip>
@@ -116,19 +116,19 @@ export default function CrabRemindersSection({ crabId, crabName, refreshKey }) {
                     </Tooltip>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => handleDelete(r)}>
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>Delete reminder</TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
                         <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-green-600 hover:text-green-700 hover:bg-green-50" onClick={() => handleMarkDone(r)}>
                           <CheckCircle2 className="h-3 w-3" />
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>Mark as done</TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => handleDelete(r)}>
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Delete reminder</TooltipContent>
                     </Tooltip>
                   </div>
                   {/* Row 2: reminder type + notes */}
@@ -166,7 +166,7 @@ export default function CrabRemindersSection({ crabId, crabName, refreshKey }) {
                   <div className="flex items-center px-2 pt-2 pb-1 gap-1">
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <CheckCircle2 className="h-3 w-3 text-emerald-500 shrink-0 cursor-help" />
+                        <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0 cursor-help" />
                       </TooltipTrigger>
                       <TooltipContent>Completed</TooltipContent>
                     </Tooltip>
