@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { Plus, Trash2, ArrowRight, Loader2, X, ChevronDown, ChevronUp, Link } from "lucide-react";
+import { Plus, Trash2, ArrowRight, Loader2, X, GripVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 
 const PRIORITIES = ["low", "normal", "high", "urgent"];
 
@@ -341,45 +342,73 @@ export default function WorkflowTemplateEditor({ template, onSaved, onCancel }) 
         </div>
       )}
 
-      {/* Workflow visual preview */}
+      {/* Workflow visual preview — drag to reorder */}
       {steps.length > 0 && (
         <div className="space-y-2">
-          <h3 className="text-sm font-semibold">Flow Preview</h3>
-          <div className="border rounded-xl p-4 bg-muted/30 space-y-1">
-            {steps.map((step, idx) => {
-              const stepId = getStepId(step);
-              const outgoing = transitions.filter(t => t.from_step_id === stepId);
-              return (
-                <div key={stepId}>
-                  <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium ${step.is_start_step ? 'bg-blue-100 text-blue-800' : step.is_final_step ? 'bg-green-100 text-green-800' : 'bg-white border'}`}>
-                    <span className="text-muted-foreground w-4">{idx + 1}</span>
-                    <span className="flex-1">{step.title || '(unnamed)'}</span>
-                    <span className="text-[10px] text-muted-foreground">{step.due_days_from_commencement}d</span>
-                    {step.is_start_step && <span className="text-[10px] bg-blue-200 text-blue-700 px-1 rounded">START</span>}
-                    {step.is_final_step && <span className="text-[10px] bg-green-200 text-green-700 px-1 rounded">END</span>}
-                  </div>
-                  {outgoing.length > 0 && (
-                    <div className="ml-4 pl-3 border-l border-dashed border-muted-foreground/30 my-1 space-y-0.5">
-                      {outgoing.map((t, ti) => {
-                        const toStep = steps.find(s => getStepId(s) === t.to_step_id);
-                        return (
-                          <div key={ti} className="text-[10px] text-muted-foreground flex items-center gap-1">
-                            <ArrowRight className="h-2.5 w-2.5" />
-                            {toStep ? toStep.title : '?'}
-                            {t.transition_group_id && (
-                              <span className="ml-1 px-1 rounded bg-muted text-[9px]">
-                                {t.group_completion_rule === 'ANY_ONE_REQUIRED' ? 'ANY' : 'ALL'} [{t.transition_group_id.slice(0, 6)}]
+          <h3 className="text-sm font-semibold">Flow Preview <span className="text-xs text-muted-foreground font-normal ml-1">— drag to reorder</span></h3>
+          <DragDropContext onDragEnd={result => {
+            if (!result.destination || result.destination.index === result.source.index) return;
+            const reordered = Array.from(steps);
+            const [moved] = reordered.splice(result.source.index, 1);
+            reordered.splice(result.destination.index, 0, moved);
+            setSteps(reordered);
+          }}>
+            <Droppable droppableId="flow-preview">
+              {(provided) => (
+                <div
+                  ref={provided.innerRef}
+                  {...provided.droppableProps}
+                  className="border rounded-xl p-4 bg-muted/30 space-y-1"
+                >
+                  {steps.map((step, idx) => {
+                    const stepId = getStepId(step);
+                    const outgoing = transitions.filter(t => t.from_step_id === stepId);
+                    return (
+                      <Draggable key={stepId} draggableId={stepId} index={idx}>
+                        {(provided, snapshot) => (
+                          <div
+                            ref={provided.innerRef}
+                            {...provided.draggableProps}
+                            className={snapshot.isDragging ? "opacity-80" : ""}
+                          >
+                            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium ${step.is_start_step ? 'bg-blue-100 text-blue-800' : step.is_final_step ? 'bg-green-100 text-green-800' : 'bg-white border'}`}>
+                              <span {...provided.dragHandleProps} className="cursor-grab text-muted-foreground hover:text-foreground">
+                                <GripVertical className="h-3.5 w-3.5" />
                               </span>
+                              <span className="text-muted-foreground w-4">{idx + 1}</span>
+                              <span className="flex-1">{step.title || '(unnamed)'}</span>
+                              <span className="text-[10px] text-muted-foreground">{step.due_days_from_commencement}d</span>
+                              {step.is_start_step && <span className="text-[10px] bg-blue-200 text-blue-700 px-1 rounded">START</span>}
+                              {step.is_final_step && <span className="text-[10px] bg-green-200 text-green-700 px-1 rounded">END</span>}
+                            </div>
+                            {outgoing.length > 0 && (
+                              <div className="ml-4 pl-3 border-l border-dashed border-muted-foreground/30 my-1 space-y-0.5">
+                                {outgoing.map((t, ti) => {
+                                  const toStep = steps.find(s => getStepId(s) === t.to_step_id);
+                                  return (
+                                    <div key={ti} className="text-[10px] text-muted-foreground flex items-center gap-1">
+                                      <ArrowRight className="h-2.5 w-2.5" />
+                                      {toStep ? toStep.title : '?'}
+                                      {t.transition_group_id && (
+                                        <span className="ml-1 px-1 rounded bg-muted text-[9px]">
+                                          {t.group_completion_rule === 'ANY_ONE_REQUIRED' ? 'ANY' : 'ALL'} [{t.transition_group_id.slice(0, 6)}]
+                                        </span>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
                             )}
                           </div>
-                        );
-                      })}
-                    </div>
-                  )}
+                        )}
+                      </Draggable>
+                    );
+                  })}
+                  {provided.placeholder}
                 </div>
-              );
-            })}
-          </div>
+              )}
+            </Droppable>
+          </DragDropContext>
         </div>
       )}
 
