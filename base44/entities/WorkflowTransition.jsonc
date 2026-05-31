@@ -1,0 +1,40 @@
+{
+  "name": "WorkflowTransition",
+  "type": "object",
+  "properties": {
+    "workflow_template_id": {
+      "type": "string",
+      "title": "Workflow Template ID"
+    },
+    "from_step_id": {
+      "type": "string",
+      "title": "From Step ID"
+    },
+    "to_step_id": {
+      "type": "string",
+      "title": "To Step ID"
+    },
+    "transition_group_id": {
+      "type": "string",
+      "title": "Transition Group ID (for parallel branches)"
+    },
+    "group_completion_rule": {
+      "type": "string",
+      "title": "Group Completion Rule",
+      "enum": [
+        "ALL_REQUIRED",
+        "ANY_ONE_REQUIRED"
+      ],
+      "default": "ALL_REQUIRED"
+    },
+    "notes": {
+      "type": "string",
+      "title": "Notes"
+    }
+  },
+  "required": [
+    "workflow_template_id",
+    "from_step_id",
+    "to_step_id"
+  ]
+}

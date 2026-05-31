@@ -1,0 +1,81 @@
+{
+  "name": "WorkflowRun",
+  "type": "object",
+  "properties": {
+    "workflow_template_id": {
+      "type": "string",
+      "title": "Workflow Template ID"
+    },
+    "workflow_template_name": {
+      "type": "string",
+      "title": "Workflow Template Name (snapshot)"
+    },
+    "status": {
+      "type": "string",
+      "title": "Status",
+      "enum": [
+        "active",
+        "completed",
+        "cancelled",
+        "paused",
+        "blocked"
+      ],
+      "default": "active"
+    },
+    "commenced_at": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Commenced At"
+    },
+    "completed_at": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Completed At"
+    },
+    "cancelled_at": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Cancelled At"
+    },
+    "created_by": {
+      "type": "string",
+      "title": "Created By User ID"
+    },
+    "related_record_id": {
+      "type": "string",
+      "title": "Related Record ID (crab, document, etc.)"
+    },
+    "related_record_type": {
+      "type": "string",
+      "title": "Related Record Type"
+    },
+    "notes": {
+      "type": "string",
+      "title": "Notes"
+    },
+    "activity_log": {
+      "type": "array",
+      "title": "Activity Log",
+      "items": {
+        "type": "object",
+        "properties": {
+          "at": {
+            "type": "string"
+          },
+          "event": {
+            "type": "string"
+          },
+          "step_title": {
+            "type": "string"
+          },
+          "by": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "required": [
+    "workflow_template_id"
+  ]
+}

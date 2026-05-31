@@ -1,0 +1,31 @@
+{
+  "name": "WorkflowTemplate",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "title": "Name"
+    },
+    "description": {
+      "type": "string",
+      "title": "Description"
+    },
+    "status": {
+      "type": "string",
+      "title": "Status",
+      "enum": [
+        "draft",
+        "active",
+        "archived"
+      ],
+      "default": "draft"
+    },
+    "created_by": {
+      "type": "string",
+      "title": "Created By User ID"
+    }
+  },
+  "required": [
+    "name"
+  ]
+}

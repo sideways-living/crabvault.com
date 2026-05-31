@@ -1,0 +1,65 @@
+{
+  "name": "WorkflowStepTemplate",
+  "type": "object",
+  "properties": {
+    "workflow_template_id": {
+      "type": "string",
+      "title": "Workflow Template ID"
+    },
+    "step_number": {
+      "type": "number",
+      "title": "Step Number",
+      "default": 1
+    },
+    "title": {
+      "type": "string",
+      "title": "Title"
+    },
+    "description": {
+      "type": "string",
+      "title": "Description"
+    },
+    "assigned_role": {
+      "type": "string",
+      "title": "Assigned Role"
+    },
+    "assigned_user_id": {
+      "type": "string",
+      "title": "Assigned User ID"
+    },
+    "due_days_from_commencement": {
+      "type": "number",
+      "title": "Due Days from Commencement",
+      "default": 7
+    },
+    "priority": {
+      "type": "string",
+      "title": "Priority",
+      "enum": [
+        "low",
+        "normal",
+        "high",
+        "urgent"
+      ],
+      "default": "normal"
+    },
+    "category": {
+      "type": "string",
+      "title": "Category"
+    },
+    "is_start_step": {
+      "type": "boolean",
+      "title": "Is Start Step",
+      "default": false
+    },
+    "is_final_step": {
+      "type": "boolean",
+      "title": "Is Final Step",
+      "default": false
+    }
+  },
+  "required": [
+    "workflow_template_id",
+    "title"
+  ]
+}

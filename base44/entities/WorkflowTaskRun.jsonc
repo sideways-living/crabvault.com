@@ -1,0 +1,70 @@
+{
+  "name": "WorkflowTaskRun",
+  "type": "object",
+  "properties": {
+    "workflow_run_id": {
+      "type": "string",
+      "title": "Workflow Run ID"
+    },
+    "workflow_step_template_id": {
+      "type": "string",
+      "title": "Workflow Step Template ID"
+    },
+    "step_title": {
+      "type": "string",
+      "title": "Step Title (snapshot)"
+    },
+    "reminder_id": {
+      "type": "string",
+      "title": "Linked Reminder ID"
+    },
+    "status": {
+      "type": "string",
+      "title": "Status",
+      "enum": [
+        "pending",
+        "active",
+        "completed",
+        "skipped",
+        "cancelled",
+        "overdue"
+      ],
+      "default": "active"
+    },
+    "commenced_at": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Commenced At"
+    },
+    "due_at": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Due At"
+    },
+    "completed_at": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Completed At"
+    },
+    "completed_by": {
+      "type": "string",
+      "title": "Completed By User ID"
+    },
+    "transition_group_id": {
+      "type": "string",
+      "title": "Transition Group ID (if part of parallel group)"
+    },
+    "parallel_completion_rule": {
+      "type": "string",
+      "title": "Parallel Completion Rule",
+      "enum": [
+        "ALL_REQUIRED",
+        "ANY_ONE_REQUIRED"
+      ]
+    }
+  },
+  "required": [
+    "workflow_run_id",
+    "workflow_step_template_id"
+  ]
+}

@@ -33,6 +33,14 @@
       "type": "boolean",
       "title": "Deleted",
       "default": false
+    },
+    "workflow_run_id": {
+      "type": "string",
+      "title": "Workflow Run ID (optional)"
+    },
+    "workflow_step_template_id": {
+      "type": "string",
+      "title": "Workflow Step Template ID (optional)"
     }
   },
   "required": [
