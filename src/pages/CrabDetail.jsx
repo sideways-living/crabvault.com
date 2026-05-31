@@ -593,70 +593,7 @@ export default function CrabDetail() {
             })()}
 
 
-            {/* Mailing */}
-            <div className="border-t pt-4">
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-xs font-medium text-muted-foreground">Mailing</p>
-                <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={crab.mailing_same_as_residential ?? true}
-                    onChange={e => setCrab(c => ({ ...c, mailing_same_as_residential: e.target.checked }))}
-                    className="rounded"
-                  />
-                  Same as residential
-                </label>
-              </div>
-              {(crab.mailing_same_as_residential ?? true) ? null : editing ? (
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="col-span-2">
-                    <Label className="text-xs">Address Line 1</Label>
-                    <Input className="mt-1" value={crab.mailing_address1 || ""} onChange={setTitle("mailing_address1")} placeholder="Street number and name" />
-                  </div>
-                  <div className="col-span-2">
-                    <Label className="text-xs">Address Line 2</Label>
-                    <Input className="mt-1" value={crab.mailing_address2 || ""} onChange={setTitle("mailing_address2")} placeholder="Unit, PO Box, locked bag…" />
-                  </div>
-                  <div>
-                    <Label className="text-xs">Suburb</Label>
-                    <Input className="mt-1" value={crab.mailing_suburb || ""} onChange={e => setCrab(c => ({ ...c, mailing_suburb: e.target.value.toUpperCase() }))} />
-                  </div>
-                  <div>
-                    <Label className="text-xs">State</Label>
-                    <Select value={crab.mailing_state || ""} onValueChange={v => setCrab(c => ({ ...c, mailing_state: v }))}>
-                      <SelectTrigger className="mt-1"><SelectValue placeholder="State" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="NSW">NSW</SelectItem>
-                        <SelectItem value="VIC">VIC</SelectItem>
-                        <SelectItem value="QLD">QLD</SelectItem>
-                        <SelectItem value="WA">WA</SelectItem>
-                        <SelectItem value="SA">SA</SelectItem>
-                        <SelectItem value="TAS">TAS</SelectItem>
-                        <SelectItem value="NT">NT</SelectItem>
-                        <SelectItem value="ACT">ACT</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label className="text-xs">Postcode</Label>
-                    <Input className="mt-1" value={crab.mailing_postcode || ""} onChange={set("mailing_postcode")} />
-                  </div>
-                  <div>
-                    <Label className="text-xs">Country</Label>
-                    <Input className="mt-1" value={crab.mailing_country || "Australia"} onChange={setTitle("mailing_country")} />
-                  </div>
-                </div>
-              ) : (
-                <div className="text-sm text-muted-foreground space-y-0.5">
-                  {crab.mailing_address1 && <p>{crab.mailing_address1}</p>}
-                  {crab.mailing_address2 && <p>{crab.mailing_address2}</p>}
-                  {(crab.mailing_suburb || crab.mailing_state || crab.mailing_postcode) && (
-                    <p>{[crab.mailing_suburb, crab.mailing_state, crab.mailing_postcode].filter(Boolean).join("  ")}</p>
-                  )}
-                  {crab.mailing_country && crab.mailing_country !== "Australia" && <p>{crab.mailing_country}</p>}
-                </div>
-              )}
-              </div>
+
               </div>
 
               {/* ID Numbers */}
