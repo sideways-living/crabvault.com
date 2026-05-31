@@ -154,7 +154,7 @@ export default function CrabsPage() {
                       </div>
                       {crab.date_of_birth && (
                         <p className="text-xs text-muted-foreground mt-0.5">
-                          {crab.date_of_birth}
+                          {new Date(crab.date_of_birth + 'T12:00:00').toLocaleDateString("en-AU", { day: "2-digit", month: "long", year: "numeric" })}
                           {" · "}
                           {Math.floor((Date.now() - new Date(crab.date_of_birth).getTime()) / (365.25 * 24 * 60 * 60 * 1000))} yrs
                         </p>
