@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { Bell, CheckCircle2, AlertTriangle, Clock, Loader2, Pencil, Trash2, User } from "lucide-react";
+import { CheckCircle2, AlertTriangle, Clock, Loader2, Pencil, Trash2, User, LayoutList, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
@@ -18,6 +18,7 @@ export default function AllRemindersView() {
   const [loading, setLoading] = useState(true);
   const [editingReminder, setEditingReminder] = useState(null);
   const [showDone, setShowDone] = useState(false);
+  const [groupBy, setGroupBy] = useState("none"); // "none" | "task"
 
   const load = async () => {
     const [rems, crabList] = await Promise.all([
@@ -132,6 +133,15 @@ export default function AllRemindersView() {
     );
   };
 
+  // Group active reminders by task (reminder_type)
+  const groupedByTask = {};
+  active.forEach(r => {
+    const key = r.reminder_type || "Uncategorised";
+    if (!groupedByTask[key]) groupedByTask[key] = [];
+    groupedByTask[key].push(r);
+  });
+  const taskGroups = Object.entries(groupedByTask).sort(([a], [b]) => a.localeCompare(b));
+
   return (
     <TooltipProvider>
       {editingReminder && (
@@ -144,16 +154,47 @@ export default function AllRemindersView() {
       )}
 
       <div className="space-y-4">
-        {/* Summary */}
-        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-          <span>{active.filter(r => new Date(r.due_date) < today).length > 0 && (
-            <span className="text-red-600 font-medium">{active.filter(r => new Date(r.due_date) < today).length} overdue · </span>
-          )}{active.length} active reminder{active.length !== 1 ? "s" : ""}</span>
+        {/* Summary + group toggle */}
+        <div className="flex items-center justify-between gap-4">
+          <span className="text-sm text-muted-foreground">
+            {active.filter(r => new Date(r.due_date) < today).length > 0 && (
+              <span className="text-red-600 font-medium">{active.filter(r => new Date(r.due_date) < today).length} overdue · </span>
+            )}{active.length} active reminder{active.length !== 1 ? "s" : ""}
+          </span>
+          <div className="flex items-center gap-1 border rounded-md overflow-hidden text-xs">
+            <button
+              onClick={() => setGroupBy("none")}
+              className={`flex items-center gap-1 px-2.5 py-1.5 font-medium transition-colors ${groupBy === "none" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"}`}
+            >
+              <LayoutList className="h-3 w-3" /> List
+            </button>
+            <button
+              onClick={() => setGroupBy("task")}
+              className={`flex items-center gap-1 px-2.5 py-1.5 font-medium transition-colors ${groupBy === "task" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"}`}
+            >
+              <Tag className="h-3 w-3" /> By Task
+            </button>
+          </div>
         </div>
 
         {/* Active */}
         {active.length === 0 ? (
           <p className="text-sm text-muted-foreground italic">No active reminders.</p>
+        ) : groupBy === "task" ? (
+          <div className="space-y-5">
+            {taskGroups.map(([taskName, rems]) => (
+              <div key={taskName}>
+                <div className="flex items-center gap-2 mb-2">
+                  <Tag className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-sm font-semibold">{taskName}</span>
+                  <span className="text-xs text-muted-foreground">({rems.length})</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {rems.map(r => <ReminderCard key={r.id} r={r} isDone={false} />)}
+                </div>
+              </div>
+            ))}
+          </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {active.map(r => <ReminderCard key={r.id} r={r} isDone={false} />)}
