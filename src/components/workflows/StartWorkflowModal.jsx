@@ -7,12 +7,20 @@ import { toast } from "sonner";
 
 export default function StartWorkflowModal({ template, onClose, onStarted }) {
   const [crabs, setCrabs] = useState([]);
+  const [steps, setSteps] = useState([]);
   const [selectedCrabId, setSelectedCrabId] = useState("");
+  const [selectedStepId, setSelectedStepId] = useState("");
   const [notes, setNotes] = useState("");
   const [starting, setStarting] = useState(false);
 
   useEffect(() => {
     base44.entities.Crab.list("full_name", 500).then(list => setCrabs(list.filter(c => !c.is_deleted)));
+    base44.entities.WorkflowStepTemplate.filter({ workflow_template_id: template.id }).then(list => {
+      const sorted = list.sort((a, b) => (a.step_number || 0) - (b.step_number || 0));
+      setSteps(sorted);
+      const startStep = sorted.find(s => s.is_start_step);
+      if (startStep) setSelectedStepId(startStep.id);
+    });
   }, []);
 
   const handleStart = async () => {
@@ -24,6 +32,7 @@ export default function StartWorkflowModal({ template, onClose, onStarted }) {
         related_record_id: selectedCrabId || null,
         related_record_type: selectedCrabId ? 'crab' : null,
         notes: notes.trim() || null,
+        start_step_id: selectedStepId || null,
       },
     });
     if (res.data?.success) {
@@ -55,6 +64,22 @@ export default function StartWorkflowModal({ template, onClose, onStarted }) {
           >
             <option value="">— Not linked to a crab —</option>
             {crabs.map(c => <option key={c.id} value={c.id}>{c.full_name || c.surname}</option>)}
+          </select>
+        </div>
+
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-muted-foreground">Start at step</label>
+          <select
+            className="w-full border rounded-md h-9 px-3 text-sm bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+            value={selectedStepId}
+            onChange={e => setSelectedStepId(e.target.value)}
+          >
+            <option value="">— Use default start step —</option>
+            {steps.map(s => (
+              <option key={s.id} value={s.id}>
+                {s.step_number ? `${s.step_number}. ` : ""}{s.title}{s.is_start_step ? " (default start)" : ""}
+              </option>
+            ))}
           </select>
         </div>
 

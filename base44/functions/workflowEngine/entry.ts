@@ -23,7 +23,7 @@ Deno.serve(async (req) => {
 
 // ─── Start a workflow run ────────────────────────────────────────────────────
 async function startWorkflow(base44, user, payload) {
-  const { workflow_template_id, related_record_id, related_record_type, notes } = payload;
+  const { workflow_template_id, related_record_id, related_record_type, notes, start_step_id } = payload;
 
   let tmpl;
   try { tmpl = await base44.entities.WorkflowTemplate.get(workflow_template_id); }
@@ -33,7 +33,15 @@ async function startWorkflow(base44, user, payload) {
   if (tmpl.status !== 'active') return Response.json({ error: 'Template is not active' }, { status: 400 });
 
   const allSteps = await base44.entities.WorkflowStepTemplate.filter({ workflow_template_id });
-  const startSteps = allSteps.filter(s => s.is_start_step);
+
+  let startSteps;
+  if (start_step_id) {
+    const chosenStep = allSteps.find(s => s.id === start_step_id);
+    if (!chosenStep) return Response.json({ error: 'Specified start step not found' }, { status: 400 });
+    startSteps = [chosenStep];
+  } else {
+    startSteps = allSteps.filter(s => s.is_start_step);
+  }
   if (startSteps.length === 0) return Response.json({ error: 'No start step defined' }, { status: 400 });
 
   const now = new Date().toISOString();
