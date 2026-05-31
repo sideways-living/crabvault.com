@@ -37,6 +37,24 @@ function buildAddress(crab) {
   return parts.join(", ");
 }
 
+function getStarSign(dob) {
+  const d = new Date(dob + 'T12:00:00');
+  const m = d.getMonth() + 1;
+  const day = d.getDate();
+  if ((m === 3 && day >= 21) || (m === 4 && day <= 19)) return { name: "Aries", emoji: "♈" };
+  if ((m === 4 && day >= 20) || (m === 5 && day <= 20)) return { name: "Taurus", emoji: "♉" };
+  if ((m === 5 && day >= 21) || (m === 6 && day <= 20)) return { name: "Gemini", emoji: "♊" };
+  if ((m === 6 && day >= 21) || (m === 7 && day <= 22)) return { name: "Cancer", emoji: "♋" };
+  if ((m === 7 && day >= 23) || (m === 8 && day <= 22)) return { name: "Leo", emoji: "♌" };
+  if ((m === 8 && day >= 23) || (m === 9 && day <= 22)) return { name: "Virgo", emoji: "♍" };
+  if ((m === 9 && day >= 23) || (m === 10 && day <= 22)) return { name: "Libra", emoji: "♎" };
+  if ((m === 10 && day >= 23) || (m === 11 && day <= 21)) return { name: "Scorpio", emoji: "♏" };
+  if ((m === 11 && day >= 22) || (m === 12 && day <= 21)) return { name: "Sagittarius", emoji: "♐" };
+  if ((m === 12 && day >= 22) || (m === 1 && day <= 19)) return { name: "Capricorn", emoji: "♑" };
+  if ((m === 1 && day >= 20) || (m === 2 && day <= 18)) return { name: "Aquarius", emoji: "♒" };
+  return { name: "Pisces", emoji: "♓" };
+}
+
 export default function CrabsPage() {
   const [crabs, setCrabs] = useState([]);
   const [docsByCrab, setDocsByCrab] = useState({});
@@ -152,13 +170,16 @@ export default function CrabsPage() {
                           ) : null;
                         })()}
                       </div>
-                      {crab.date_of_birth && (
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          {new Date(crab.date_of_birth + 'T12:00:00').toLocaleDateString("en-AU", { day: "2-digit", month: "long", year: "numeric" })}
-                          {" · "}
-                          {Math.floor((Date.now() - new Date(crab.date_of_birth).getTime()) / (365.25 * 24 * 60 * 60 * 1000))} yrs
-                        </p>
-                      )}
+                      {crab.date_of_birth && (() => {
+                        const sign = getStarSign(crab.date_of_birth);
+                        const age = Math.floor((Date.now() - new Date(crab.date_of_birth).getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+                        const dob = new Date(crab.date_of_birth + 'T12:00:00').toLocaleDateString("en-AU", { day: "2-digit", month: "long", year: "numeric" });
+                        return (
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {dob} · {age} yrs · <span title={sign.name}>{sign.emoji} {sign.name}</span>
+                          </p>
+                        );
+                      })()}
                       {(crab.aliases || []).length > 0 && (
                         <p className="text-xs text-muted-foreground mt-0.5 truncate">aka {crab.aliases.join(", ")}</p>
                       )}
