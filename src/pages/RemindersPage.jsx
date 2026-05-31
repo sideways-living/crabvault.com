@@ -4,6 +4,7 @@ import WorkflowTemplateList from "@/components/workflows/WorkflowTemplateList";
 import WorkflowTemplateEditor from "@/components/workflows/WorkflowTemplateEditor";
 import WorkflowRunList from "@/components/workflows/WorkflowRunList";
 import StartWorkflowModal from "@/components/workflows/StartWorkflowModal";
+import AllRemindersView from "@/components/reminders/AllRemindersView";
 
 const TABS = [
   { id: "reminders", label: "Reminders", icon: Bell },
@@ -49,9 +50,7 @@ export default function RemindersPage() {
 
       {/* Reminders tab */}
       {activeTab === "reminders" && (
-        <div className="text-sm text-muted-foreground italic">
-          Use the Reminders section on individual Crab profiles to add and manage reminders.
-        </div>
+        <AllRemindersView />
       )}
 
       {/* Workflows tab */}
