@@ -607,9 +607,7 @@ export default function CrabDetail() {
                   Same as residential
                 </label>
               </div>
-              {(crab.mailing_same_as_residential ?? true) ? (
-                <p className="text-xs text-muted-foreground italic">Using residential address for mail</p>
-              ) : editing ? (
+              {(crab.mailing_same_as_residential ?? true) ? null : editing ? (
                 <div className="grid grid-cols-2 gap-3">
                   <div className="col-span-2">
                     <Label className="text-xs">Address Line 1</Label>
