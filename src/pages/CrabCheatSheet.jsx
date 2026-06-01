@@ -6,7 +6,8 @@ export default function CrabCheatSheet() {
   const id = urlParams.get("id");
 
   const [crab, setCrab] = useState(null);
-  const [module, setModule] = useState(null);
+  const [rbMod, setRbMod] = useState(null);
+  const [ybMod, setYbMod] = useState(null);
   const [rbAccounts, setRbAccounts] = useState([]);
   const [rbCards, setRbCards] = useState([]);
   const [ybAccounts, setYbAccounts] = useState([]);
@@ -21,18 +22,19 @@ export default function CrabCheatSheet() {
     ]).then(async ([crabs, mods]) => {
       const c = crabs[0];
       setCrab(c);
-      const rbMod = mods.find(m => m.module_type === "redbank");
-      const ybMod = mods.find(m => m.module_type === "yellowbank");
-      setModule({ rb: rbMod, yb: ybMod });
+      const rb = mods.find(m => m.module_type === "redbank") || null;
+      const yb = mods.find(m => m.module_type === "yellowbank") || null;
+      setRbMod(rb);
+      setYbMod(yb);
 
       const fetches = [];
-      if (rbMod) {
+      if (rb) {
         fetches.push(
           base44.entities.RedBankAccount.filter({ crab_id: id }, "created_date").then(setRbAccounts),
           base44.entities.RedBankCard.filter({ crab_id: id }, "created_date").then(setRbCards),
         );
       }
-      if (ybMod) {
+      if (yb) {
         fetches.push(
           base44.entities.YellowBankAccount.filter({ crab_id: id }, "created_date").then(setYbAccounts),
           base44.entities.YellowBankCard.filter({ crab_id: id }, "created_date").then(setYbCards),
@@ -45,7 +47,7 @@ export default function CrabCheatSheet() {
 
   useEffect(() => {
     if (!loading && crab) {
-      setTimeout(() => window.print(), 400);
+      setTimeout(() => window.print(), 500);
     }
   }, [loading, crab]);
 
@@ -58,240 +60,99 @@ export default function CrabCheatSheet() {
   }
 
   const fullName = [crab.first_name, crab.middle_name, crab.surname].filter(Boolean).join(" ");
+  const surnameUpper = crab.surname?.toUpperCase() || "";
+  const displayName = [crab.first_name, crab.middle_name, surnameUpper].filter(Boolean).join(" ");
+
   const dob = crab.date_of_birth
-    ? new Date(crab.date_of_birth).toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" })
+    ? new Date(crab.date_of_birth).toLocaleDateString("en-AU", { day: "2-digit", month: "2-digit", year: "numeric" })
     : null;
 
-  const rb = module?.rb;
-  const yb = module?.yb;
+  const getSelectedPhone = (mod) => {
+    if (!mod || !crab) return crab?.phone || null;
+    if (mod.selected_phone_type === "additional" && mod.selected_phone_index != null) {
+      return crab.additional_phones?.[mod.selected_phone_index]?.number || crab.phone;
+    }
+    return crab.phone || null;
+  };
 
-  const address = [crab.address1, crab.address2, [crab.suburb, crab.state, crab.postcode].filter(Boolean).join(" ")]
-    .filter(Boolean).join(", ");
+  const getSelectedAddress = (mod) => {
+    if (!mod || !crab) {
+      return formatAddress(crab?.address1, crab?.address2, crab?.suburb, crab?.state, crab?.postcode);
+    }
+    if (mod.selected_address_type === "additional" && mod.selected_address_index != null) {
+      const a = crab.additional_addresses?.[mod.selected_address_index];
+      if (a) return formatAddress(a.address1, a.address2, a.suburb, a.state, a.postcode);
+    }
+    return formatAddress(crab.address1, crab.address2, crab.suburb, crab.state, crab.postcode);
+  };
+
+  const formatAddress = (a1, a2, suburb, state, postcode) => {
+    const line1 = [a1, a2].filter(Boolean).join(", ");
+    const line2 = [suburb, state, postcode].filter(Boolean).join(" ");
+    return [line1, line2].filter(Boolean).join(", ");
+  };
+
+  const now = new Date();
+  const generatedStr = now.toLocaleDateString("en-AU", { day: "2-digit", month: "short", year: "numeric" }) +
+    " at " + now.toLocaleTimeString("en-AU", { hour: "2-digit", minute: "2-digit", hour12: true });
+
+  const formatSalary = (v) => {
+    if (!v) return null;
+    return "$" + Number(v).toLocaleString("en-AU", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
+
+  const formatCommencementDate = (d) => {
+    if (!d) return null;
+    return new Date(d).toLocaleDateString("en-AU", { day: "2-digit", month: "2-digit", year: "numeric" });
+  };
 
   return (
     <>
       <style>{`
-        @page { size: A4; margin: 12mm; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Inter', Arial, sans-serif; background: white; color: #111; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        @page { size: A4; margin: 15mm; }
         @media print {
-          body { margin: 0; }
           .no-print { display: none !important; }
+          .page-break { page-break-before: always; }
         }
-        body { font-family: 'Arial', sans-serif; background: white; color: #111; }
+        table { border-collapse: collapse; width: 100%; }
+        td { padding: 5px 8px; border-bottom: 1px solid #eee; font-size: 10.5px; vertical-align: top; }
+        .label-col { color: #666; width: 42%; }
+        .value-col { font-weight: 600; color: #111; }
+        .section-title { font-size: 9px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; color: #888; margin-top: 14px; margin-bottom: 4px; }
       `}</style>
 
-      {/* Print button — hidden when printing */}
-      <div className="no-print fixed top-3 right-3 flex gap-2">
-        <button
-          onClick={() => window.print()}
-          style={{ background: '#1d4ed8', color: 'white', border: 'none', padding: '6px 14px', borderRadius: 6, cursor: 'pointer', fontSize: 13 }}
-        >
-          Print
-        </button>
-        <button
-          onClick={() => window.close()}
-          style={{ background: '#6b7280', color: 'white', border: 'none', padding: '6px 14px', borderRadius: 6, cursor: 'pointer', fontSize: 13 }}
-        >
-          Close
-        </button>
+      {/* Screen-only buttons */}
+      <div className="no-print" style={{ position: 'fixed', top: 12, right: 12, display: 'flex', gap: 8, zIndex: 999 }}>
+        <button onClick={() => window.print()} style={{ background: '#1d4ed8', color: 'white', border: 'none', padding: '6px 16px', borderRadius: 6, cursor: 'pointer', fontSize: 13, fontWeight: 500 }}>Print</button>
+        <button onClick={() => window.close()} style={{ background: '#6b7280', color: 'white', border: 'none', padding: '6px 16px', borderRadius: 6, cursor: 'pointer', fontSize: 13, fontWeight: 500 }}>Close</button>
       </div>
 
-      {/* A4 sheet */}
-      <div style={{ width: '100%', maxWidth: 760, margin: '0 auto', padding: '8px 0', fontSize: 11, lineHeight: 1.4, color: '#111' }}>
+      <div style={{ maxWidth: 760, margin: '0 auto' }}>
 
-        {/* Header */}
-        <div style={{ borderBottom: '2px solid #111', paddingBottom: 6, marginBottom: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-          <div>
-            <div style={{ fontSize: 20, fontWeight: 'bold', letterSpacing: 0.5 }}>{fullName}</div>
-            {(crab.aliases || []).length > 0 && (
-              <div style={{ fontSize: 10, color: '#555' }}>aka: {crab.aliases.join(", ")}</div>
-            )}
-          </div>
-          <div style={{ textAlign: 'right', fontSize: 10, color: '#555' }}>
-            <div>EMERGENCY CHEAT SHEET</div>
-            <div>Generated {new Date().toLocaleDateString("en-AU")}</div>
-          </div>
-        </div>
-
-        {/* Photo + Core details row */}
-        <div style={{ display: 'flex', gap: 14, marginBottom: 10 }}>
-          {crab.photo_url && (
-            <img src={crab.photo_url} alt="Photo" style={{ width: 80, height: 100, objectFit: 'cover', border: '1px solid #ccc', flexShrink: 0 }} />
-          )}
-          <div style={{ flex: 1 }}>
-            <Table>
-              {dob && <Row label="Date of Birth" value={dob} />}
-              {crab.phone && <Row label="Main Phone" value={crab.phone} />}
-              {crab.email && <Row label="Main Email" value={crab.email} />}
-              {address && <Row label="Address" value={address} />}
-              {crab.status && crab.status !== "active" && <Row label="Status" value={crab.status.toUpperCase()} highlight />}
-            </Table>
-          </div>
-        </div>
-
-        {/* Additional phones */}
-        {(crab.additional_phones || []).length > 0 && (
-          <Section title="Additional Phone Numbers">
-            <Table>
-              {crab.additional_phones.map((p, i) => <Row key={i} label={p.label || `Phone ${i+1}`} value={p.number} />)}
-            </Table>
-          </Section>
-        )}
-
-        {/* Additional emails */}
-        {(crab.additional_emails || []).length > 0 && (
-          <Section title="Additional Emails">
-            <Table>
-              {crab.additional_emails.map((e, i) => <Row key={i} label={e.label || `Email ${i+1}`} value={e.email} />)}
-            </Table>
-          </Section>
-        )}
-
-        {/* Additional addresses */}
-        {(crab.additional_addresses || []).length > 0 && (
-          <Section title="Additional Addresses">
-            <Table>
-              {crab.additional_addresses.map((a, i) => (
-                <Row key={i} label={a.label || `Address ${i+1}`}
-                  value={[a.address1, a.address2, [a.suburb, a.state, a.postcode].filter(Boolean).join(" ")].filter(Boolean).join(", ")} />
-              ))}
-            </Table>
-          </Section>
-        )}
-
-        {/* ID Numbers */}
-        {(crab.id_numbers || []).length > 0 && (
-          <Section title="ID Numbers / References">
-            <Table>
-              {crab.id_numbers.map((n, i) => <Row key={i} label={n.label} value={n.value} />)}
-            </Table>
-          </Section>
-        )}
-
-        {/* 2-col layout for bank modules */}
-        {(rb || yb) && (
-          <div style={{ display: 'flex', gap: 12, marginTop: 10 }}>
-
-            {/* RedBank */}
-            {rb && (
-              <div style={{ flex: 1, border: '1px solid #e44', borderRadius: 4, padding: 8 }}>
-                <div style={{ fontWeight: 'bold', fontSize: 12, color: '#c00', marginBottom: 6, borderBottom: '1px solid #e44', paddingBottom: 3 }}>
-                  🔴 RedBank
-                </div>
-                <Table>
-                  {rb.redbank_customer_number && <Row label="Customer No." value={rb.redbank_customer_number} />}
-                  {rb.redbank_password && <Row label="Password" value={rb.redbank_password} />}
-                  {rb.redbank_app_pin && <Row label="App PIN" value={rb.redbank_app_pin} />}
-                  {rb.telephone_access_code && <Row label="Tel. Access Code" value={rb.telephone_access_code} />}
-                  {rb.has_joint_accounts && rb.redbank_joint_holder_name && (
-                    <Row label="Joint Holder" value={rb.redbank_joint_holder_name} />
-                  )}
-                </Table>
-
-                {rbAccounts.length > 0 && (
-                  <>
-                    <div style={{ fontWeight: 'bold', fontSize: 10, marginTop: 6, marginBottom: 3, color: '#555' }}>ACCOUNTS</div>
-                    <Table>
-                      {rbAccounts.map(a => (
-                        <Row key={a.id} label={`${a.account_type || 'Acc'}`} value={`BSB ${a.bsb}  |  ${a.account_number}`} />
-                      ))}
-                    </Table>
-                  </>
-                )}
-
-                {rbCards.length > 0 && (
-                  <>
-                    <div style={{ fontWeight: 'bold', fontSize: 10, marginTop: 6, marginBottom: 3, color: '#555' }}>CARDS</div>
-                    <Table>
-                      {rbCards.map(c => (
-                        <Row key={c.id} label={`····${(c.card_number || '').slice(-4)}`} value={`Exp ${c.expiry || '—'}  |  CCV ${c.ccv || '—'}${c.pin ? `  |  PIN ${c.pin}` : ''}`} />
-                      ))}
-                    </Table>
-                  </>
-                )}
-
-                {(rb.redbank_payids || []).length > 0 && (
-                  <>
-                    <div style={{ fontWeight: 'bold', fontSize: 10, marginTop: 6, marginBottom: 3, color: '#555' }}>PAYIDs</div>
-                    {rb.redbank_payids.map((p, i) => (
-                      <div key={i} style={{ fontSize: 10, fontFamily: 'monospace' }}>{p.payid}</div>
-                    ))}
-                  </>
-                )}
-              </div>
-            )}
-
-            {/* YellowBank */}
-            {yb && (
-              <div style={{ flex: 1, border: '1px solid #ca8', borderRadius: 4, padding: 8 }}>
-                <div style={{ fontWeight: 'bold', fontSize: 12, color: '#a06000', marginBottom: 6, borderBottom: '1px solid #ca8', paddingBottom: 3 }}>
-                  🟡 YellowBank
-                </div>
-                <Table>
-                  {yb.yellowbank_client_number && <Row label="Client No." value={yb.yellowbank_client_number} />}
-                  {yb.yellowbank_password && <Row label="Password" value={yb.yellowbank_password} />}
-                  {yb.yellowbank_app_pin && <Row label="App PIN" value={yb.yellowbank_app_pin} />}
-                  {yb.yellowbank_telephone_pin && <Row label="Tel. PIN" value={yb.yellowbank_telephone_pin} />}
-                  {yb.yellowbank_last_branch && <Row label="Last Branch" value={yb.yellowbank_last_branch} />}
-                  {yb.yellowbank_last_branch_purpose && <Row label="Branch Purpose" value={yb.yellowbank_last_branch_purpose} />}
-                </Table>
-
-                {(yb.yellowbank_security_q1 || yb.yellowbank_security_q2) && (
-                  <>
-                    <div style={{ fontWeight: 'bold', fontSize: 10, marginTop: 6, marginBottom: 3, color: '#555' }}>SECURITY QUESTIONS</div>
-                    <Table>
-                      {yb.yellowbank_security_q1 && <Row label={yb.yellowbank_security_q1} value={yb.yellowbank_security_a1 || '—'} />}
-                      {yb.yellowbank_security_q2 && <Row label={yb.yellowbank_security_q2} value={yb.yellowbank_security_a2 || '—'} />}
-                    </Table>
-                  </>
-                )}
-
-                {ybAccounts.length > 0 && (
-                  <>
-                    <div style={{ fontWeight: 'bold', fontSize: 10, marginTop: 6, marginBottom: 3, color: '#555' }}>ACCOUNTS</div>
-                    <Table>
-                      {ybAccounts.map(a => (
-                        <Row key={a.id} label={`${a.account_type || 'Acc'}`} value={`BSB ${a.bsb}  |  ${a.account_number}`} />
-                      ))}
-                    </Table>
-                  </>
-                )}
-
-                {ybCards.length > 0 && (
-                  <>
-                    <div style={{ fontWeight: 'bold', fontSize: 10, marginTop: 6, marginBottom: 3, color: '#555' }}>CARDS</div>
-                    <Table>
-                      {ybCards.map(c => (
-                        <Row key={c.id} label={`····${(c.card_number || '').slice(-4)}`} value={`Exp ${c.expiry || '—'}  |  CCV ${c.ccv || '—'}${c.pin ? `  |  PIN ${c.pin}` : ''}`} />
-                      ))}
-                    </Table>
-                  </>
-                )}
-
-                {(yb.yellowbank_payids || []).length > 0 && (
-                  <>
-                    <div style={{ fontWeight: 'bold', fontSize: 10, marginTop: 6, marginBottom: 3, color: '#555' }}>PAYIDs</div>
-                    {yb.yellowbank_payids.map((p, i) => (
-                      <div key={i} style={{ fontSize: 10, fontFamily: 'monospace' }}>{p.payid}</div>
-                    ))}
-                  </>
-                )}
-              </div>
-            )}
+        {/* ═══════════════════════════════════════════
+            PAGE 1 — YellowBank (only if yb module exists)
+            ═══════════════════════════════════════════ */}
+        {ybMod && (
+          <div style={{ paddingTop: 0 }}>
+            <PageHeader fullName={fullName} bank="YellowBank" bankColor="#a06000" generatedStr={generatedStr} />
+            <PersonSection crab={crab} displayName={displayName} dob={dob} phone={getSelectedPhone(ybMod)} address={getSelectedAddress(ybMod)} />
+            <YellowBankSection mod={ybMod} accounts={ybAccounts} cards={ybCards} formatSalary={formatSalary} formatDate={formatCommencementDate} />
+            <PageFooter generatedStr={generatedStr} />
           </div>
         )}
 
-        {/* Notes / Emergency summary */}
-        {(crab.emergency_summary || crab.notes) && (
-          <Section title="Notes">
-            {crab.emergency_summary && <p style={{ marginBottom: 4 }}>{crab.emergency_summary}</p>}
-            {crab.notes && <p style={{ color: '#444' }}>{crab.notes}</p>}
-          </Section>
-        )}
-
-        {/* Tags */}
-        {(crab.tags || []).length > 0 && (
-          <div style={{ marginTop: 8, fontSize: 10, color: '#555' }}>
-            Tags: {crab.tags.join("  ·  ")}
+        {/* ═══════════════════════════════════════════
+            PAGE 2 — RedBank (only if rb module exists)
+            ═══════════════════════════════════════════ */}
+        {rbMod && (
+          <div className={ybMod ? "page-break" : ""} style={{ paddingTop: ybMod ? 0 : 0 }}>
+            <PageHeader fullName={fullName} bank="RedBank" bankColor="#b91c1c" generatedStr={generatedStr} />
+            <PersonSection crab={crab} displayName={displayName} dob={dob} phone={getSelectedPhone(rbMod)} address={getSelectedAddress(rbMod)} />
+            <RedBankSection mod={rbMod} accounts={rbAccounts} cards={rbCards} />
+            <PageFooter generatedStr={generatedStr} />
           </div>
         )}
 
@@ -300,31 +161,245 @@ export default function CrabCheatSheet() {
   );
 }
 
-function Section({ title, children }) {
+/* ─── Page Header ─── */
+function PageHeader({ fullName, bank, bankColor, generatedStr }) {
   return (
-    <div style={{ marginTop: 8 }}>
-      <div style={{ fontWeight: 'bold', fontSize: 10, textTransform: 'uppercase', letterSpacing: 0.5, color: '#555', borderBottom: '1px solid #ddd', marginBottom: 4, paddingBottom: 2 }}>
-        {title}
+    <div>
+      {/* Top row: logo left, bank name right */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 22 }}>🦀</span>
+          <div>
+            <div style={{ fontSize: 16, fontWeight: 800, letterSpacing: 1, color: '#111' }}>CRABCLAWS</div>
+            <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: 1.5, color: '#888', textTransform: 'uppercase' }}>Emergency Profile Details</div>
+          </div>
+        </div>
+        <div style={{ textAlign: 'right' }}>
+          <div style={{ fontSize: 18, fontWeight: 700, color: bankColor }}>{bank}</div>
+          <div style={{ fontSize: 10, color: '#888', marginTop: 1 }}>{fullName}</div>
+        </div>
       </div>
-      {children}
+      {/* Amber divider line */}
+      <div style={{ height: 3, background: 'linear-gradient(to right, #f59e0b, #fbbf24)', borderRadius: 2, marginBottom: 10 }} />
+      {/* Confidential banner */}
+      <div style={{ background: '#fffbeb', border: '1px solid #fbbf24', borderRadius: 6, padding: '6px 12px', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+        <span style={{ fontSize: 13 }}>⚠️</span>
+        <span style={{ fontSize: 10, color: '#92400e' }}>
+          <strong>CONFIDENTIAL</strong> — Keep this document in a secure location. Do not share with unauthorised persons.
+        </span>
+      </div>
     </div>
   );
 }
 
-function Table({ children }) {
+/* ─── Person / Common Section ─── */
+function PersonSection({ crab, displayName, dob, phone, address }) {
+  const hasAliases = (crab.aliases || []).length > 0;
   return (
-    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 10.5 }}>
-      <tbody>{children}</tbody>
-    </table>
+    <div style={{ marginBottom: 12 }}>
+      <div className="section-title">Personal Details</div>
+      <table>
+        <tbody>
+          <DataRow label="Full Name" value={displayName} />
+          {hasAliases && <DataRow label="Known Aliases" value={crab.aliases.join(", ")} />}
+          {dob && <DataRow label="Date of Birth" value={dob} />}
+          {phone && <DataRow label="Mobile Number" value={phone} />}
+          {crab.email && <DataRow label="Email" value={crab.email} />}
+          {address && <DataRow label="Address" value={address} />}
+        </tbody>
+      </table>
+    </div>
   );
 }
 
-function Row({ label, value, highlight }) {
+/* ─── YellowBank Section ─── */
+function YellowBankSection({ mod, accounts, cards, formatSalary, formatDate }) {
+  const hasEmployer = mod.yellowbank_employer || mod.yellowbank_job_role || mod.yellowbank_annual_salary || mod.yellowbank_commencement_date;
+  const hasSecurity = mod.yellowbank_security_q1 || mod.yellowbank_security_q2;
+
+  return (
+    <div>
+      {/* Account & Security */}
+      <div className="section-title">Account &amp; Security</div>
+      <table>
+        <tbody>
+          {mod.yellowbank_client_number && <DataRow label="Client Number" value={mod.yellowbank_client_number} />}
+          {mod.yellowbank_password && <DataRow label="Password" value={mod.yellowbank_password} />}
+          {mod.yellowbank_app_pin && <DataRow label="App PIN" value={mod.yellowbank_app_pin} />}
+          {mod.yellowbank_telephone_pin && <DataRow label="Telephone PIN" value={mod.yellowbank_telephone_pin} />}
+          {mod.yellowbank_last_branch && <DataRow label="Last Branch" value={mod.yellowbank_last_branch} />}
+          {mod.yellowbank_last_branch_purpose && <DataRow label="Branch Purpose" value={mod.yellowbank_last_branch_purpose} />}
+        </tbody>
+      </table>
+
+      {/* Security Questions */}
+      {hasSecurity && (
+        <>
+          <div className="section-title">Security Questions</div>
+          <table>
+            <tbody>
+              {mod.yellowbank_security_q1 && <DataRow label={mod.yellowbank_security_q1} value={mod.yellowbank_security_a1 || "—"} />}
+              {mod.yellowbank_security_q2 && <DataRow label={mod.yellowbank_security_q2} value={mod.yellowbank_security_a2 || "—"} />}
+            </tbody>
+          </table>
+        </>
+      )}
+
+      {/* Employment */}
+      {hasEmployer && (
+        <>
+          <div className="section-title">Employment</div>
+          <table>
+            <tbody>
+              {mod.yellowbank_employer && <DataRow label="Employer" value={mod.yellowbank_employer} />}
+              {mod.yellowbank_job_role && <DataRow label="Job Role" value={mod.yellowbank_job_role} />}
+              {mod.yellowbank_annual_salary && <DataRow label="Annual Salary" value={formatSalary(mod.yellowbank_annual_salary)} />}
+              {mod.yellowbank_commencement_date && <DataRow label="Commencement Date" value={formatDate(mod.yellowbank_commencement_date)} />}
+            </tbody>
+          </table>
+        </>
+      )}
+
+      {/* Accounts */}
+      {accounts.length > 0 && (
+        <>
+          <div className="section-title">Bank Accounts</div>
+          <table>
+            <tbody>
+              {accounts.map(a => (
+                <DataRow key={a.id} label={a.account_type || "Account"} value={`BSB ${a.bsb}  |  ${a.account_number}${a.bsb_branch_name ? `  (${a.bsb_branch_name})` : ""}`} />
+              ))}
+            </tbody>
+          </table>
+        </>
+      )}
+
+      {/* Cards */}
+      {cards.length > 0 && (
+        <>
+          <div className="section-title">Cards</div>
+          {cards.map(c => (
+            <div key={c.id} style={{ marginBottom: 8 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: '#555', marginBottom: 2, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                •••• {(c.card_number || "").slice(-4)}
+              </div>
+              <table>
+                <tbody>
+                  <DataRow label="Card Number" value={c.card_number} />
+                  {c.expiry && <DataRow label="Expiry" value={c.expiry} />}
+                  {c.ccv && <DataRow label="CVV" value={c.ccv} />}
+                  {c.pin && <DataRow label="PIN" value={c.pin} />}
+                  {c.credit_limit && <DataRow label="Credit Limit" value={`$${Number(c.credit_limit).toLocaleString("en-AU", { minimumFractionDigits: 2 })}`} />}
+                </tbody>
+              </table>
+            </div>
+          ))}
+        </>
+      )}
+
+      {/* PayIDs */}
+      {(mod.yellowbank_payids || []).length > 0 && (
+        <>
+          <div className="section-title">PayIDs</div>
+          <table>
+            <tbody>
+              {mod.yellowbank_payids.map((p, i) => (
+                <DataRow key={i} label={`PayID ${i + 1}`} value={p.payid} />
+              ))}
+            </tbody>
+          </table>
+        </>
+      )}
+    </div>
+  );
+}
+
+/* ─── RedBank Section ─── */
+function RedBankSection({ mod, accounts, cards }) {
+  return (
+    <div>
+      <div className="section-title">Account &amp; Security</div>
+      <table>
+        <tbody>
+          {mod.redbank_customer_number && <DataRow label="Customer Number" value={mod.redbank_customer_number} />}
+          {mod.redbank_password && <DataRow label="Password" value={mod.redbank_password} />}
+          {mod.redbank_app_pin && <DataRow label="App PIN" value={mod.redbank_app_pin} />}
+          {mod.telephone_access_code && <DataRow label="Telephone Access Code" value={mod.telephone_access_code} />}
+          {mod.has_joint_accounts && mod.redbank_joint_holder_name && (
+            <DataRow label="Joint Holder" value={mod.redbank_joint_holder_name} />
+          )}
+        </tbody>
+      </table>
+
+      {accounts.length > 0 && (
+        <>
+          <div className="section-title">Bank Accounts</div>
+          <table>
+            <tbody>
+              {accounts.map(a => (
+                <DataRow key={a.id} label={a.account_type || "Account"} value={`BSB ${a.bsb}  |  ${a.account_number}${a.bsb_branch_name ? `  (${a.bsb_branch_name})` : ""}`} />
+              ))}
+            </tbody>
+          </table>
+        </>
+      )}
+
+      {cards.length > 0 && (
+        <>
+          <div className="section-title">Cards</div>
+          {cards.map(c => (
+            <div key={c.id} style={{ marginBottom: 8 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: '#555', marginBottom: 2, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                •••• {(c.card_number || "").slice(-4)}
+              </div>
+              <table>
+                <tbody>
+                  <DataRow label="Card Number" value={c.card_number} />
+                  {c.expiry && <DataRow label="Expiry" value={c.expiry} />}
+                  {c.ccv && <DataRow label="CVV" value={c.ccv} />}
+                  {c.pin && <DataRow label="PIN" value={c.pin} />}
+                </tbody>
+              </table>
+            </div>
+          ))}
+        </>
+      )}
+
+      {(mod.redbank_payids || []).length > 0 && (
+        <>
+          <div className="section-title">PayIDs</div>
+          <table>
+            <tbody>
+              {mod.redbank_payids.map((p, i) => (
+                <DataRow key={i} label={`PayID ${i + 1}`} value={p.payid} />
+              ))}
+            </tbody>
+          </table>
+        </>
+      )}
+    </div>
+  );
+}
+
+/* ─── Page Footer ─── */
+function PageFooter({ generatedStr }) {
+  return (
+    <div style={{ marginTop: 24, borderTop: '1px solid #eee', paddingTop: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <span style={{ fontSize: 9, color: '#aaa' }}>Generated {generatedStr}</span>
+      <span style={{ fontSize: 9, color: '#aaa', display: 'flex', alignItems: 'center', gap: 4 }}>
+        🦀 CrabClaws — Store securely
+      </span>
+    </div>
+  );
+}
+
+/* ─── Table Row ─── */
+function DataRow({ label, value }) {
   if (!value) return null;
   return (
     <tr>
-      <td style={{ paddingRight: 8, paddingTop: 1, paddingBottom: 1, color: '#555', whiteSpace: 'nowrap', verticalAlign: 'top', width: '35%' }}>{label}</td>
-      <td style={{ paddingTop: 1, paddingBottom: 1, fontWeight: highlight ? 'bold' : 'normal', color: highlight ? '#c00' : '#111', fontFamily: 'monospace' }}>{value}</td>
+      <td className="label-col">{label}</td>
+      <td className="value-col">{value}</td>
     </tr>
   );
 }

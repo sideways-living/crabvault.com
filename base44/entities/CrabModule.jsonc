@@ -26,8 +26,7 @@
     },
     "selected_phone_index": {
       "type": "number",
-      "title": "Selected Additional Phone Index",
-      "description": "Index in additional_phones array if selected_phone_type is 'additional'"
+      "title": "Selected Additional Phone Index"
     },
     "selected_email_type": {
       "type": "string",
@@ -40,8 +39,7 @@
     },
     "selected_email_index": {
       "type": "number",
-      "title": "Selected Additional Email Index",
-      "description": "Index in additional_emails array if selected_email_type is 'additional'"
+      "title": "Selected Additional Email Index"
     },
     "selected_address_type": {
       "type": "string",
@@ -54,8 +52,7 @@
     },
     "selected_address_index": {
       "type": "number",
-      "title": "Selected Additional Address Index",
-      "description": "Index in additional_addresses array if selected_address_type is 'additional'"
+      "title": "Selected Additional Address Index"
     },
     "override_phone": {
       "type": "string",
@@ -88,7 +85,6 @@
     "identification_used": {
       "type": "array",
       "title": "Identification Used",
-      "description": "List of ID type labels used when setting up this module",
       "items": {
         "type": "string"
       }
@@ -129,12 +125,10 @@
         "type": "object",
         "properties": {
           "payid": {
-            "type": "string",
-            "title": "PayID"
+            "type": "string"
           },
           "linked_account_id": {
-            "type": "string",
-            "title": "Linked Account ID"
+            "type": "string"
           }
         }
       }
@@ -186,15 +180,30 @@
         "type": "object",
         "properties": {
           "payid": {
-            "type": "string",
-            "title": "PayID"
+            "type": "string"
           },
           "linked_account_id": {
-            "type": "string",
-            "title": "Linked Account ID"
+            "type": "string"
           }
         }
       }
+    },
+    "yellowbank_employer": {
+      "type": "string",
+      "title": "YellowBank Employer"
+    },
+    "yellowbank_job_role": {
+      "type": "string",
+      "title": "YellowBank Job Role"
+    },
+    "yellowbank_annual_salary": {
+      "type": "number",
+      "title": "YellowBank Annual Salary"
+    },
+    "yellowbank_commencement_date": {
+      "type": "string",
+      "format": "date",
+      "title": "YellowBank Commencement Date"
     },
     "notes": {
       "type": "string",

@@ -224,6 +224,10 @@ export default function YellowBankModule({ crabId }) {
     yellowbank_security_a2: "",
     yellowbank_last_branch: "",
     yellowbank_last_branch_purpose: "",
+    yellowbank_employer: "",
+    yellowbank_job_role: "",
+    yellowbank_annual_salary: "",
+    yellowbank_commencement_date: "",
   });
   const [loginDirty, setLoginDirty] = useState(false);
   const [savingLogin, setSavingLogin] = useState(false);
@@ -260,6 +264,10 @@ export default function YellowBankModule({ crabId }) {
         yellowbank_security_a2: mod.yellowbank_security_a2 || "",
         yellowbank_last_branch: mod.yellowbank_last_branch || "",
         yellowbank_last_branch_purpose: mod.yellowbank_last_branch_purpose || "",
+        yellowbank_employer: mod.yellowbank_employer || "",
+        yellowbank_job_role: mod.yellowbank_job_role || "",
+        yellowbank_annual_salary: mod.yellowbank_annual_salary ? String(mod.yellowbank_annual_salary) : "",
+        yellowbank_commencement_date: mod.yellowbank_commencement_date || "",
       });
     }
     setAccounts(accs);
@@ -284,7 +292,12 @@ export default function YellowBankModule({ crabId }) {
   const saveLogin = async () => {
     setSavingLogin(true);
     const mod = await ensureModule();
-    await base44.entities.CrabModule.update(mod.id, { ...loginEdit, identification_used: identificationUsed });
+    const saveData = {
+      ...loginEdit,
+      identification_used: identificationUsed,
+      yellowbank_annual_salary: loginEdit.yellowbank_annual_salary ? Number(loginEdit.yellowbank_annual_salary) : undefined,
+    };
+    await base44.entities.CrabModule.update(mod.id, saveData);
     toast.success("Login details saved");
     setLoginDirty(false);
     setSavingLogin(false);
@@ -507,6 +520,29 @@ export default function YellowBankModule({ crabId }) {
                 </div>
               </div>
 
+              {/* Employment */}
+              <div className="space-y-2 pt-1">
+                <Label className="text-xs flex items-center gap-1 text-muted-foreground font-semibold uppercase tracking-wide">Employment Information</Label>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs">Employer</Label>
+                    <Input className="mt-1" placeholder="Employer name" value={loginEdit.yellowbank_employer} onChange={L("yellowbank_employer")} />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Job Role</Label>
+                    <Input className="mt-1" placeholder="Job title / role" value={loginEdit.yellowbank_job_role} onChange={L("yellowbank_job_role")} />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Annual Salary ($)</Label>
+                    <Input className="mt-1 font-mono" type="number" placeholder="0.00" value={loginEdit.yellowbank_annual_salary} onChange={L("yellowbank_annual_salary")} />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Commencement Date</Label>
+                    <Input className="mt-1" type="date" value={loginEdit.yellowbank_commencement_date} onChange={L("yellowbank_commencement_date")} />
+                  </div>
+                </div>
+              </div>
+
               <IdentificationUsedSelector
                 crab={crab}
                 selected={identificationUsed}
@@ -564,6 +600,27 @@ export default function YellowBankModule({ crabId }) {
                 <div className="flex justify-between pt-1 border-t">
                   <span className="text-muted-foreground">{loginEdit.yellowbank_last_branch || "—"}</span>
                   <span>{loginEdit.yellowbank_last_branch_purpose || ""}</span>
+                </div>
+              )}
+
+              {/* Employment */}
+              {(loginEdit.yellowbank_employer || loginEdit.yellowbank_job_role || loginEdit.yellowbank_annual_salary || loginEdit.yellowbank_commencement_date) && (
+                <div className="pt-1 border-t space-y-1.5">
+                  <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wide">Employment</p>
+                  <div className="grid grid-cols-2 gap-x-6 gap-y-1">
+                    {loginEdit.yellowbank_employer && (
+                      <div className="flex justify-between"><span className="text-muted-foreground text-sm">Employer</span><span className="text-sm font-medium">{loginEdit.yellowbank_employer}</span></div>
+                    )}
+                    {loginEdit.yellowbank_job_role && (
+                      <div className="flex justify-between"><span className="text-muted-foreground text-sm">Job Role</span><span className="text-sm font-medium">{loginEdit.yellowbank_job_role}</span></div>
+                    )}
+                    {loginEdit.yellowbank_annual_salary && (
+                      <div className="flex justify-between"><span className="text-muted-foreground text-sm">Annual Salary</span><span className="text-sm font-medium font-mono">${Number(loginEdit.yellowbank_annual_salary).toLocaleString("en-AU")}</span></div>
+                    )}
+                    {loginEdit.yellowbank_commencement_date && (
+                      <div className="flex justify-between"><span className="text-muted-foreground text-sm">Commenced</span><span className="text-sm font-medium">{new Date(loginEdit.yellowbank_commencement_date).toLocaleDateString("en-AU")}</span></div>
+                    )}
+                  </div>
                 </div>
               )}
 
