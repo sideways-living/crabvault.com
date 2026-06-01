@@ -124,7 +124,7 @@ export default function CrabCheatSheet() {
         td { padding: 5px 8px; border-bottom: 1px solid #eee; font-size: 10.5px; vertical-align: top; }
         .label-col { color: #666; width: 42%; }
         .value-col { font-weight: 600; color: #111; }
-        .section-title { font-size: 9px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; color: #888; margin-top: 14px; margin-bottom: 4px; }
+        .section-title { font-size: 9px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; color: #3b6fd4; margin-top: 14px; margin-bottom: 4px; }
       `}</style>
 
       {/* Screen-only buttons */}
@@ -173,9 +173,11 @@ function PageHeader({ fullName, bank, bankColor, generatedStr }) {
       {/* Top row: logo left, bank name right */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: 22 }}>🦀</span>
+          <div style={{ width: 32, height: 32, borderRadius: 8, background: '#1d4ed8', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <span style={{ fontSize: 18, lineHeight: 1 }}>🛡️</span>
+          </div>
           <div>
-            <div style={{ fontSize: 16, fontWeight: 800, letterSpacing: 1, color: '#111' }}>CRABCLAWS</div>
+            <div style={{ fontSize: 16, fontWeight: 800, letterSpacing: 0.5, color: '#1a2744' }}>CrabVault<span style={{ color: '#3b6fd4' }}>.one</span></div>
             <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: 1.5, color: '#888', textTransform: 'uppercase' }}>Emergency Profile Details</div>
           </div>
         </div>
@@ -184,12 +186,12 @@ function PageHeader({ fullName, bank, bankColor, generatedStr }) {
           <div style={{ fontSize: 10, color: '#888', marginTop: 1 }}>{fullName}</div>
         </div>
       </div>
-      {/* Amber divider line */}
-      <div style={{ height: 3, background: 'linear-gradient(to right, #f59e0b, #fbbf24)', borderRadius: 2, marginBottom: 10 }} />
+      {/* Navy/blue divider line matching app primary */}
+      <div style={{ height: 3, background: 'linear-gradient(to right, #1d4ed8, #3b82f6)', borderRadius: 2, marginBottom: 10 }} />
       {/* Confidential banner */}
-      <div style={{ background: '#fffbeb', border: '1px solid #fbbf24', borderRadius: 6, padding: '6px 12px', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+      <div style={{ background: '#eff6ff', border: '1px solid #93c5fd', borderRadius: 6, padding: '6px 12px', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
         <span style={{ fontSize: 13 }}>⚠️</span>
-        <span style={{ fontSize: 10, color: '#92400e' }}>
+        <span style={{ fontSize: 10, color: '#1e3a8a' }}>
           <strong>CONFIDENTIAL</strong> — Keep this document in a secure location. Do not share with unauthorised persons.
         </span>
       </div>
@@ -421,7 +423,7 @@ function PageFooter({ generatedStr }) {
     <div style={{ marginTop: 24, borderTop: '1px solid #eee', paddingTop: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
       <span style={{ fontSize: 9, color: '#aaa' }}>Generated {generatedStr}</span>
       <span style={{ fontSize: 9, color: '#aaa', display: 'flex', alignItems: 'center', gap: 4 }}>
-        🦀 CrabClaws — Store securely
+        🛡️ CrabVault.one — Store securely
       </span>
     </div>
   );
