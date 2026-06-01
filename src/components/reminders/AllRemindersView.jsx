@@ -6,6 +6,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { toast } from "sonner";
 import EditReminderModal from "./EditReminderModal";
 import { Link } from "react-router-dom";
+import { getReminderUrgency, reminderCardClass, reminderDueDateClass } from "@/lib/reminderUtils";
 
 function formatDate(d) {
   if (!d) return "—";
@@ -65,6 +66,8 @@ export default function AllRemindersView() {
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+  const tomorrow = new Date(today);
+  tomorrow.setDate(today.getDate() + 1);
 
   const active = reminders
     .filter(r => !r.is_done)
@@ -81,18 +84,22 @@ export default function AllRemindersView() {
   );
 
   const ReminderCard = ({ r, isDone }) => {
-    const isOverdue = !isDone && r.due_date && new Date(r.due_date) < today;
+    const urgency = isDone ? "normal" : getReminderUrgency(r.due_date);
+    const isOverdue = urgency === "overdue";
+    const isDueSoon = urgency === "due_soon";
     const crab = crabs[r.crab_id];
     const crabName = crab ? (crab.full_name || [crab.first_name, crab.surname].filter(Boolean).join(" ")) : null;
 
     return (
-      <div className={`rounded-lg border text-xs overflow-hidden ${isOverdue ? "border-red-200 bg-red-50/40" : isDone ? "bg-muted/10 opacity-70" : "bg-muted/20"}`}>
+      <div className={`rounded-lg border text-xs overflow-hidden ${isDone ? "bg-muted/10 opacity-70" : reminderCardClass(urgency)}`}>
         <div className="flex items-center px-2.5 pt-2 pb-1 gap-1">
           {isDone
             ? <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" strokeWidth={2.5} />
             : isOverdue
               ? <AlertTriangle className="h-4 w-4 text-red-500 shrink-0" strokeWidth={2.5} />
-              : <Clock className="h-4 w-4 text-muted-foreground shrink-0" strokeWidth={2.5} />
+              : isDueSoon
+                ? <Clock className="h-4 w-4 text-orange-500 shrink-0" strokeWidth={2.5} />
+                : <Clock className="h-4 w-4 text-muted-foreground shrink-0" strokeWidth={2.5} />
           }
           {crabName && (
             <Link to={`/crabs/${r.crab_id}`} className="flex items-center gap-1 text-[10px] text-primary hover:underline ml-1 font-medium truncate flex-1">
@@ -137,7 +144,7 @@ export default function AllRemindersView() {
             <div className="text-[8px] uppercase tracking-wide">Added</div>
             <div className="text-[10px]">{formatDate(r.created_date)}</div>
           </div>
-          <div className={`flex-1 px-2.5 py-1 text-right ${isDone ? "text-emerald-600" : isOverdue ? "text-red-600 font-medium" : "text-muted-foreground/70"}`}>
+          <div className={`flex-1 px-2.5 py-1 text-right ${isDone ? "text-emerald-600" : reminderDueDateClass(urgency)}`}>
             <div className="text-[8px] uppercase tracking-wide">{isDone ? "Completed" : "Due"}</div>
             <div className="text-[10px]">{formatDate(isDone ? r.completed_at : r.due_date)}</div>
           </div>
@@ -178,9 +185,14 @@ export default function AllRemindersView() {
         {/* Summary + group toggle */}
         <div className="flex items-center justify-between gap-4">
           <span className="text-sm text-muted-foreground">
-            {active.filter(r => new Date(r.due_date) < today).length > 0 && (
-              <span className="text-red-600 font-medium">{active.filter(r => new Date(r.due_date) < today).length} overdue · </span>
-            )}{active.length} active reminder{active.length !== 1 ? "s" : ""}
+            {(() => {
+              const overdueCount = active.filter(r => getReminderUrgency(r.due_date) === "overdue").length;
+              const dueSoonCount = active.filter(r => getReminderUrgency(r.due_date) === "due_soon").length;
+              return (<>
+                {overdueCount > 0 && <span className="text-red-600 font-medium">{overdueCount} overdue · </span>}
+                {dueSoonCount > 0 && <span className="text-orange-500 font-medium">{dueSoonCount} due soon · </span>}
+              </>);
+            })()}{active.length} active reminder{active.length !== 1 ? "s" : ""}
           </span>
           <div className="flex items-center gap-1 border rounded-md overflow-hidden text-xs">
             <button

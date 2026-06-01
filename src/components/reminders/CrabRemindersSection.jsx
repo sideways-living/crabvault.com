@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import EditReminderModal from "./EditReminderModal";
+import { getReminderUrgency, reminderCardClass, reminderDueDateClass } from "@/lib/reminderUtils";
 
 function formatDate(d) {
   if (!d) return "—";
@@ -90,9 +91,11 @@ export default function CrabRemindersSection({ crabId, crabName, refreshKey }) {
         {active.length > 0 && (
           <div className="space-y-1.5">
             {active.map(r => {
-              const isOverdue = r.due_date && new Date(r.due_date) < today;
+              const urgency = getReminderUrgency(r.due_date);
+              const isOverdue = urgency === "overdue";
+              const isDueSoon = urgency === "due_soon";
               return (
-                <div key={r.id} className={`rounded-lg border text-xs overflow-hidden ${isOverdue ? "border-red-200 bg-red-50/40" : "bg-muted/20"}`}>
+                <div key={r.id} className={`rounded-lg border text-xs overflow-hidden ${reminderCardClass(urgency)}`}>
                   {/* Row 1: status icon (left) | edit + done + delete buttons (right) */}
                   <div className="flex items-center px-2.5 pt-2 pb-1 gap-1">
                     {isOverdue
@@ -102,12 +105,19 @@ export default function CrabRemindersSection({ crabId, crabName, refreshKey }) {
                           </TooltipTrigger>
                           <TooltipContent>Overdue</TooltipContent>
                         </Tooltip>
-                      : <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Clock className="h-4 w-4 text-muted-foreground shrink-0 cursor-help" strokeWidth={2.5} />
-                          </TooltipTrigger>
-                          <TooltipContent>Active</TooltipContent>
-                        </Tooltip>
+                      : isDueSoon
+                        ? <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Clock className="h-4 w-4 text-orange-500 shrink-0 cursor-help" strokeWidth={2.5} />
+                            </TooltipTrigger>
+                            <TooltipContent>Due soon</TooltipContent>
+                          </Tooltip>
+                        : <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Clock className="h-4 w-4 text-muted-foreground shrink-0 cursor-help" strokeWidth={2.5} />
+                            </TooltipTrigger>
+                            <TooltipContent>Active</TooltipContent>
+                          </Tooltip>
                     }
                     <div className="flex-1" />
                     <Tooltip>
@@ -146,7 +156,7 @@ export default function CrabRemindersSection({ crabId, crabName, refreshKey }) {
                       <div className="text-[8px] uppercase tracking-wide">Added</div>
                       <div className="text-[10px]">{formatDate(r.created_date)}</div>
                     </div>
-                    <div className={`flex-1 px-2.5 py-1 text-right ${isOverdue ? "text-red-600 font-medium" : "text-muted-foreground/70"}`}>
+                    <div className={`flex-1 px-2.5 py-1 text-right ${reminderDueDateClass(urgency)}`}>
                       <div className="text-[8px] uppercase tracking-wide">Due</div>
                       <div className="text-[10px]">{formatDate(r.due_date)}</div>
                     </div>
