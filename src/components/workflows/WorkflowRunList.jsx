@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { CheckCircle2, Clock, AlertTriangle, XCircle, ChevronDown, ChevronUp, Loader2, Eye } from "lucide-react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
@@ -137,7 +138,15 @@ function RunCard({ run, tasksByRun, crabsMap, expandedRun, completing, toggleExp
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-sm font-medium">{run.workflow_template_name}</span>
             <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${config.bg} ${config.color}`}>{config.label}</span>
-            {crab && <span className="text-xs text-primary">{crab.full_name || crab.surname}</span>}
+            {crab && (
+              <Link
+                to={`/crabs/${crab.id}`}
+                className="text-xs text-primary hover:underline"
+                onClick={e => e.stopPropagation()}
+              >
+                {crab.full_name || crab.surname}
+              </Link>
+            )}
           </div>
           <div className="flex items-center gap-3 mt-1">
             <span className="text-xs text-muted-foreground">Started {formatDate(run.commenced_at)}</span>
