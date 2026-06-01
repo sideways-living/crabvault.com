@@ -12,6 +12,7 @@ export default function CrabCheatSheet() {
   const [rbCards, setRbCards] = useState([]);
   const [ybAccounts, setYbAccounts] = useState([]);
   const [ybCards, setYbCards] = useState([]);
+  const [devices, setDevices] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -27,7 +28,9 @@ export default function CrabCheatSheet() {
       setRbMod(rb);
       setYbMod(yb);
 
-      const fetches = [];
+      const fetches = [
+        base44.entities.CrabDevice.filter({ crab_id: id }, "created_date").then(setDevices),
+      ];
       if (rb) {
         fetches.push(
           base44.entities.RedBankAccount.filter({ crab_id: id }, "created_date").then(setRbAccounts),
@@ -140,6 +143,7 @@ export default function CrabCheatSheet() {
             <PageHeader fullName={fullName} bank="YellowBank" bankColor="#a06000" generatedStr={generatedStr} />
             <PersonSection crab={crab} displayName={displayName} dob={dob} phone={getSelectedPhone(ybMod)} address={getSelectedAddress(ybMod)} />
             <YellowBankSection mod={ybMod} accounts={ybAccounts} cards={ybCards} formatSalary={formatSalary} formatDate={formatCommencementDate} />
+            <DevicesSection devices={devices} />
             <PageFooter generatedStr={generatedStr} />
           </div>
         )}
@@ -152,6 +156,7 @@ export default function CrabCheatSheet() {
             <PageHeader fullName={fullName} bank="RedBank" bankColor="#b91c1c" generatedStr={generatedStr} />
             <PersonSection crab={crab} displayName={displayName} dob={dob} phone={getSelectedPhone(rbMod)} address={getSelectedAddress(rbMod)} />
             <RedBankSection mod={rbMod} accounts={rbAccounts} cards={rbCards} />
+            <DevicesSection devices={devices} />
             <PageFooter generatedStr={generatedStr} />
           </div>
         )}
@@ -377,6 +382,35 @@ function RedBankSection({ mod, accounts, cards }) {
           </table>
         </>
       )}
+    </div>
+  );
+}
+
+/* ─── Devices Section ─── */
+function DevicesSection({ devices }) {
+  if (!devices || devices.length === 0) return null;
+  return (
+    <div>
+      <div className="section-title">Devices</div>
+      {devices.map((d, i) => (
+        <div key={d.id} style={{ marginBottom: 6 }}>
+          {devices.length > 1 && (
+            <div style={{ fontSize: 10, fontWeight: 700, color: '#555', marginBottom: 2 }}>
+              Device {i + 1}{d.brand || d.model ? ` — ${[d.brand, d.model].filter(Boolean).join(" ")}` : ""}
+            </div>
+          )}
+          <table>
+            <tbody>
+              {d.brand && <DataRow label="Brand" value={d.brand} />}
+              {d.model && <DataRow label="Model" value={d.model} />}
+              {d.colour && <DataRow label="Colour" value={d.colour} />}
+              {d.imei && <DataRow label="IMEI" value={d.imei} />}
+              {(d.used_for || []).length > 0 && <DataRow label="Used For" value={d.used_for.join(", ")} />}
+              {d.notes && <DataRow label="Notes" value={d.notes} />}
+            </tbody>
+          </table>
+        </div>
+      ))}
     </div>
   );
 }
