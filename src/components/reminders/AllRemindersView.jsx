@@ -20,15 +20,28 @@ export default function AllRemindersView() {
   const [showDone, setShowDone] = useState(false);
   const [groupBy, setGroupBy] = useState("none"); // "none" | "task"
 
+  const [stepOrder, setStepOrder] = useState([]); // ordered list of step titles
+
   const load = async () => {
-    const [rems, crabList] = await Promise.all([
+    const [rems, crabList, steps] = await Promise.all([
       base44.entities.Reminder.filter({ is_deleted: false }, "due_date", 500),
       base44.entities.Crab.filter({ is_deleted: false }, "full_name", 500),
+      base44.entities.WorkflowStepTemplate.list("step_number", 500),
     ]);
     const crabMap = {};
     crabList.forEach(c => { crabMap[c.id] = c; });
     setCrabs(crabMap);
     setReminders(rems);
+    // Build ordered unique step titles (preserving step_number order, deduped)
+    const seen = new Set();
+    const ordered = [];
+    steps.forEach(s => {
+      if (s.title && !seen.has(s.title)) {
+        seen.add(s.title);
+        ordered.push(s.title);
+      }
+    });
+    setStepOrder(ordered);
     setLoading(false);
   };
 
@@ -140,7 +153,15 @@ export default function AllRemindersView() {
     if (!groupedByTask[key]) groupedByTask[key] = [];
     groupedByTask[key].push(r);
   });
-  const taskGroups = Object.entries(groupedByTask).sort(([a], [b]) => a.localeCompare(b));
+  // Sort task groups by workflow step order; unknown types go to the end alphabetically
+  const taskGroups = Object.entries(groupedByTask).sort(([a], [b]) => {
+    const ai = stepOrder.indexOf(a);
+    const bi = stepOrder.indexOf(b);
+    if (ai === -1 && bi === -1) return a.localeCompare(b);
+    if (ai === -1) return 1;
+    if (bi === -1) return -1;
+    return ai - bi;
+  });
 
   return (
     <TooltipProvider>
