@@ -6,7 +6,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { toast } from "sonner";
 import EditReminderModal from "./EditReminderModal";
 import { Link } from "react-router-dom";
-import { getReminderUrgency, reminderCardClass, reminderDueDateClass } from "@/lib/reminderUtils";
+import { getReminderUrgency, reminderCardClass, reminderDueDateClass, markReminderDone } from "@/lib/reminderUtils";
 
 function formatDate(d) {
   if (!d) return "—";
@@ -49,10 +49,7 @@ export default function AllRemindersView() {
   useEffect(() => { load(); }, []);
 
   const handleMarkDone = async (reminder) => {
-    await base44.entities.Reminder.update(reminder.id, {
-      is_done: true,
-      completed_at: new Date().toISOString(),
-    });
+    await markReminderDone(base44, reminder);
     toast.success("Marked as done");
     load();
   };

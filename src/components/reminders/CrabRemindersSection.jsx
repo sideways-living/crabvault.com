@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import EditReminderModal from "./EditReminderModal";
-import { getReminderUrgency, reminderCardClass, reminderDueDateClass } from "@/lib/reminderUtils";
+import { getReminderUrgency, reminderCardClass, reminderDueDateClass, markReminderDone } from "@/lib/reminderUtils";
 
 function formatDate(d) {
   if (!d) return "—";
@@ -26,10 +26,7 @@ export default function CrabRemindersSection({ crabId, crabName, refreshKey }) {
   useEffect(() => { load(); }, [crabId, refreshKey]);
 
   const handleMarkDone = async (reminder) => {
-    await base44.entities.Reminder.update(reminder.id, {
-      is_done: true,
-      completed_at: new Date().toISOString(),
-    });
+    await markReminderDone(base44, reminder);
     toast.success("Marked as done");
     load();
   };
