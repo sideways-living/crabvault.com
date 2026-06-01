@@ -213,7 +213,15 @@ export default function CrabDetail() {
   const removeAdditionalEmail = (i) =>
     setCrab(c => ({ ...c, additional_emails: c.additional_emails.filter((_, idx) => idx !== i) }));
 
-  const addAdditionalAddress = () => setCrab(c => ({ ...c, additional_addresses: [...(c.additional_addresses || []), { label: "", address1: "", address2: "", suburb: "", state: "", postcode: "", country: "Australia" }] }));
+  const addAdditionalAddress = () => {
+    setCrab(c => {
+      const newIdx = (c.additional_addresses || []).filter(a => !a.is_old).length + (c.additional_addresses || []).filter(a => a.is_old).length;
+      // We need the actual index in the full array to set editingAddressIdx
+      const newFullIdx = (c.additional_addresses || []).length;
+      setTimeout(() => setEditingAddressIdx(newFullIdx), 0);
+      return { ...c, additional_addresses: [...(c.additional_addresses || []), { label: "", address1: "", address2: "", suburb: "", state: "", postcode: "", country: "Australia" }] };
+    });
+  };
   const updateAdditionalAddress = (i, field, val) =>
     setCrab(c => ({ ...c, additional_addresses: c.additional_addresses.map((a, idx) => idx === i ? { ...a, [field]: val } : a) }));
   const removeAdditionalAddress = (i) =>
