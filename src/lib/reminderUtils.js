@@ -4,12 +4,11 @@
  */
 export async function markReminderDone(base44, reminder) {
   if (reminder.workflow_run_id) {
-    // Find the linked WorkflowTaskRun
+    // Find the linked WorkflowTaskRun — filter only by run_id, match reminder_id in JS
     const tasks = await base44.entities.WorkflowTaskRun.filter({
       workflow_run_id: reminder.workflow_run_id,
-      reminder_id: reminder.id,
     });
-    const task = tasks.find(t => t.status === 'active');
+    const task = tasks.find(t => t.reminder_id === reminder.id && t.status === 'active');
     if (task) {
       await base44.functions.invoke('workflowEngine', {
         action: 'complete_task',
