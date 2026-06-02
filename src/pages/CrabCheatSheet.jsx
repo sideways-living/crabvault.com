@@ -285,22 +285,9 @@ function YellowBankSection({ mod, accounts, cards, formatSalary, formatDate }) {
       {cards.length > 0 && (
         <>
           <div className="section-title">Cards</div>
-          {cards.map(c => (
-            <div key={c.id} style={{ marginBottom: 8 }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: '#555', marginBottom: 2, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                •••• {(c.card_number || "").slice(-4)}
-              </div>
-              <table>
-                <tbody>
-                  <DataRow label="Card Number" value={c.card_number} />
-                  {c.expiry && <DataRow label="Expiry" value={c.expiry} />}
-                  {c.ccv && <DataRow label="CVV" value={c.ccv} />}
-                  {c.pin && <DataRow label="PIN" value={c.pin} />}
-                  {c.credit_limit && <DataRow label="Credit Limit" value={`$${Number(c.credit_limit).toLocaleString("en-AU", { minimumFractionDigits: 2 })}`} />}
-                </tbody>
-              </table>
-            </div>
-          ))}
+          <table><tbody>
+          {cards.map(c => <CardRow key={c.id} card={c} showCreditLimit />)}
+          </tbody></table>
         </>
       )}
 
@@ -354,21 +341,9 @@ function RedBankSection({ mod, accounts, cards }) {
       {cards.length > 0 && (
         <>
           <div className="section-title">Cards</div>
-          {cards.map(c => (
-            <div key={c.id} style={{ marginBottom: 8 }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: '#555', marginBottom: 2, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                •••• {(c.card_number || "").slice(-4)}
-              </div>
-              <table>
-                <tbody>
-                  <DataRow label="Card Number" value={c.card_number} />
-                  {c.expiry && <DataRow label="Expiry" value={c.expiry} />}
-                  {c.ccv && <DataRow label="CVV" value={c.ccv} />}
-                  {c.pin && <DataRow label="PIN" value={c.pin} />}
-                </tbody>
-              </table>
-            </div>
-          ))}
+          <table><tbody>
+          {cards.map(c => <CardRow key={c.id} card={c} />)}
+          </tbody></table>
         </>
       )}
 
@@ -436,6 +411,42 @@ function DataRow({ label, value }) {
     <tr>
       <td className="label-col">{label}</td>
       <td className="value-col">{value}</td>
+    </tr>
+  );
+}
+
+/* ─── Card Row (compact 2-line) ─── */
+function CardRow({ card, showCreditLimit }) {
+  const last4 = (card.card_number || "").replace(/\s/g, "").slice(-4);
+  const details = [
+    card.expiry   && { icon: "📅", tip: "Expiry",       val: card.expiry },
+    card.ccv      && { icon: "🔒", tip: "CVV",          val: card.ccv },
+    card.pin      && { icon: "🔑", tip: "PIN",          val: card.pin },
+    showCreditLimit && card.credit_limit && { icon: "💳", tip: "Credit Limit", val: `$${Number(card.credit_limit).toLocaleString("en-AU", { minimumFractionDigits: 2 })}` },
+  ].filter(Boolean);
+
+  return (
+    <tr>
+      <td colSpan={2} style={{ paddingTop: 7, paddingBottom: 7, borderBottom: '1px solid #eee' }}>
+        {/* Line 1 — card number */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: details.length ? 4 : 0 }}>
+          <span title="Card Number" style={{ fontSize: 13, lineHeight: 1 }}>💳</span>
+          <span style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: 11, letterSpacing: 1, color: '#111' }}>
+            {card.card_number || `•••• •••• •••• ${last4}`}
+          </span>
+        </div>
+        {/* Line 2 — expiry / cvv / pin */}
+        {details.length > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, paddingLeft: 19 }}>
+            {details.map(({ icon, tip, val }) => (
+              <span key={tip} title={tip} style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 10.5, color: '#333' }}>
+                <span style={{ fontSize: 11 }}>{icon}</span>
+                <span style={{ fontWeight: 600 }}>{val}</span>
+              </span>
+            ))}
+          </div>
+        )}
+      </td>
     </tr>
   );
 }
