@@ -47,6 +47,7 @@ const AuthenticatedApp = () => {
 
   return (
     <Routes>
+      <Route path="/cheat-sheet" element={<CrabCheatSheet />} />
       <Route element={<CrabVaultLayout />}>
         <Route path="/" element={<CrabVaultDashboard />} />
         <Route path="/crabs" element={<CrabsPage />} />
@@ -54,7 +55,6 @@ const AuthenticatedApp = () => {
         <Route path="/crab-documents" element={<CrabDocumentsPage />} />
         <Route path="/crab-documents/:id" element={<CrabDocumentDetail />} />
         <Route path="/ingress" element={<CrabIngressPage />} />
-        <Route path="/cheat-sheet" element={<CrabCheatSheet />} />
         <Route path="/watcher-status" element={<WatcherStatus />} />
         <Route path="/needs-attention" element={<NeedsAttentionPage />} />
         <Route path="/search" element={<DocumentSearchPage />} />
