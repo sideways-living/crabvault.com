@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { CheckCircle2, Clock, AlertTriangle, XCircle, ChevronDown, ChevronUp, Loader2, Eye } from "lucide-react";
+import { CheckCircle2, Clock, AlertTriangle, XCircle, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import TaskCompletionModal from "./TaskCompletionModal";
 
 function formatDate(d) {
   if (!d) return "—";
@@ -34,6 +35,7 @@ export default function WorkflowRunList({ refreshKey }) {
   const [expandedRun, setExpandedRun] = useState(null);
   const [loading, setLoading] = useState(true);
   const [completing, setCompleting] = useState(null);
+  const [completionModal, setCompletionModal] = useState(null); // { task, stepTemplate, crabId }
 
   const load = async () => {
     const [allRuns, allCrabs] = await Promise.all([
@@ -63,7 +65,21 @@ export default function WorkflowRunList({ refreshKey }) {
     }
   };
 
-  const handleCompleteTask = async (task) => {
+  const handleCompleteTask = async (task, run) => {
+    // Load step template to check for completion fields
+    let stepTemplate = null;
+    try {
+      stepTemplate = await base44.entities.WorkflowStepTemplate.get(task.workflow_step_template_id);
+    } catch(e) {}
+
+    const hasFields = stepTemplate?.completion_fields?.length > 0;
+    if (hasFields) {
+      const crabId = run?.related_record_id || null;
+      setCompletionModal({ task, stepTemplate, crabId });
+      return;
+    }
+
+    // No fields — complete directly
     setCompleting(task.id);
     const res = await base44.functions.invoke('workflowEngine', {
       action: 'complete_task',
@@ -94,13 +110,26 @@ export default function WorkflowRunList({ refreshKey }) {
 
   return (
     <div className="space-y-4">
+      {completionModal && (
+        <TaskCompletionModal
+          task={completionModal.task}
+          stepTemplate={completionModal.stepTemplate}
+          crabId={completionModal.crabId}
+          onCompleted={async () => {
+            setCompletionModal(null);
+            await loadTasksForRun(completionModal.task.workflow_run_id);
+            await load();
+          }}
+          onCancel={() => setCompletionModal(null)}
+        />
+      )}
       <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Running Workflows</h2>
 
       {activeRuns.length === 0 && (
         <p className="text-sm text-muted-foreground italic">No active workflow runs. Start a workflow from the Templates tab.</p>
       )}
 
-      {activeRuns.map(run => <RunCard key={run.id} run={run} {...{ tasksByRun, crabsMap, expandedRun, completing, toggleExpand, handleCompleteTask, handleCancelRun }} />)}
+      {activeRuns.map(run => <RunCard key={run.id} run={run} {...{ tasksByRun, crabsMap, expandedRun, completing, toggleExpand, handleCompleteTask, handleCancelRun }} onCompleteTask={(task) => handleCompleteTask(task, run)} />)}
 
       {doneRuns.length > 0 && (
         <details className="group mt-4">
@@ -108,7 +137,7 @@ export default function WorkflowRunList({ refreshKey }) {
             Show completed/cancelled ({doneRuns.length})
           </summary>
           <div className="mt-2 space-y-2 opacity-70">
-            {doneRuns.map(run => <RunCard key={run.id} run={run} {...{ tasksByRun, crabsMap, expandedRun, completing, toggleExpand, handleCompleteTask, handleCancelRun }} />)}
+            {doneRuns.map(run => <RunCard key={run.id} run={run} {...{ tasksByRun, crabsMap, expandedRun, completing, toggleExpand, handleCompleteTask, handleCancelRun }} onCompleteTask={(task) => handleCompleteTask(task, run)} />)}
           </div>
         </details>
       )}
@@ -116,7 +145,7 @@ export default function WorkflowRunList({ refreshKey }) {
   );
 }
 
-function RunCard({ run, tasksByRun, crabsMap, expandedRun, completing, toggleExpand, handleCompleteTask, handleCancelRun }) {
+function RunCard({ run, tasksByRun, crabsMap, expandedRun, completing, toggleExpand, onCompleteTask, handleCancelRun }) {
   const config = STATUS_CONFIG[run.status] || STATUS_CONFIG.active;
   const StatusIcon = config.icon;
   const isExpanded = expandedRun === run.id;
@@ -200,7 +229,7 @@ function RunCard({ run, tasksByRun, crabsMap, expandedRun, completing, toggleExp
                       size="sm"
                       variant="outline"
                       className="h-6 text-[10px] gap-1 shrink-0"
-                      onClick={() => handleCompleteTask(task)}
+                      onClick={() => onCompleteTask(task)}
                       disabled={completing === task.id}
                     >
                       {completing === task.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <><CheckCircle2 className="h-3 w-3" /> Done</>}

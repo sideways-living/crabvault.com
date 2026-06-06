@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { Plus, Trash2, ArrowRight, Loader2, X, GripVertical } from "lucide-react";
+import { Plus, Trash2, ArrowRight, Loader2, X, GripVertical, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+import StepCompletionFieldsEditor from "./StepCompletionFieldsEditor";
 
 const PRIORITIES = ["low", "normal", "high", "urgent"];
 
@@ -35,6 +36,8 @@ export default function WorkflowTemplateEditor({ template, onSaved, onCancel }) 
     }
   }, []);
 
+  const [expandedStepIdx, setExpandedStepIdx] = useState(null);
+
   const addStep = () => {
     const tmpId = `new_${Date.now()}`;
     setSteps(prev => [...prev, {
@@ -45,6 +48,7 @@ export default function WorkflowTemplateEditor({ template, onSaved, onCancel }) 
       priority: "normal",
       is_start_step: prev.length === 0,
       is_final_step: false,
+      completion_fields: [],
     }]);
   };
 
@@ -112,6 +116,7 @@ export default function WorkflowTemplateEditor({ template, onSaved, onCancel }) 
         is_start_step: !!s.is_start_step,
         is_final_step: !!s.is_final_step,
         assigned_role: s.assigned_role || null,
+        completion_fields: s.completion_fields || [],
       };
       if (s.id) {
         await base44.entities.WorkflowStepTemplate.update(s.id, stepData);
@@ -260,6 +265,25 @@ export default function WorkflowTemplateEditor({ template, onSaved, onCancel }) 
                 <input type="checkbox" checked={!!step.is_final_step} onChange={e => updateStep(idx, 'is_final_step', e.target.checked)} />
                 Final step
               </label>
+            </div>
+            {/* Completion fields toggle */}
+            <div className="border-t pt-2">
+              <button
+                type="button"
+                className="flex items-center gap-1.5 text-[10px] font-medium text-muted-foreground hover:text-foreground"
+                onClick={() => setExpandedStepIdx(expandedStepIdx === idx ? null : idx)}
+              >
+                {expandedStepIdx === idx ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                Completion fields {(step.completion_fields || []).length > 0 ? `(${step.completion_fields.length})` : ""}
+              </button>
+              {expandedStepIdx === idx && (
+                <div className="mt-2">
+                  <StepCompletionFieldsEditor
+                    fields={step.completion_fields || []}
+                    onChange={val => updateStep(idx, 'completion_fields', val)}
+                  />
+                </div>
+              )}
             </div>
           </div>
         ))}

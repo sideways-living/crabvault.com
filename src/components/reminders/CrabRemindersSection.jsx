@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import EditReminderModal from "./EditReminderModal";
-import { getReminderUrgency, reminderCardClass, reminderDueDateClass, markReminderDone } from "@/lib/reminderUtils";
+import TaskCompletionModal from "@/components/workflows/TaskCompletionModal";
+import { getReminderUrgency, reminderCardClass, reminderDueDateClass } from "@/lib/reminderUtils";
 
 function formatDate(d) {
   if (!d) return "—";
@@ -16,6 +17,7 @@ export default function CrabRemindersSection({ crabId, crabName, refreshKey }) {
   const [reminders, setReminders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editingReminder, setEditingReminder] = useState(null);
+  const [completionModal, setCompletionModal] = useState(null); // { task, stepTemplate }
 
   const load = async () => {
     const rems = await base44.entities.Reminder.filter({ crab_id: crabId }, "due_date", 200);
@@ -26,7 +28,26 @@ export default function CrabRemindersSection({ crabId, crabName, refreshKey }) {
   useEffect(() => { load(); }, [crabId, refreshKey]);
 
   const handleMarkDone = async (reminder) => {
-    await markReminderDone(base44, reminder);
+    // Workflow-linked reminders: check if the step has completion fields
+    if (reminder.workflow_run_id) {
+      const tasks = await base44.entities.WorkflowTaskRun.filter({ workflow_run_id: reminder.workflow_run_id });
+      const task = tasks.find(t => t.reminder_id === reminder.id && t.status === 'active');
+      if (task) {
+        let stepTemplate = null;
+        try { stepTemplate = await base44.entities.WorkflowStepTemplate.get(task.workflow_step_template_id); } catch(e) {}
+        if (stepTemplate?.completion_fields?.length > 0) {
+          setCompletionModal({ task, stepTemplate });
+          return;
+        }
+        // No fields — complete via engine directly
+        await base44.functions.invoke('workflowEngine', { action: 'complete_task', payload: { task_run_id: task.id } });
+        toast.success("Marked as done");
+        load();
+        return;
+      }
+    }
+    // Plain reminder
+    await base44.entities.Reminder.update(reminder.id, { is_done: true, completed_at: new Date().toISOString() });
     toast.success("Marked as done");
     load();
   };
@@ -60,6 +81,15 @@ export default function CrabRemindersSection({ crabId, crabName, refreshKey }) {
   return (
     <TooltipProvider>
       <>
+        {completionModal && (
+          <TaskCompletionModal
+            task={completionModal.task}
+            stepTemplate={completionModal.stepTemplate}
+            crabId={crabId}
+            onCompleted={() => { setCompletionModal(null); load(); }}
+            onCancel={() => setCompletionModal(null)}
+          />
+        )}
         {editingReminder && (
           <EditReminderModal
             reminder={editingReminder}

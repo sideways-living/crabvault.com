@@ -50,6 +50,10 @@
       "type": "string",
       "title": "Completed By User ID"
     },
+    "completion_data": {
+      "type": "object",
+      "title": "Completion Data (collected on completion)"
+    },
     "transition_group_id": {
       "type": "string",
       "title": "Transition Group ID (if part of parallel group)"

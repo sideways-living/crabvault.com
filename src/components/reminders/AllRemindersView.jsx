@@ -6,7 +6,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { toast } from "sonner";
 import EditReminderModal from "./EditReminderModal";
 import { Link } from "react-router-dom";
-import { getReminderUrgency, reminderCardClass, reminderDueDateClass, markReminderDone } from "@/lib/reminderUtils";
+import { getReminderUrgency, reminderCardClass, reminderDueDateClass } from "@/lib/reminderUtils";
+import TaskCompletionModal from "@/components/workflows/TaskCompletionModal";
 
 function formatDate(d) {
   if (!d) return "—";
@@ -18,6 +19,7 @@ export default function AllRemindersView() {
   const [crabs, setCrabs] = useState({});
   const [loading, setLoading] = useState(true);
   const [editingReminder, setEditingReminder] = useState(null);
+  const [completionModal, setCompletionModal] = useState(null);
   const [showDone, setShowDone] = useState(false);
   const [groupBy, setGroupBy] = useState("none"); // "none" | "task"
 
@@ -49,7 +51,23 @@ export default function AllRemindersView() {
   useEffect(() => { load(); }, []);
 
   const handleMarkDone = async (reminder) => {
-    await markReminderDone(base44, reminder);
+    if (reminder.workflow_run_id) {
+      const tasks = await base44.entities.WorkflowTaskRun.filter({ workflow_run_id: reminder.workflow_run_id });
+      const task = tasks.find(t => t.reminder_id === reminder.id && t.status === 'active');
+      if (task) {
+        let stepTemplate = null;
+        try { stepTemplate = await base44.entities.WorkflowStepTemplate.get(task.workflow_step_template_id); } catch(e) {}
+        if (stepTemplate?.completion_fields?.length > 0) {
+          setCompletionModal({ task, stepTemplate, crabId: reminder.crab_id });
+          return;
+        }
+        await base44.functions.invoke('workflowEngine', { action: 'complete_task', payload: { task_run_id: task.id } });
+        toast.success("Marked as done");
+        load();
+        return;
+      }
+    }
+    await base44.entities.Reminder.update(reminder.id, { is_done: true, completed_at: new Date().toISOString() });
     toast.success("Marked as done");
     load();
   };
@@ -169,6 +187,15 @@ export default function AllRemindersView() {
 
   return (
     <TooltipProvider>
+      {completionModal && (
+        <TaskCompletionModal
+          task={completionModal.task}
+          stepTemplate={completionModal.stepTemplate}
+          crabId={completionModal.crabId}
+          onCompleted={() => { setCompletionModal(null); load(); }}
+          onCancel={() => setCompletionModal(null)}
+        />
+      )}
       {editingReminder && (
         <EditReminderModal
           reminder={editingReminder}

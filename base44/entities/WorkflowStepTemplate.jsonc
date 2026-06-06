@@ -56,6 +56,46 @@
       "type": "boolean",
       "title": "Is Final Step",
       "default": false
+    },
+    "completion_fields": {
+      "type": "array",
+      "title": "Completion Fields",
+      "description": "Fields to collect when completing this task",
+      "items": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Field Key (unique identifier)"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label shown to user"
+          },
+          "type": {
+            "type": "string",
+            "title": "Field Type",
+            "enum": [
+              "text",
+              "document_upload",
+              "document_upload_pair"
+            ]
+          },
+          "default_value": {
+            "type": "string",
+            "title": "Default Value"
+          },
+          "profile_update_path": {
+            "type": "string",
+            "title": "Profile field to update (e.g. phone, email, yellowbank_last_branch)"
+          },
+          "required": {
+            "type": "boolean",
+            "title": "Required",
+            "default": false
+          }
+        }
+      }
     }
   },
   "required": [
