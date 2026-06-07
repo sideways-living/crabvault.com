@@ -124,7 +124,8 @@ async function completeTask(base44, user, payload) {
       }
     } else if (taskRun.parallel_completion_rule === 'ALL_REQUIRED') {
       const refreshedSiblings = allTasksInRun.filter(t => t.transition_group_id === taskRun.transition_group_id);
-      const allDone = refreshedSiblings.every(s => s.status === 'completed' || s.id === taskRun.id);
+      // Treat the current task as completed regardless of DB read timing
+      const allDone = refreshedSiblings.every(s => s.id === taskRun.id || s.status === 'completed' || s.status === 'skipped');
       if (!allDone) {
         await base44.entities.WorkflowRun.update(run.id, { activity_log: log });
         return Response.json({ success: true, waiting_for_group: true });
@@ -155,9 +156,11 @@ async function completeTask(base44, user, payload) {
       const isSolo = groupKey.startsWith('__solo__');
       const groupId = isSolo ? null : groupKey;
 
-      for (const transition of groupTransitions) {
+      // Collect unique target steps across all transitions in this group
+      const targetStepIds = [...new Set(groupTransitions.map(t => t.to_step_id))];
+      for (const toStepId of targetStepIds) {
         let nextStep;
-        try { nextStep = await base44.entities.WorkflowStepTemplate.get(transition.to_step_id); }
+        try { nextStep = await base44.entities.WorkflowStepTemplate.get(toStepId); }
         catch(e) { continue; }
         if (!nextStep) continue;
 
@@ -168,7 +171,9 @@ async function completeTask(base44, user, payload) {
         const alreadyActive = existing.filter(t => t.status === 'active' || t.status === 'completed');
         if (alreadyActive.length > 0) continue;
 
-        await createTaskRun(base44, run, nextStep, groupId, isSolo ? null : rule, commenced_at);
+        // Target tasks are never parallel siblings — they are convergence points.
+        // Only source tasks (the ones completing) carry a group_id for sibling checks.
+        await createTaskRun(base44, run, nextStep, null, null, commenced_at);
         log.push({ at: now, event: 'task_created', step_title: nextStep.title, by: 'system' });
       }
     }
